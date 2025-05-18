@@ -1,0 +1,121 @@
+/* globals.css - Alternative approach with proper CSS variables for shadcn/ui */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        /* Background colors */
+        --background: 222.2 84% 4.9%; /* Very dark gray */
+        --foreground: 210 40% 98%; /* Very light gray */
+
+        /* Card colors */
+        --card: 222.2 84% 7.9%; /* Dark gray */
+        --card-foreground: 210 40% 98%; /* Light gray */
+
+        /* Popup colors */
+        --popover: 222.2 84% 4.9%; /* Dark gray */
+        --popover-foreground: 210 40% 98%; /* Light gray */
+
+        /* Primary colors (emerald theme) */
+        --primary: 142.1 76.2% 36.3%; /* Emerald */
+        --primary-foreground: 355.7 100% 97.3%; /* White */
+
+        /* Secondary colors */
+        --secondary: 217.2 32.6% 17.5%; /* Dark gray */
+        --secondary-foreground: 210 40% 98%; /* Light gray */
+
+        /* Muted colors */
+        --muted: 217.2 32.6% 17.5%; /* Dark gray */
+        --muted-foreground: 215 20.2% 65.1%; /* Medium gray */
+
+        /* Accent colors */
+        --accent: 217.2 32.6% 17.5%; /* Dark gray */
+        --accent-foreground: 210 40% 98%; /* Light gray */
+
+        /* Destructive colors */
+        --destructive: 0 62.8% 30.6%; /* Dark red */
+        --destructive-foreground: 210 40% 98%; /* Light gray */
+
+        /* Border and input */
+        --border: 217.2 32.6% 17.5%; /* Dark gray */
+        --input: 217.2 32.6% 17.5%; /* Dark gray */
+        --ring: 142.1 76.2% 36.3%; /* Emerald */
+
+        /* Border radius */
+        --radius: 0.5rem;
+
+        /* Custom variables for your app */
+        --text-primary: 210 40% 98%;
+        --text-secondary: 215 20.2% 65.1%;
+    }
+
+    .dark {
+        /* Dark mode colors (same as root for this dark theme) */
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 222.2 84% 7.9%;
+        --card-foreground: 210 40% 98%;
+        --popover: 222.2 84% 4.9%;
+        --popover-foreground: 210 40% 98%;
+        --primary: 142.1 76.2% 36.3%;
+        --primary-foreground: 355.7 100% 97.3%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --muted: 217.2 32.6% 17.5%;
+        --muted-foreground: 215 20.2% 65.1%;
+        --accent: 217.2 32.6% 17.5%;
+        --accent-foreground: 210 40% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --input: 217.2 32.6% 17.5%;
+        --ring: 142.1 76.2% 36.3%;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    }
+}
+
+/* Tactics grid layout */
+.tactics-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .tactics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .tactics-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Custom field pattern for tactics cards */
+.field-pattern {
+    background-color: #0a4c38;
+    background-image:
+            linear-gradient(to right, rgba(255,255,255,.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,.1) 1px, transparent 1px);
+    background-size: 10% 10%;
+}
+
+/* Content card hover effects */
+.content-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
