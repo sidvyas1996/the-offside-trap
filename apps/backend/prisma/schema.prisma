@@ -1,0 +1,83 @@
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://vendantvyas:password@localhost:5432/postgres?schema=the_offside_trap"
+  //env("DATABASE_URL")
+}
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tactics   Tactic[]
+  likes     Like[]
+  comments  Comment[]
+  saves     Save[]
+
+  @@map("users")
+}
+
+model Tactic {
+  id          String   @id @default(uuid())
+  title       String
+  formation   String
+  tags        String[]
+  description String
+  players     Json     // Store Player[] as JSON
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes       Like[]
+  comments    Comment[]
+  saves       Save[]
+
+  @@map("tactics")
+}
+
+model Like {
+  userId   String
+  tacticId String
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tacticId])
+  @@map("likes")
+}
+
+model Comment {
+  id       String   @id @default(uuid())
+  content  String
+  userId   String
+  tacticId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Save {
+  userId   String
+  tacticId String
+  savedAt  DateTime @default(now())
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tacticId])
+  @@map("saves")
+}
