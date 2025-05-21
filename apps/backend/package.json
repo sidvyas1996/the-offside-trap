@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
@@ -13,10 +13,13 @@
     "db:stop": "../scripts/stop-db.sh",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:seed": "ts-node prisma/seed.ts",
+    "db:seed": "npm run db:generate && ts-node prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
     "db:setup": "npm run db:push && npm run db:seed"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
   },
   "keywords": [],
   "author": "",
@@ -36,15 +39,18 @@
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.0",
     "prettier": "^3.5.3",
-    "prisma": "^5.7.0",
+    "prisma": "^6.8.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.6.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^6.8.2",
     "bcryptjs": "^3.0.2",
-    "prisma": "^6.8.2"
+    "jsonwebtoken": "^9.0.2"
   },
-  "include": ["src/**/*", "prisma/**/*"]
+  "include": [
+    "src/**/*",
+    "prisma/**/*"
+  ]
 }

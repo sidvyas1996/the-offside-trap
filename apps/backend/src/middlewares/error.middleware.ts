@@ -1,78 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
-import {PrismaClientKnownRequestError} from "@prisma/client/runtime/library";
 
+// Error interface
 export interface AppError extends Error {
-    statusCode?: number;
-    isOperational?: boolean;
+  statusCode?: number;
+  isOperational?: boolean;
 }
 
-export const errorHandler = (
-    error: AppError,
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    let statusCode = error.statusCode || 500;
-    let message = error.message || 'Internal server error';
+// Define a type for Express request handler functions
+type ExpressHandler = (req: Request, res: Response, next: NextFunction) => Promise<any> | any;
 
-   /* // Prisma errors
-    if (error instanceof PrismaClientKnownRequestError) {
-        switch (error.code) {
-            case 'P2002':
-                statusCode = 409;
-                message = 'A record with this information already exists';
-                break;
-            case 'P2025':
-                statusCode = 404;
-                message = 'Record not found';
-                break;
-            default:
-                statusCode = 400;
-                message = 'Database operation failed';
-        }
-    }
+// Error handler middleware
+export const errorHandler = (error: AppError, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = error.statusCode || 500;
+  const message = error.message || 'Internal server error';
 
-    // Validation errors
-    if (error instanceof PrismaClientValidationError) {
-        statusCode = 400;
-        message = 'Invalid data provided';
-    }*/
-
-    // JWT errors
-    if (error.name === 'JsonWebTokenError') {
-        statusCode = 401;
-        message = 'Invalid token';
-    }
-
-    if (error.name === 'TokenExpiredError') {
-        statusCode = 401;
-        message = 'Token expired';
-    }
-
-    // Log error in non-production environments
-    if (process.env.NODE_ENV !== 'production') {
-        console.error('Error:', error);
-    }
-
-    res.status(statusCode).json({
-        success: false,
-        error: message,
-        ...(process.env.NODE_ENV !== 'production' && { stack: error.stack })
-    });
+  res.status(statusCode).json({
+    success: false,
+    error: message,
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+  });
 };
 
-// Async error wrapper
-export const asyncHandler = (fn: Function) => {
-    return (req: Request, res: Response, next: NextFunction) => {
-        Promise.resolve(fn(req, res, next)).catch(next);
-    };
+// Async handler wrapper with proper typing
+export const asyncHandler = (fn: ExpressHandler) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 };
 
-// Custom error creator
-export const createError = (message: string, statusCode: number = 500): AppError => {
-    const error: AppError = new Error(message);
-    error.statusCode = statusCode;
-    error.isOperational = true;
-    return error;
+// Helper to create custom errors
+export const createError = (message: string, statusCode: number = 400): AppError => {
+  const error: AppError = new Error(message);
+  error.statusCode = statusCode;
+  error.isOperational = true;
+  return error;
 };

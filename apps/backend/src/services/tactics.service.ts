@@ -1,10 +1,4 @@
-import {
-  Tactic,
-  TacticResponse,
-  Player,
-  TacticFormData,
-  TacticFilters,
-} from '@the-offside-trap/shared';
+import { TacticResponse, Player, TacticFormData, TacticFilters } from '@the-offside-trap/shared';
 import { prisma } from './db.service';
 import { createError } from '../middlewares/error.middleware';
 
@@ -192,7 +186,6 @@ export class TacticsService {
    * Create a new tactic
    */
   async createTactic(data: TacticFormData, userId: string) {
-    // Validate players (should be 11)
     if (!data.players || data.players.length !== 11) {
       throw createError('Exactly 11 players are required', 400);
     }
@@ -211,7 +204,7 @@ export class TacticsService {
         formation: data.formation,
         tags,
         description: data.description,
-        players: data.players,
+        players: JSON.stringify(data.players),
         author: {
           connect: { id: userId },
         },
@@ -518,7 +511,7 @@ export class TacticsService {
         formation: originalTactic.formation,
         tags: originalTactic.tags,
         description: originalTactic.description,
-        players: originalTactic.players,
+        players: originalTactic.players!,
         author: {
           connect: { id: userId },
         },

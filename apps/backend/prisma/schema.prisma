@@ -1,7 +1,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -14,8 +13,8 @@ model User {
   email     String   @unique
   password  String
   avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @map("created_at")@default(now())
+  updatedAt   DateTime @map("updated_at")@updatedAt
 
   tactics   Tactic[]
   likes     Like[]
@@ -32,9 +31,9 @@ model Tactic {
   tags        String[]
   description String
   players     Json     // Store Player[] as JSON
-  authorId    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  authorId    String @map("author_id")
+  createdAt   DateTime @map("created_at")@default(now())
+  updatedAt   DateTime @map("updated_at")@updatedAt
 
   author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   likes       Like[]
@@ -46,7 +45,7 @@ model Tactic {
 
 model Like {
   userId   String
-  tacticId String
+  tacticId String @map("tactic_id")
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
@@ -58,10 +57,10 @@ model Like {
 model Comment {
   id       String   @id @default(uuid())
   content  String
-  userId   String
-  tacticId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  userId   String @map("user_id")
+  tacticId String @map("tactic_id")
+  createdAt   DateTime @map("created_at")@default(now())
+  updatedAt   DateTime @map("updated_at")@updatedAt
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
@@ -70,8 +69,8 @@ model Comment {
 }
 
 model Save {
-  userId   String
-  tacticId String
+  userId   String @map("user_id")
+  tacticId String @map("tactic_id")
   savedAt  DateTime @default(now())
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
