@@ -28,3 +28,12 @@ apps/backend/
 │   ├── schema.prisma
 │   └── migrations/
 └── package.json
+
+## Development Commands
+
+- Start database: `npm run db:start`
+- Stop database: `npm run db:stop`
+- Reset database: `npm run db:reset` (this will delete all data and reseed)
+- Open Prisma Studio: `npm run db:studio` (visual database editor)
+- Generate Prisma client: `npm run db:generate`
+- Seed database: `npm run db:seed`
