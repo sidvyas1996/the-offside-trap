@@ -1,0 +1,81 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  avatar    String?
+  createdAt   DateTime @map("created_at")@default(now())
+  updatedAt   DateTime @map("updated_at")@updatedAt
+
+  tactics   Tactic[]
+  likes     Like[]
+  comments  Comment[]
+  saves     Save[]
+
+  @@map("users")
+}
+
+model Tactic {
+  id          String   @id @default(uuid())
+  title       String
+  formation   String
+  tags        String[]
+  description String
+  players     Json     // Store Player[] as JSON
+  authorId    String @map("author_id")
+  createdAt   DateTime @map("created_at")@default(now())
+  updatedAt   DateTime @map("updated_at")@updatedAt
+
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes       Like[]
+  comments    Comment[]
+  saves       Save[]
+
+  @@map("tactics")
+}
+
+model Like {
+  userId   String
+  tacticId String @map("tactic_id")
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tacticId])
+  @@map("likes")
+}
+
+model Comment {
+  id       String   @id @default(uuid())
+  content  String
+  userId   String @map("user_id")
+  tacticId String @map("tactic_id")
+  createdAt   DateTime @map("created_at")@default(now())
+  updatedAt   DateTime @map("updated_at")@updatedAt
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Save {
+  userId   String @map("user_id")
+  tacticId String @map("tactic_id")
+  savedAt  DateTime @default(now())
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tacticId])
+  @@map("saves")
+}
