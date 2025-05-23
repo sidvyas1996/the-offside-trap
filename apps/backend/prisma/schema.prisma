@@ -46,7 +46,8 @@ model Tactic {
 model Like {
   userId   String
   tacticId String @map("tactic_id")
-
+  createdAt   DateTime @map("created_at")@default(now())
+  updatedAt   DateTime @map("updated_at")@updatedAt
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   tactic   Tactic @relation(fields: [tacticId], references: [id], onDelete: Cascade)
 

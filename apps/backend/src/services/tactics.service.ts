@@ -74,15 +74,30 @@ export class TacticsService {
     // Sorting options
     let orderBy: any;
     switch (sortBy) {
-      case 'recent':
+      case 'latest':
         orderBy = { createdAt: 'desc' };
         break;
-      case 'popular':
-        orderBy = { likes: { _count: 'desc' } };
-        break;
       case 'trending':
-        // Complex query for trending - could involve recent likes/views
-        orderBy = [{ likes: { _count: 'desc' } }, { createdAt: 'desc' }];
+        // Using _count properly with Prisma
+        orderBy = [
+          {
+            likes: {
+              _count: 'desc',
+            },
+          },
+          { createdAt: 'desc' }, // Secondary sort by date for ties
+        ];
+        break;
+      case 'featured':
+        // Combined ordering for featured (likes + recency)
+        orderBy = [
+          {
+            likes: {
+              _count: 'desc',
+            },
+          },
+          { createdAt: 'desc' },
+        ];
         break;
       default:
         orderBy = { createdAt: 'desc' };
@@ -641,6 +656,56 @@ export class TacticsService {
             canEdit: tactic.authorId === userId,
           }
         : undefined,
+    };
+  }
+
+  /**
+   * Get users who liked a tactic with pagination
+   * @route GET /api/tactics/:id/likes
+   */
+  async getTacticLikes(tacticId: string, page: number = 1, limit: number = 10) {
+    // Check if tactic exists
+    const tactic = await prisma.tactic.findUnique({
+      where: { id: tacticId },
+    });
+
+    if (!tactic) {
+      throw new Error('Tactic not found');
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Get like count
+    const total = await prisma.like.count({
+      where: { tacticId },
+    });
+
+    // Get users who liked this tactic
+    const likes = await prisma.like.findMany({
+      where: { tacticId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            avatar: true,
+          },
+        },
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      users: likes.map(like => like.userId),
+      pagination: {
+        total,
+        page,
+        limit,
+        hasNext: skip + likes.length < total,
+        hasPrev: page > 1,
+      },
     };
   }
 }
