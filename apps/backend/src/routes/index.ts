@@ -7,6 +7,7 @@ const router = Router();
 // Mount route modules
 router.use('/users', usersRoutes);
 router.use('/tactics', tacticsRoutes);
+router.use('/tactics-interactions', tacticsRoutes);
 
 // API info endpoint
 router.get('/', (req, res) => {

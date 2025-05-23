@@ -102,7 +102,7 @@ export interface TacticFilters {
   formation?: string;
   tags?: string[];
   search?: string;
-  sortBy?: 'recent' | 'popular' | 'trending';
+  sortBy?: 'trending' | 'featured' | 'latest';
   timeRange?: '1d' | '1w' | '1m' | '1y' | 'all';
   page?: number;
   limit?: number;

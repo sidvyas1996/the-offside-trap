@@ -44,4 +44,22 @@ export class TacticsController {
       res.status(500).json({ success: false, error: errorMessage });
     }
   }
+  async getTacticLikes(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const result = await tacticsService.getTacticLikes(id, page, limit);
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      const status = errorMessage === 'Tactic not found' ? 404 : 500;
+      res.status(status).json({ success: false, error: errorMessage });
+    }
+  }
 }
