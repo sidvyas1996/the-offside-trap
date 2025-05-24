@@ -13,6 +13,17 @@ export interface PlayerPosition {
   role?: string; // Optional position role (e.g., "GK", "CB", "CAM")
 }
 
+export interface TacticSummary {
+  id: string;
+  image_url?: string | null;
+  title: string;
+  formation: string;
+  tags: string[];
+  stats: TacticStats;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Tactic Form Data
 export interface TacticFormData {
   title: string;
@@ -56,26 +67,32 @@ export interface UserInteraction {
 // Main Tactic Types
 export interface Tactic {
   id: string;
+  image_url?: string | null;
   title: string;
   formation: string;
   tags: string[];
   description: string;
   players: Player[];
-  authorId: string;
+  author: Author;
   createdAt: Date;
   updatedAt: Date;
 }
+export interface Author {
+  id: string;
+  username: string;
+  avatar?: string | null;
+}
 
 // The primary response type returned by the API
-export interface TacticResponse extends Omit<Tactic, 'authorId'> {
-  author: UserSummary;
+export interface TacticSummaryResponse extends Omit<TacticSummary, 'authorId'> {
   stats: TacticStats;
   userInteraction?: UserInteraction;
 }
 
+
 // Tactic List Response
 export interface TacticListResponse {
-  tactics: TacticResponse[];
+  tactics: TacticSummaryResponse[];
   pagination: {
     current: number;
     total: number;
@@ -87,9 +104,9 @@ export interface TacticListResponse {
 }
 
 // Tactic Detail Response
-export interface TacticDetailResponse extends TacticResponse {
+export interface TacticDetailResponse extends Tactic {
+  stats: TacticStats;
   comments?: Comment[];
-  similarTactics?: TacticResponse[];
 }
 
 // API Request Types
@@ -121,6 +138,6 @@ export interface User {
   username: string;
   email: string;
   avatar?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 }
+
+export type TabValue = "trending" | "featured" | "latest";

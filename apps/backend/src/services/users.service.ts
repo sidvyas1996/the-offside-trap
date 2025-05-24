@@ -12,6 +12,12 @@ export class UsersService {
   // Get all users
   async getUsers() {
     return prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        avatar: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -19,7 +25,15 @@ export class UsersService {
   // Get user by ID
   async getUserById(id: string) {
     return prisma.user.findUnique({
-      where: { id },
+      where: { id: '17fbb4d6-11fb-4456-b376-84579a1b99e6' },
+      select: {
+        id: true,
+        username: true,
+        avatar: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 

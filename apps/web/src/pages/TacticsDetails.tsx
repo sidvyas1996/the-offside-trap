@@ -1,49 +1,64 @@
-import React, { useState, useRef } from 'react';
-import { ChevronLeft, Heart, MessageCircle, Save, Share2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft, Heart, MessageCircle, Save, Share2, Loader2 } from 'lucide-react';
+import { TacticEntity } from '../entities/TacticEntity';
+import type { Tactic, Player, Comment } from '../../../../packages/shared';
 
-interface Player {
-    id: number;
-    x: number;
-    y: number;
-    number: number;
-}
+const TacticsDetails: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
 
-interface TacticFormData {
-    title: string;
-    formation: string;
-    tags: string[];
-    description: string;
-}
+    // Loading and error states
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-const CreateTactics: React.FC = () => {
-    const [formData, setFormData] = useState<TacticFormData>({
-        title: 'Tiki-Taka 4-2-3-1',
-        formation: '4-2-3-1',
-        tags: ['Possession', 'Tiki-Taka', 'Professional'],
-        description: 'This possession-based system prioritizes short passing and movement to control the game. The double pivot provides defensive cover while allowing'
-    });
+    // Tactic data
+    const [tactic, setTactic] = useState<Tactic | null>(null);
+    const [players, setPlayers] = useState<Player[]>([]);
 
-    const [players, setPlayers] = useState<Player[]>([
-        { id: 1, x: 50, y: 85, number: 1 }, // GK
-        { id: 2, x: 25, y: 70, number: 2 }, // LB
-        { id: 3, x: 42, y: 75, number: 5 }, // CB
-        { id: 4, x: 58, y: 75, number: 6 }, // CB
-        { id: 5, x: 75, y: 70, number: 3 }, // RB
-        { id: 6, x: 42, y: 55, number: 4 }, // DM
-        { id: 7, x: 58, y: 55, number: 8 }, // DM
-        { id: 8, x: 25, y: 35, number: 7 }, // LM
-        { id: 9, x: 50, y: 40, number: 10 }, // CAM
-        { id: 10, x: 75, y: 35, number: 11 }, // RM
-        { id: 11, x: 50, y: 20, number: 9 }, // ST
-    ]);
+    // Interaction states
+    const [likes, setLikes] = useState(0);
+    const [isLiked, setIsLiked] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+    const [comments, setComments] = useState<Comment[]>([]);
+    const [newComment, setNewComment] = useState('');
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
+    // Drag and drop
     const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const fieldRef = useRef<HTMLDivElement>(null);
 
-    const [likes, setLikes] = useState(22);
-    const [comments, setComments] = useState(0);
-    const [isLiked, setIsLiked] = useState(false);
+    // Fetch tactic data on mount
+    useEffect(() => {
+        if (id) {
+            fetchTacticDetails();
+        }
+    }, [id]);
+
+    const fetchTacticDetails = async () => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const data = await TacticEntity.getById(id!);
+            setTactic(data);
+            setPlayers(data.players || []);
+            setLikes(data.stats?.likes || 0);
+            setIsLiked(data.userInteraction?.isLiked || false);
+            setIsSaved(data.userInteraction?.isSaved || false);
+
+            // If comments are included in the response
+            if ('comments' in data) {
+                setComments((data as any).comments || []);
+            }
+        } catch (err) {
+            console.error('Error fetching tactic:', err);
+            setError(err instanceof Error ? err.message : 'Failed to load tactic');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleMouseDown = (player: Player) => {
         setDraggedPlayer(player);
@@ -69,17 +84,80 @@ const CreateTactics: React.FC = () => {
         setDraggedPlayer(null);
     };
 
-    const handleLike = () => {
-        setIsLiked(!isLiked);
-        setLikes(isLiked ? likes - 1 : likes + 1);
+    const handleLike = async () => {
+        try {
+            if (isLiked) {
+                await TacticEntity.unlike(id!);
+                setLikes(prev => prev - 1);
+            } else {
+                await TacticEntity.like(id!);
+                setLikes(prev => prev + 1);
+            }
+            setIsLiked(!isLiked);
+        } catch (err) {
+            console.error('Error toggling like:', err);
+        }
     };
 
-    const handleTagRemove = (tagToRemove: string) => {
-        setFormData({
-            ...formData,
-            tags: formData.tags.filter(tag => tag !== tagToRemove)
+    const handleSave = async () => {
+        try {
+            if (isSaved) {
+                await TacticEntity.unsave(id!);
+            } else {
+                await TacticEntity.save(id!);
+            }
+            setIsSaved(!isSaved);
+        } catch (err) {
+            console.error('Error toggling save:', err);
+        }
+    };
+
+    const handleCommentSubmit = async () => {
+        if (!newComment.trim() || isSubmittingComment) return;
+
+        setIsSubmittingComment(true);
+        try {
+            const comment = await TacticEntity.addComment(id!, newComment);
+            setComments([comment, ...comments]);
+            setNewComment('');
+        } catch (err) {
+            console.error('Error posting comment:', err);
+        } finally {
+            setIsSubmittingComment(false);
+        }
+    };
+
+    const formatDate = (date: string | Date) => {
+        return new Date(date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
         });
     };
+
+    if (loading) {
+        return (
+            <div className="bg-black text-white min-h-screen flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
+
+    if (error || !tactic) {
+        return (
+            <div className="bg-black text-white min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-xl text-red-500 mb-4">{error || 'Tactic not found'}</p>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors"
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-black text-white min-h-screen">
@@ -89,8 +167,11 @@ const CreateTactics: React.FC = () => {
                     <div className="flex-1 pr-8">
                         {/* Header */}
                         <div className="flex items-center gap-4 mb-8">
-                            <ChevronLeft className="h-6 w-6 text-gray-400 cursor-pointer hover:text-white" />
-                            <h1 className="text-3xl font-bold">{formData.title}</h1>
+                            <ChevronLeft
+                                className="h-6 w-6 text-gray-400 cursor-pointer hover:text-white"
+                                onClick={() => navigate(-1)}
+                            />
+                            <h1 className="text-3xl font-bold">{tactic.title}</h1>
                         </div>
 
                         {/* Football Field */}
@@ -106,7 +187,7 @@ const CreateTactics: React.FC = () => {
                             onMouseUp={handleMouseUp}
                             onMouseLeave={handleMouseUp}
                         >
-                            {/* Field markings */}
+                            {/* Field markings SVG (same as before) */}
                             <svg className="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 400 300">
                                 {/* Outer boundary */}
                                 <rect x="10" y="10" width="380" height="280" stroke="white" strokeWidth="2" fill="none" />
@@ -155,13 +236,12 @@ const CreateTactics: React.FC = () => {
                         {/* Formation & Tags */}
                         <div className="flex flex-wrap gap-3 mb-6">
                             <span className="bg-gray-800 px-4 py-2 rounded-full text-sm font-medium border border-gray-700">
-                                {formData.formation}
+                                {tactic.formation}
                             </span>
-                            {formData.tags.map((tag, index) => (
+                            {tactic.tags?.map((tag, index) => (
                                 <span
                                     key={index}
                                     className="bg-gray-800 px-4 py-2 rounded-full text-sm cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700"
-                                    onClick={() => handleTagRemove(tag)}
                                 >
                                     {tag}
                                 </span>
@@ -175,27 +255,28 @@ const CreateTactics: React.FC = () => {
                                 className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 border group ${
                                     isLiked
                                         ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-700 hover:px-4'
+                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-700'
                                 }`}
                             >
                                 <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-                                <span className="transition-all duration-200">{likes}</span>
-                                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden max-w-0 group-hover:max-w-full whitespace-nowrap">
-                                    {isLiked ? '' : ''}
-                                </span>
+                                <span>{likes}</span>
                             </button>
 
-                            <button className="flex items-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-all duration-200 text-gray-300 border border-gray-700 hover:px-4 group">
+                            <button className="flex items-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-all duration-200 text-gray-300 border border-gray-700">
                                 <MessageCircle className="h-5 w-5" />
-                                <span className="transition-all duration-200">{comments}</span>
-                                <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden max-w-0 group-hover:max-w-full whitespace-nowrap">
-
-                                </span>
+                                {/*<span>{tactic.stats?.comments || 0}</span>*/}
                             </button>
 
-                            <button className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors text-gray-300 border border-gray-700">
-                                <Save className="h-5 w-5" />
-                                Save
+                            <button
+                                onClick={handleSave}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors border ${
+                                    isSaved
+                                        ? 'bg-green-600/10 text-green-500 border-green-500/20'
+                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-700'
+                                }`}
+                            >
+                                <Save className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
+                                {isSaved ? 'Saved' : 'Save'}
                             </button>
 
                             <button className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-xl transition-colors text-white">
@@ -208,7 +289,7 @@ const CreateTactics: React.FC = () => {
                         <div className="mb-12">
                             <h3 className="text-2xl font-bold mb-4">Description</h3>
                             <div className="text-gray-300 leading-relaxed">
-                                This possession-based system prioritizes short passing and movement to control the game. The double pivot provides defensive cover while allowing full-backs to advance. The attacking midfield trio offers creative options behind a mobile center-forward who drops deep to create numeric superiority in midfield.
+                                    {tactic.description}
                             </div>
                         </div>
 
@@ -219,25 +300,52 @@ const CreateTactics: React.FC = () => {
                             {/* Add Comment */}
                             <div className="flex gap-4 mb-6">
                                 <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                                    S
+                                    {/* User initial */}
+                                    U
                                 </div>
                                 <div className="flex-1 flex flex-col gap-3">
                                     <textarea
                                         className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-white resize-none focus:outline-none focus:border-green-500 transition-colors font-normal"
                                         rows={4}
                                         placeholder="Add a comment..."
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        disabled={isSubmittingComment}
                                     />
                                     <div className="flex justify-end">
-                                        <button className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 rounded-xl transition-colors text-white font-medium">
-                                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                                <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
-                                            </svg>
+                                        <button
+                                            onClick={handleCommentSubmit}
+                                            disabled={!newComment.trim() || isSubmittingComment}
+                                            className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 rounded-xl transition-colors text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSubmittingComment ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <MessageCircle className="h-4 w-4" />
+                                            )}
                                             Post Comment
                                         </button>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Comments List */}
+                            {comments.map((comment) => (
+                                <div key={comment.id} className="flex gap-4 mb-4">
+                                    <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                        {comment.user.username.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-semibold">{comment.user.username}</span>
+                                            <span className="text-sm text-gray-400">
+                                                {formatDate(comment.createdAt)}
+                                            </span>
+                                        </div>
+                                        <p className="text-gray-300">{comment.content}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
@@ -248,15 +356,18 @@ const CreateTactics: React.FC = () => {
 
                             <div className="flex items-center gap-4 mb-8">
                                 <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                    S
+                                    {tactic.author.username.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-white text-lg">siddyas0</p>
-                                    <p className="text-sm text-gray-400">Created on 16/05/2025</p>
+                                    <p className="font-semibold text-white text-lg">{tactic.author.username}</p>
+                                    <p className="text-sm text-gray-400">Created on {formatDate(tactic.createdAt)}</p>
                                 </div>
                             </div>
 
-                            <button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl transition-colors font-medium">
+                            <button
+                                onClick={() => navigate('/create')}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl transition-colors font-medium"
+                            >
                                 Create Your Own Tactic
                             </button>
                         </div>
@@ -267,4 +378,4 @@ const CreateTactics: React.FC = () => {
     );
 };
 
-export default CreateTactics;
+export default TacticsDetails;

@@ -1,10 +1,12 @@
 import express from 'express';
+import cors from 'cors';
 import { errorHandler } from './middlewares/error.middleware';
 import routes from './routes';
 
 const app = express();
 
 const PORT = process.env.PORT || 3001;
+app.use(cors());
 
 // Middleware
 app.use(express.json());

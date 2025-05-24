@@ -1,30 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Tactic, type TacticType } from "../entities/Tactic";
-import { User } from "../entities/User";
-import { AlertCircle, TrendingUp, Award, Clock, Search } from "lucide-react";
+import { TacticEntity } from "../entities/TacticEntity.ts";
+import { UserEntity } from "../entities/UserEntity.ts";
+import { AlertCircle, TrendingUp, Award, Clock } from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../lib";
 import { TacticCard } from "../components/TacticCard";
+import type {TabValue, TacticSummary, User} from "../../../../packages/shared";
 
-// User type definition
-interface UserType {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-    created_date: string;
-}
 
-type TabValue = "trending" | "featured" | "latest";
 
 const Home: React.FC = () => {
-    const [tactics, setTactics] = useState<TacticType[]>([]);
+    const [tactics, setTactics] = useState<TacticSummary[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabValue>("trending");
-    const [user, setUser] = useState<UserType | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -36,13 +28,17 @@ const Home: React.FC = () => {
             setFilteredCategory(category);
         }
 
-        loadTactics();
         loadUser();
     }, []);
 
+    // Reload tactics when sorting, category, or search changes
+    useEffect(() => {
+        loadTactics();
+    }, [activeTab, filteredCategory, searchQuery]);
+
     const loadUser = async (): Promise<void> => {
         try {
-            const userData = await User.me();
+            const userData = await UserEntity.me();
             setUser(userData);
         } catch (error) {
             console.log("Not logged in yet");
@@ -51,59 +47,34 @@ const Home: React.FC = () => {
 
     const loadTactics = async (): Promise<void> => {
         setLoading(true);
+        setError(null);
+
         try {
-            const data = await Tactic.list();
+            // Build query parameters
+            const params: Record<string, string> = {
+                sortBy: activeTab
+            };
+
+            if (filteredCategory) {
+                params.category = filteredCategory;
+            }
+
+            if (searchQuery.trim()) {
+                params.search = searchQuery.trim();
+            }
+
+            const data = await TacticEntity.list(params);
             setTactics(data);
         } catch (err) {
             setError("Failed to load tactics. Please try again later.");
             console.error(err);
+            setTactics([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const filteredTactics = (): TacticType[] => {
-        let filtered = tactics;
-
-        // Apply category filter if selected
-        if (filteredCategory) {
-            filtered = filtered.filter(
-                (tactic: TacticType) => tactic.tags && tactic.tags.includes(filteredCategory)
-            );
-        }
-
-        // Apply search filter if there's a query
-        if (searchQuery.trim() !== "") {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(
-                tactic =>
-                    tactic.title?.toLowerCase().includes(query) ||
-                    tactic.description?.toLowerCase().includes(query) ||
-                    tactic.author?.name?.toLowerCase().includes(query)
-            );
-        }
-
-        return filtered;
-    };
-
     const renderTactics = (): React.ReactNode => {
-        const filtered = filteredTactics();
-
-        if (filtered.length === 0 && !loading) {
-            return (
-                <div className="text-center py-12">
-                    <p className="text-[var(--text-secondary)] mb-4">
-                        {searchQuery ? "No tactics match your search" : filteredCategory ? "No tactics found in this category" : "No tactics found"}
-                    </p>
-                    <Link to={createPageUrl("Create")}>
-                        <button className="btn-primary">
-                            Create your first tactic
-                        </button>
-                    </Link>
-                </div>
-            );
-        }
-
         if (loading) {
             return (
                 <div className="tactics-grid">
@@ -127,26 +98,24 @@ const Home: React.FC = () => {
             );
         }
 
-        let sortedTactics: TacticType[] = [...filtered];
-
-        // Sort based on active tab
-        if (activeTab === "trending") {
-            sortedTactics.sort((a: TacticType, b: TacticType) => (b.likes || 0) - (a.likes || 0));
-        } else if (activeTab === "latest") {
-            sortedTactics.sort((a: TacticType, b: TacticType) =>
-                new Date(b.created_date).getTime() - new Date(a.created_date).getTime()
+        if (tactics.length === 0) {
+            return (
+                <div className="text-center py-12">
+                    <p className="text-[var(--text-secondary)] mb-4">
+                        {searchQuery ? "No tactics match your search" : filteredCategory ? "No tactics found in this category" : "No tactics found"}
+                    </p>
+                    <Link to={createPageUrl("Create")}>
+                        <button className="btn-primary">
+                            Create your first tactic
+                        </button>
+                    </Link>
+                </div>
             );
-        } else if (activeTab === "featured") {
-            sortedTactics.sort((a: TacticType, b: TacticType) => {
-                const aScore = (b.likes || 0) + (new Date(b.created_date).getTime() / 1000000000);
-                const bScore = (a.likes || 0) + (new Date(a.created_date).getTime() / 1000000000);
-                return aScore - bScore;
-            });
         }
 
         return (
             <div className="tactics-grid">
-                {sortedTactics.map((tactic: TacticType) => (
+                {tactics.map((tactic: TacticSummary) => (
                     <TacticCard key={tactic.id} tactic={tactic} />
                 ))}
             </div>
@@ -188,10 +157,6 @@ const Home: React.FC = () => {
                     </div>
                 </div>
             )}
-
-            {/* Search and filter section */}
-
-
             {/* Page header with tabs */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
                 <div className="page-header">
@@ -202,7 +167,7 @@ const Home: React.FC = () => {
                         <p>
                             Showing results for "{searchQuery}"
                         </p>
-                    )}˚
+                    )}
                     {filteredCategory && (
                         <p>
                             Showing all tactics with the {filteredCategory} tag

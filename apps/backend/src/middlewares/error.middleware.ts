@@ -10,7 +10,7 @@ export interface AppError extends Error {
 type ExpressHandler = (req: Request, res: Response, next: NextFunction) => Promise<any> | any;
 
 // Error handler middleware
-export const errorHandler = (error: AppError, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (error: AppError, req: Request, res: Response) => {
   const statusCode = error.statusCode || 500;
   const message = error.message || 'Internal server error';
 
