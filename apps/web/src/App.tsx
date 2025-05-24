@@ -3,7 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import Home from './pages/Home';
-import CreateTactics from './pages/CreateTactics';
+import TacticsDetails from './pages/TacticsDetails.tsx';
 
 const Header: React.FC = () => {
     return (
@@ -73,8 +73,7 @@ const Footer: React.FC = () => {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p>© 2023 The Offside Trap. All rights reserved.</p>
-                    <span className="terminal-badge">Terminal</span>
+                    <p>© 2025 The Offside Trap. All rights reserved.</p>
                 </div>
             </div>
         </footer>
@@ -98,7 +97,8 @@ function App() {
             <Layout>
                 <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/create" element={<CreateTactics />} />
+                    <Route path="/tactics/:id" element={<TacticsDetails />} />
+
                     {/* Redirect any unknown routes to home */}
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

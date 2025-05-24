@@ -3,10 +3,10 @@ import { TacticFormData } from '@the-offside-trap/shared';
 import { tacticsService } from '../services/tactics.service';
 
 export class TacticsController {
-  async getTactics(req: Request, res: Response) {
+  async getTacticsSummary(req: Request, res: Response) {
     try {
       const filters = req.query;
-      const tactics = await tacticsService.getTactics(filters);
+      const tactics = await tacticsService.getTacticsSummary(filters);
       res.json({ success: true, data: tactics });
     } catch (error) {
       console.error(error);
@@ -14,7 +14,6 @@ export class TacticsController {
       res.status(500).json({ success: false, error: errorMessage });
     }
   }
-
   async createTactic(req: Request, res: Response) {
     try {
       const tacticData: TacticFormData = req.body;
@@ -42,6 +41,15 @@ export class TacticsController {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       res.status(500).json({ success: false, error: errorMessage });
+    }
+  }
+  async getTacticsById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const tactics = await tacticsService.getTacticById(id);
+      res.json({ success: true, data: tactics });
+    } catch (error) {
+      console.error(error);
     }
   }
   async getTacticLikes(req: Request, res: Response) {

@@ -1,8 +1,44 @@
-import React from "react";
+
+import React, { createContext, useContext, useState } from "react";
 import { cn } from "../../lib/utils";
 
-export function Tabs({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <div className={cn("space-y-4", className)}>{children}</div>;
+interface TabsContextType {
+    value: string;
+    onValueChange: (value: string) => void;
+}
+
+const TabsContext = createContext<TabsContextType | undefined>(undefined);
+
+export function Tabs({
+                         children,
+                         className,
+                         value,
+                         defaultValue,
+                         onValueChange
+                     }: {
+    children: React.ReactNode;
+    className?: string;
+    value?: string;
+    defaultValue?: string;
+    onValueChange?: (value: string) => void;
+}) {
+    const [internalValue, setInternalValue] = useState(defaultValue || '');
+
+    const contextValue = {
+        value: value !== undefined ? value : internalValue,
+        onValueChange: (newValue: string) => {
+            if (value === undefined) {
+                setInternalValue(newValue);
+            }
+            onValueChange?.(newValue);
+        }
+    };
+
+    return (
+        <TabsContext.Provider value={contextValue}>
+            <div className={cn("space-y-4", className)}>{children}</div>
+        </TabsContext.Provider>
+    );
 }
 
 export function TabsList({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -12,19 +48,22 @@ export function TabsList({ children, className }: { children: React.ReactNode; c
 export function TabsTrigger({
                                 children,
                                 value,
-                                isActive,
-                                onClick,
                                 className,
                             }: {
     children: React.ReactNode;
     value: string;
-    isActive?: boolean;
-    onClick?: () => void;
     className?: string;
 }) {
+    const context = useContext(TabsContext);
+    if (!context) {
+        throw new Error('TabsTrigger must be used within Tabs');
+    }
+
+    const isActive = context.value === value;
+
     return (
         <button
-            onClick={onClick}
+            onClick={() => context.onValueChange(value)}
             className={cn(
                 "px-3 py-1.5 text-sm rounded-md transition-colors",
                 isActive ? "bg-[#333] text-white" : "text-gray-400 hover:text-white",

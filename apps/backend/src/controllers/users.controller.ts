@@ -15,13 +15,14 @@ export class UsersController {
   }
 
   // Get user by ID
-  async getUserById(req: Request, res: Response) {
+  async getUserById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
       const user = await usersService.getUserById(id);
 
       if (!user) {
-        return res.status(404).json({ success: false, error: 'User not found' });
+        res.status(404).json({ success: false, error: 'User not found' });
+        return;
       }
 
       res.json({ success: true, data: user });

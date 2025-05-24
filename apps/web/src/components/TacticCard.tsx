@@ -1,17 +1,18 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "../lib";
 import { Heart, MessageCircle, Eye } from "lucide-react";
 import { motion } from "framer-motion";
-import { type TacticType } from "../entities/Tactic";
+
 import FootballField from "../components/FootballField";
+import type {TacticSummary} from "../../../../packages/shared";
 
 interface TacticCardProps {
-    tactic: TacticType;
+    tactic: TacticSummary;
 }
 
 export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
-    const formattedDate = new Date(tactic.created_date).toLocaleDateString("en-US", {
+    const formattedDate = new Date(tactic.createdAt).toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -19,9 +20,8 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
 
     // Handle comments count whether it's an array or number
     const getCommentsCount = (): number => {
-        if (!tactic.comments) return 0;
-        if (typeof tactic.comments === 'number') return tactic.comments;
-        return tactic.comments.length;
+        if (!tactic.stats.comments) return 0;
+        return tactic.stats.comments;
     };
 
     return (
@@ -29,7 +29,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
             whileHover={{ y: -5 }}
             className="tactic-card"
         >
-            <Link to={createPageUrl(`Create`)}>
+            <Link to={`/tactics/${tactic.id}`}>
                 <div className="aspect-video relative overflow-hidden">
                     {tactic.image_url ? (
                         <img
@@ -65,7 +65,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
                     <div className="flex items-center gap-4">
                         <div className="stat-item stat-likes">
                             <Heart className="stat-icon" />
-                            <span>{tactic.likes || 0}</span>
+                            <span>{tactic.stats.likes || 0}</span>
                         </div>
                         <div className="stat-item">
                             <MessageCircle className="stat-icon" />

@@ -1,12 +1,13 @@
-import { TacticResponse, Player, TacticFormData, TacticFilters } from '@the-offside-trap/shared';
+import { Player, TacticFormData, TacticFilters } from '@the-offside-trap/shared';
 import { prisma } from './db.service';
 import { createError } from '../middlewares/error.middleware';
+import { tacticSummarySelect } from './tactics.utils';
 
 export class TacticsService {
   /**
    * Get tactics with filtering, sorting, and pagination
    */
-  async getTactics(filters?: TacticFilters, userId?: string) {
+  async getTacticsSummary(filters?: TacticFilters, userId?: string) {
     const {
       formation,
       tags,
@@ -78,18 +79,16 @@ export class TacticsService {
         orderBy = { createdAt: 'desc' };
         break;
       case 'trending':
-        // Using _count properly with Prisma
         orderBy = [
           {
             likes: {
               _count: 'desc',
             },
           },
-          { createdAt: 'desc' }, // Secondary sort by date for ties
+          { createdAt: 'desc' },
         ];
         break;
       case 'featured':
-        // Combined ordering for featured (likes + recency)
         orderBy = [
           {
             likes: {
@@ -103,44 +102,16 @@ export class TacticsService {
         orderBy = { createdAt: 'desc' };
     }
 
-    // Execute query
     const [tactics, total] = await Promise.all([
       prisma.tactic.findMany({
         where,
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              avatar: true,
-            },
-          },
-          _count: {
-            select: {
-              likes: true,
-              comments: true,
-              saves: true,
-            },
-          },
-          ...(userId && {
-            likes: {
-              where: { userId },
-              select: { userId: true },
-            },
-            saves: {
-              where: { userId },
-              select: { userId: true },
-            },
-          }),
-        },
+        select: tacticSummarySelect,
         orderBy,
         skip,
         take: limit,
       }),
       prisma.tactic.count({ where }),
     ]);
-
-    // Transform to TacticResponse objects
     const tacticResponses = tactics.map(tactic => this.mapToTacticResponse(tactic, userId));
 
     return {
@@ -629,7 +600,7 @@ export class TacticsService {
   /**
    * Helper method to map Prisma tactic to TacticResponse
    */
-  private mapToTacticResponse(tactic: any, userId?: string): TacticResponse {
+  private mapToTacticResponse(tactic: any, userId?: string) {
     return {
       id: tactic.id,
       title: tactic.title,
