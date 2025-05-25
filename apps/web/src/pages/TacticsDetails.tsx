@@ -267,13 +267,13 @@ const TacticsDetails: React.FC = () => {
 
                         {/* Formation & Tags */}
                         <div className="flex flex-wrap gap-3 mb-6">
-                            <span className="bg-gray-800 px-4 py-2 rounded-full text-sm font-medium border border-gray-700">
+                            <span className="bg-[#1a1a1a] border border-[rgb(49,54,63)] px-4 py-2 rounded-full text-sm font-medium ">
                                 {tactic.formation}
                             </span>
                             {tactic.tags?.map((tag, index) => (
                                 <span
                                     key={index}
-                                    className="bg-gray-800 px-4 py-2 rounded-full text-sm cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700"
+                                    className="bg-[#1a1a1a] border border-[rgb(49,54,63)] px-4 py-2 rounded-full text-sm cursor-pointer hover:bg-gray-700 transition-colors"
                                 >
                                     {tag}
                                 </span>
@@ -287,14 +287,14 @@ const TacticsDetails: React.FC = () => {
                                 className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 border group ${
                                     isLiked
                                         ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-700'
+                                        : 'bg-[#1a1a1a] border border-[rgb(49,54,63)] hover:bg-gray-700 text-gray-300'
                                 }`}
                             >
                                 <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
                                 <span>{likes}</span>
                             </button>
 
-                            <button className="flex items-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl transition-all duration-200 text-gray-300 border border-gray-700">
+                            <button className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] border border-[rgb(49,54,63)] hover:bg-gray-700 rounded-xl transition-all duration-200 text-gray-300">
                                 <MessageCircle className="h-5 w-5" />
                                 {/*<span>{tactic.stats?.comments || 0}</span>*/}
                             </button>
@@ -304,7 +304,7 @@ const TacticsDetails: React.FC = () => {
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors border ${
                                     isSaved
                                         ? 'bg-green-600/10 text-green-500 border-green-500/20'
-                                        : 'bg-gray-800 hover:bg-gray-700 text-gray-300 border-gray-700'
+                                        : 'bg-[#1a1a1a] border border-[rgb(49,54,63)] hover:bg-gray-700 text-gray-300 '
                                 }`}
                             >
                                 <Save className={`h-5 w-5 ${isSaved ? 'fill-current' : ''}`} />
@@ -336,14 +336,14 @@ const TacticsDetails: React.FC = () => {
                                     U
                                 </div>
                                 <div className="flex-1 flex flex-col gap-3">
-                                    <textarea
-                                        className="w-full bg-gray-800 border border-gray-700 rounded-xl p-4 text-white resize-none focus:outline-none focus:border-green-500 transition-colors font-normal"
-                                        rows={4}
-                                        placeholder="Add a comment..."
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                        disabled={isSubmittingComment}
-                                    />
+  <textarea
+      className="w-full bg-[#1a1a1a] border border-[rgb(49,54,63)] rounded-xl p-4 text-white resize-none focus:outline-none focus:border-green-500 transition-colors font-normal"
+      rows={4}
+      placeholder="Add a comment..."
+      value={newComment}
+      onChange={(e) => setNewComment(e.target.value)}
+      disabled={isSubmittingComment}
+  />
                                     <div className="flex justify-end">
                                         <button
                                             onClick={handleCommentSubmit}
@@ -389,7 +389,7 @@ const TacticsDetails: React.FC = () => {
 
                     {/* Right Sidebar */}
                     <div className="w-80 flex-shrink-0" style={{ marginTop: '4rem' }}>
-                        <div className="bg-gray-950 border border-gray-700 rounded-xl p-6">
+                        <div className="bg-[#1a1a1a] border border-[rgb(49,54,63)] rounded-xl p-6">
                             <h3 className="text-xl font-bold mb-6">About the Creator</h3>
 
                             <div className="flex items-center gap-4 mb-8">
