@@ -8,7 +8,7 @@ import TacticsDetails from './pages/TacticsDetails.tsx';
 
     const Header: React.FC = () => {
         return (
-            <header className="  bg-black text-white">
+            <header className="  bg-gray-950 border-gray-200 rounded-xl text-white">
                 <div className="flex items-center h-16 px-6">
                     {/* Logo - Far left */}
                     <div className="flex items-center">
@@ -67,14 +67,14 @@ const Footer: React.FC = () => {
    <footer className="footer bg-black text-white">
             <div className="px-6">
                 {/* Main footer content with better spacing */}
-                <div className="flex items-center py-12">
+                <div className="flex items-center py-3">
                     <div className="footer-brand">
                         <h3 className="text-xl font-bold text-[var(--primary)] mb-2">The Offside Trap</h3>
                         <p className="text-gray-400 text-base">The ultimate hub for football tactics</p>
                     </div>
                     
                     <div className="flex-1 flex justify-center">
-                        <div className="footer-links flex items-center space-x-12">
+                        <div className="footer-links flex items-center space-x-5">
                             <a href="/about" className="text-gray-300 hover:text-white transition-colors text-base font-medium">About</a>
                             <a href="/privacy" className="text-gray-300 hover:text-white transition-colors text-base font-medium">Privacy</a>
                             <a href="/terms" className="text-gray-300 hover:text-white transition-colors text-base font-medium">Terms</a>

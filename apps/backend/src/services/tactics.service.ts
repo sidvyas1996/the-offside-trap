@@ -424,53 +424,6 @@ export class TacticsService {
   }
 
   /**
-   * Get trending tactics
-   */
-  async getTrendingTactics(userId?: string) {
-    // Get recent tactics with most likes in last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const tactics = await prisma.tactic.findMany({
-      where: {
-        createdAt: {
-          gte: sevenDaysAgo,
-        },
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
-          },
-        },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
-            saves: true,
-          },
-        },
-        ...(userId && {
-          likes: {
-            where: { userId },
-            select: { userId: true },
-          },
-          saves: {
-            where: { userId },
-            select: { userId: true },
-          },
-        }),
-      },
-      orderBy: [{ likes: { _count: 'desc' } }, { comments: { _count: 'desc' } }],
-      take: 10,
-    });
-
-    return tactics.map(tactic => this.mapToTacticResponse(tactic, userId));
-  }
-
-  /**
    * Duplicate a tactic
    */
   async duplicateTactic(tacticId: string, userId: string) {
@@ -521,29 +474,6 @@ export class TacticsService {
     });
 
     return this.mapToTacticResponse(newTactic, userId);
-  }
-
-  /**
-   * Get popular formations
-   */
-  async getFormations() {
-    const formationsData = await prisma.tactic.groupBy({
-      by: ['formation'],
-      _count: {
-        formation: true,
-      },
-      orderBy: {
-        _count: {
-          formation: 'desc',
-        },
-      },
-      take: 10,
-    });
-
-    return formationsData.map((item: any) => ({
-      formation: item.formation,
-      count: item._count.formation,
-    }));
   }
 
   /**

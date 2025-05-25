@@ -171,7 +171,7 @@ const TacticsDetails: React.FC = () => {
                                 className="h-6 w-6 text-gray-400 cursor-pointer hover:text-white"
                                 onClick={() => navigate(-1)}
                             />
-                            <h1 className="text-3xl font-bold">{tactic.title}</h1>
+                            <h1 className="text-5xl font-bold ">{tactic.title}</h1>
                         </div>
 
                         {/* Football Field */}
@@ -179,7 +179,7 @@ const TacticsDetails: React.FC = () => {
                             ref={fieldRef}
                             className="relative bg-green-800 rounded-xl overflow-hidden cursor-move mb-6"
                             style={{
-                                aspectRatio: '4/3',
+                                aspectRatio: '11/7',
                                 width: '100%',
                                 maxWidth: '800px'
                             }}
@@ -187,33 +187,55 @@ const TacticsDetails: React.FC = () => {
                             onMouseUp={handleMouseUp}
                             onMouseLeave={handleMouseUp}
                         >
-                            {/* Field markings SVG (same as before) */}
-                            <svg className="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 400 300">
+                            {/* Field markings SVG - Updated with smaller penalty areas */}
+                            <svg className="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 550 350">
                                 {/* Outer boundary */}
-                                <rect x="10" y="10" width="380" height="280" stroke="white" strokeWidth="2" fill="none" />
+                                <rect x="20" y="20" width="510" height="310" stroke="white" strokeWidth="2.5" fill="none" />
 
                                 {/* Center line */}
-                                <line x1="200" y1="10" x2="200" y2="290" stroke="white" strokeWidth="2" />
+                                <line x1="275" y1="20" x2="275" y2="330" stroke="white" strokeWidth="2.5" />
 
                                 {/* Center circle */}
-                                <circle cx="200" cy="150" r="40" stroke="white" strokeWidth="2" fill="none" />
-                                <circle cx="200" cy="150" r="2" fill="white" />
+                                <circle cx="275" cy="175" r="45" stroke="white" strokeWidth="2.5" fill="none" />
+                                <circle cx="275" cy="175" r="3" fill="white" />
 
-                                {/* Penalty areas */}
-                                <rect x="10" y="85" width="60" height="130" stroke="white" strokeWidth="2" fill="none" />
-                                <rect x="330" y="85" width="60" height="130" stroke="white" strokeWidth="2" fill="none" />
+                                {/* Left penalty area - REDUCED WIDTH */}
+                                <rect x="20" y="95" width="70" height="160" stroke="white" strokeWidth="2.5" fill="none" />
 
-                                {/* Goal areas */}
-                                <rect x="10" y="115" width="25" height="70" stroke="white" strokeWidth="2" fill="none" />
-                                <rect x="365" y="115" width="25" height="70" stroke="white" strokeWidth="2" fill="none" />
+                                {/* Right penalty area - REDUCED WIDTH */}
+                                <rect x="460" y="95" width="70" height="160" stroke="white" strokeWidth="2.5" fill="none" />
+
+                                {/* Left goal area (6-yard box) - ADJUSTED */}
+                                <rect x="20" y="130" width="30" height="90" stroke="white" strokeWidth="2.5" fill="none" />
+
+                                {/* Right goal area (6-yard box) - ADJUSTED */}
+                                <rect x="500" y="130" width="30" height="90" stroke="white" strokeWidth="2.5" fill="none" />
+
+                                {/* Left penalty spot - ADJUSTED */}
+                                <circle cx="65" cy="175" r="3" fill="white" />
+
+                                {/* Right penalty spot - ADJUSTED */}
+                                <circle cx="485" cy="175" r="3" fill="white" />
+
+                                {/* Left penalty arc (D) - ADJUSTED */}
+                                <path d="M 90 155 A 30 30 0 0 1 90 195" stroke="white" strokeWidth="2.5" fill="none" />
+
+                                {/* Right penalty arc (D) - ADJUSTED */}
+                                <path d="M 460 155 A 30 30 0 0 0 460 195" stroke="white" strokeWidth="2.5" fill="none" />
 
                                 {/* Corner arcs */}
-                                <path d="M 10,10 A 8,8 0 0,1 18,18" stroke="white" strokeWidth="2" fill="none" />
-                                <path d="M 390,10 A 8,8 0 0,0 382,18" stroke="white" strokeWidth="2" fill="none" />
-                                <path d="M 10,290 A 8,8 0 0,0 18,282" stroke="white" strokeWidth="2" fill="none" />
-                                <path d="M 390,290 A 8,8 0 0,1 382,282" stroke="white" strokeWidth="2" fill="none" />
-                            </svg>
+                                {/* Top-left corner */}
+                                <path d="M 20 30 A 10 10 0 0 0 30 20" stroke="white" strokeWidth="2.5" fill="none" />
 
+                                {/* Top-right corner */}
+                                <path d="M 520 20 A 10 10 0 0 0 530 30" stroke="white" strokeWidth="2.5" fill="none" />
+
+                                {/* Bottom-left corner */}
+                                <path d="M 30 330 A 10 10 0 0 0 20 320" stroke="white" strokeWidth="2.5" fill="none" />
+
+                                {/* Bottom-right corner */}
+                                <path d="M 530 320 A 10 10 0 0 0 520 330" stroke="white" strokeWidth="2.5" fill="none" />
+                            </svg>
                             {/* Players */}
                             {players.map((player) => (
                                 <div
@@ -226,7 +248,7 @@ const TacticsDetails: React.FC = () => {
                                     }}
                                     onMouseDown={() => handleMouseDown(player)}
                                 >
-                                    <div className="w-full h-full bg-green-400 rounded-full flex items-center justify-center text-black font-bold text-lg shadow-lg border-2 border-white">
+                                    <div className="w-full h-full bg-green-400 rounded-full flex items-center justify-center text-black font-bold text-lg shadow-lg border-2 border-gray-300">
                                         {player.number}
                                     </div>
                                 </div>
@@ -351,7 +373,7 @@ const TacticsDetails: React.FC = () => {
 
                     {/* Right Sidebar */}
                     <div className="w-80 flex-shrink-0" style={{ marginTop: '4rem' }}>
-                        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                        <div className="bg-gray-950 border border-gray-700 rounded-xl p-6">
                             <h3 className="text-xl font-bold mb-6">About the Creator</h3>
 
                             <div className="flex items-center gap-4 mb-8">
@@ -364,12 +386,12 @@ const TacticsDetails: React.FC = () => {
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => navigate('/create')}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl transition-colors font-medium"
-                            >
-                                Create Your Own Tactic
-                            </button>
+                            {/*<button*/}
+                            {/*    onClick={() => navigate('/create')}*/}
+                            {/*    className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl transition-colors font-medium"*/}
+                            {/*>*/}
+                            {/*    Create Your Own Tactic*/}
+                            {/*</button>*/}
                         </div>
                     </div>
                 </div>
