@@ -10,4 +10,5 @@ router.post('/', tacticsController.createTactic);
 router.post('/:id/like', tacticsController.likeTactic);
 router.get('/:id/likes', tacticsController.getTacticLikes);
 router.post('/:id/comment', tacticsController.addComment);
+router.get('/:id/comments', tacticsController.getComments);
 export default router;

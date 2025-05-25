@@ -125,6 +125,20 @@ export interface TacticFilters {
   limit?: number;
 }
 
+
+// Comment List type
+export interface CommentListResponse {
+  comments: Comment[];
+  pagination: {
+    current: number;
+    total: number;
+    count: number;
+    totalItems: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
 // API Response Wrapper Type
 export interface ApiResponse<T> {
   success: boolean;
