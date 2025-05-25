@@ -33,6 +33,7 @@ const TacticsDetails: React.FC = () => {
     useEffect(() => {
         if (id) {
             fetchTacticDetails();
+            fetchComments();
         }
     }, [id]);
 
@@ -57,6 +58,15 @@ const TacticsDetails: React.FC = () => {
             setError(err instanceof Error ? err.message : 'Failed to load tactic');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchComments = async () => {
+        try {
+            const commentsData = await TacticEntity.getComments(id!);
+            setComments(commentsData);
+        } catch (err) {
+            console.error('Error fetching comments:', err);
         }
     };
 
@@ -352,22 +362,28 @@ const TacticsDetails: React.FC = () => {
                             </div>
 
                             {/* Comments List */}
-                            {comments.map((comment) => (
-                                <div key={comment.id} className="flex gap-4 mb-4">
-                                    <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                        {comment.user.username.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-semibold">{comment.user.username}</span>
-                                            <span className="text-sm text-gray-400">
-                                                {formatDate(comment.createdAt)}
-                                            </span>
+                            {comments.length === 0 ? (
+                                <p className="text-gray-500 text-center py-8">
+                                    No comments yet. Be the first to comment!
+                                </p>
+                            ) : (
+                                comments.map((comment) => (
+                                    <div key={comment.id} className="flex gap-4 mb-4">
+                                        <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                            {comment.user.username.charAt(0).toUpperCase()}
                                         </div>
-                                        <p className="text-gray-300">{comment.content}</p>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-semibold">{comment.user.username}</span>
+                                                <span className="text-sm text-gray-400">
+                                                    {formatDate(comment.createdAt)}
+                                                </span>
+                                            </div>
+                                            <p className="text-gray-300">{comment.content}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
 

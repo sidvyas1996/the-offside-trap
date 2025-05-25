@@ -3,7 +3,7 @@ import type {
     ApiResponse,
     TacticListResponse,
     TacticFilters,
-    TacticDetailResponse
+    TacticDetailResponse, Comment, CommentListResponse
 } from '../../../../packages/shared';
 
 import axios from 'axios';
@@ -140,6 +140,50 @@ export class TacticEntity {
             }
 
             console.error('Error deleting tactic:', error);
+            throw error;
+        }
+    }
+
+    static async addComment(tacticId: string,content: string) {
+        try {
+            const { data } = await api.post<ApiResponse<Comment>>(`/tactics/${tacticId}/comment`,{content} );
+
+            if (!data.success || !data.data) {
+                throw new Error(data.error || 'Failed to add comment');
+            }
+
+            return data.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 400) {
+                    throw new Error('Invalid tactic data');
+                }
+                throw new Error(`HTTP error! status: ${error.response?.status}`);
+            }
+
+            console.error('Error adding comment:', error);
+            throw error;
+        }
+    }
+
+    static async getComments(tacticId: string) {
+        try {
+            const { data } = await api.get<ApiResponse<CommentListResponse>>(`/tactics/${tacticId}/comments`);
+
+            if (!data.success || !data.data) {
+                throw new Error(data.error || 'Failed to get comments');
+            }
+
+            return data.data.comments;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 400) {
+                    throw new Error('Invalid tactic data');
+                }
+                throw new Error(`HTTP error! status: ${error.response?.status}`);
+            }
+
+            console.error('Error getting comments:', error);
             throw error;
         }
     }
