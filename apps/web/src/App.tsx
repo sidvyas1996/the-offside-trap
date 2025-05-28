@@ -8,7 +8,7 @@ import TacticsDetails from './pages/TacticsDetails.tsx';
 
     const Header: React.FC = () => {
         return (
-            <header className="  bg-gray-950 border-gray-200 rounded-xl text-white">
+            <header className="  bg-[#1a1a1a] border border-[rgb(49,54,63)]">
                 <div className="flex items-center h-16 px-6">
                     {/* Logo - Far left */}
                     <div className="flex items-center">
@@ -52,7 +52,7 @@ import TacticsDetails from './pages/TacticsDetails.tsx';
 </div>
 
                         {/* User avatar */}
-                        <div className="user-avatar">
+                        <div className="user-avatar ">
                             SV
                         </div>
                     </div>
