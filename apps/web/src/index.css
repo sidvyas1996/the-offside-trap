@@ -11,8 +11,8 @@
   --border: #333333; /* Medium gray for borders */
   --text-primary: #ffffff; /* White for primary text */
   --text-secondary: #a3a3a3; /* Light gray for secondary text */
-  --primary: #10b981; /* Emerald green for accents */
-  --primary-hover: #059669; /* Darker emerald for hover */
+  --primary: #16A34A; /* Emerald green for accents */
+  --primary-hover: #0b7431; /* Darker emerald for hover */
   --hero-overlay: rgba(0, 0, 0, 0.8); /* Dark overlay for hero section */
 }
 
