@@ -3,15 +3,13 @@ export interface Player {
   x: number;
   y: number;
   number: number;
+  name?: string;
+  isCaptain?: boolean;
+  hasYellowCard?: boolean;
+  hasRedCard?: boolean;
 }
 
-export interface PlayerPosition {
-  id: number;
-  x: number;
-  y: number;
-  number: number;
-  role?: string; // Optional position role (e.g., "GK", "CB", "CAM")
-}
+
 
 export interface TacticSummary {
   id: string;
