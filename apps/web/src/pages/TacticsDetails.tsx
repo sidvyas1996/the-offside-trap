@@ -246,11 +246,12 @@ const TacticsDetails: React.FC = () => {
                                 {/* Bottom-right corner */}
                                 <path d="M 530 320 A 10 10 0 0 0 520 330" stroke="white" strokeWidth="2.5" fill="none" />
                             </svg>
+
                             {/* Players */}
                             {players.map((player) => (
                                 <div
                                     key={player.id}
-                                    className="absolute w-10 h-10 transform -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing"
+                                    className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing"
                                     style={{
                                         left: `${player.x}%`,
                                         top: `${player.y}%`,
@@ -258,8 +259,50 @@ const TacticsDetails: React.FC = () => {
                                     }}
                                     onMouseDown={() => handleMouseDown(player)}
                                 >
-                                    <div className="w-full h-full bg-green-400 rounded-full flex items-center justify-center text-black font-bold text-lg shadow-lg border-2 border-gray-300">
-                                        {player.number}
+                                    {/* Player circle with indicators */}
+                                    <div className="relative">
+                                        <div
+                                            className="w-10 h-10 bg-green-400 rounded-full flex items-center justify-center text-black font-bold text-lg shadow-lg"
+                                            style={{
+                                                border: '2px solid rgb(59 61 64)'
+                                            }}
+                                        >
+                                            {player.number}
+                                        </div>
+
+                                        {/* Captain's Armband with White Background */}
+                                        {player.isCaptain && (
+                                            <img
+                                                src="/armband.png"
+                                                alt="Captain"
+                                                className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-9 h-9 object-contain drop-shadow-md z-10 hover:scale-110 transition-transform"
+                                            />
+                                        )}
+
+                                        {/* Yellow Card - Rounded */}
+                                        {player.hasYellowCard && (
+                                            <img
+                                                src="/yellow-card.png"
+                                                alt="Yellow Card"
+                                                className="absolute -top-3 -left-2 w-7 h-8 object-contain hover:scale-110 transition-transform"
+                                            />
+                                        )}
+
+                                        {/* Red Card - Rounded (if both cards, show red) */}
+                                        {player.hasRedCard && (
+                                            <img
+                                                src="/red-card.png"
+                                                alt="Red Card"
+                                                className="absolute -top-3 -left-2 w-7 h-8 object-contain hover:scale-110 transition-transform"
+                                            />
+                                        )}
+
+                                        {/* Player name box */}
+                                        <div className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                            <div className="bg-black/80 text-white text-sm px-1 py-1 rounded border border-gray-600">
+                                                {player.name || `Player ${player.number}`}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -336,14 +379,14 @@ const TacticsDetails: React.FC = () => {
                                     U
                                 </div>
                                 <div className="flex-1 flex flex-col gap-3">
-  <textarea
-      className="w-full bg-[#1a1a1a] border border-[rgb(49,54,63)] rounded-xl p-4 text-white resize-none focus:outline-none focus:border-green-500 transition-colors font-normal"
-      rows={4}
-      placeholder="Add a comment..."
-      value={newComment}
-      onChange={(e) => setNewComment(e.target.value)}
-      disabled={isSubmittingComment}
-  />
+                                  <textarea
+                                      className="w-full bg-[#1a1a1a] border border-[rgb(49,54,63)] rounded-xl p-4 text-white resize-none focus:outline-none focus:border-green-500 transition-colors font-normal"
+                                      rows={4}
+                                      placeholder="Add a comment..."
+                                      value={newComment}
+                                      onChange={(e) => setNewComment(e.target.value)}
+                                      disabled={isSubmittingComment}
+                                  />
                                     <div className="flex justify-end">
                                         <button
                                             onClick={handleCommentSubmit}
@@ -369,10 +412,10 @@ const TacticsDetails: React.FC = () => {
                             ) : (
                                 comments.map((comment) => (
                                     <div key={comment.id} className="flex gap-4 mb-4">
-                                        <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                                        <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold text-md flex-shrink-0">
                                             {comment.user.username.charAt(0).toUpperCase()}
                                         </div>
-                                        <div className="flex-1">
+                                        <div className="flex-1 border border-[rgb(49,54,63)] rounded-xl p-4 flex flex-col gap-2">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="font-semibold">{comment.user.username}</span>
                                                 <span className="text-sm text-gray-400">
