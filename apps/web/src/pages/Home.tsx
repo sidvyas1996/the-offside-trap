@@ -126,10 +126,6 @@ const Home: React.FC = () => {
         setActiveTab(value as TabValue);
     };
 
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        setSearchQuery(e.target.value);
-    };
-
     return (
         <div className="max-w-screen-xl mx-auto px-4 lg:px-8">
             {/* Hero section */}
