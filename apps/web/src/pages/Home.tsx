@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { TacticEntity } from "../entities/TacticEntity.ts";
-import { UserEntity } from "../entities/UserEntity.ts";
 import { AlertCircle, TrendingUp, Award, Clock } from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Tabs, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../lib";
 import { TacticCard } from "../components/TacticCard";
-import type {TabValue, TacticSummary, User} from "../../../../packages/shared";
+import type {TabValue, TacticSummary} from "../../../../packages/shared";
 
 
 
@@ -16,7 +15,6 @@ const Home: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabValue>("trending");
-    const [user, setUser] = useState<User | null>(null);
     const [filteredCategory, setFilteredCategory] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -27,23 +25,12 @@ const Home: React.FC = () => {
         if (category) {
             setFilteredCategory(category);
         }
-
-        loadUser();
     }, []);
 
     // Reload tactics when sorting, category, or search changes
     useEffect(() => {
         loadTactics();
     }, [activeTab, filteredCategory, searchQuery]);
-
-    const loadUser = async (): Promise<void> => {
-        try {
-            const userData = await UserEntity.me();
-            setUser(userData);
-        } catch (error) {
-            console.log("Not logged in yet");
-        }
-    };
 
     const loadTactics = async (): Promise<void> => {
         setLoading(true);

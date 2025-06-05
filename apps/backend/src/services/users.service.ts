@@ -25,7 +25,7 @@ export class UsersService {
   // Get user by ID
   async getUserById(id: string) {
     return prisma.user.findUnique({
-      where: { id: '17fbb4d6-11fb-4456-b376-84579a1b99e6' },
+      where: { id },
       select: {
         id: true,
         username: true,
@@ -52,13 +52,12 @@ export class UsersService {
   }
 
   // Create new user
-  async createUser(userData: { username: string; email: string; password: string }) {
+  async createUser(userData: { id: string; username: string; email: string }) {
     try {
       return await prisma.user.create({
         data: userData,
       });
     } catch (error: any) {
-      // Handle unique constraint violations
       if (error.code === 'P2002') {
         const field = error.meta?.target?.[0] || 'field';
         throw new Error(`${field} already in use`);

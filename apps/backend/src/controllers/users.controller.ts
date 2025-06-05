@@ -35,7 +35,7 @@ export class UsersController {
   // Create new user
   async createUser(req: Request, res: Response) {
     try {
-      const { username, email } = req.body;
+      const { userId, username, email } = req.body;
 
       // Basic validation
       if (!username || !email) {
@@ -43,7 +43,7 @@ export class UsersController {
       }
 
       // Create user
-      const newUser = await usersService.createUser({ username, email, password: '<PASSWORD>' });
+      const newUser = await usersService.createUser({ id: userId, username, email });
 
       res.status(201).json({ success: true, data: newUser });
     } catch (error: unknown) {

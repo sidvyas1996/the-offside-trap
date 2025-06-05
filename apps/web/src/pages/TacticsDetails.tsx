@@ -34,6 +34,7 @@ const TacticsDetails: React.FC = () => {
         if (id) {
             fetchTacticDetails();
             fetchComments();
+            fetchLikeCounts();
         }
     }, [id]);
 
@@ -47,7 +48,7 @@ const TacticsDetails: React.FC = () => {
             setPlayers(data.players || []);
             setLikes(data.stats?.likes || 0);
             setIsLiked(data.userInteraction?.isLiked || false);
-            setIsSaved(data.userInteraction?.isSaved || false);
+            setIsSaved(data.stats?.isSaved || false);
 
             // If comments are included in the response
             if ('comments' in data) {
@@ -70,17 +71,45 @@ const TacticsDetails: React.FC = () => {
         }
     };
 
+    const fetchLikeCounts = async () => {
+        try {
+            const data = await TacticEntity.getLikeCount(id!);
+            setLikes(data);
+        }
+        catch (err) {
+            console.error('Error fetching like counts:', err);
+        }
+    }
+
     const handleMouseDown = (player: Player) => {
         setDraggedPlayer(player);
         setIsDragging(true);
     };
+
+    const handleLike = async () => {
+        try {
+            const result = await TacticEntity.likeToggle(id!);
+
+            setIsLiked(result.isLiked);
+            setLikes((prevLikes) =>
+                result.isLiked ? prevLikes + 1 : Math.max(prevLikes - 1, 0)
+            );
+
+            console.log('Like toggled successfully. New state:', {
+                isLiked: result.isLiked,
+            });
+        } catch (err) {
+            console.error('Error toggling like:', err);
+        }
+    };
+
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!isDragging || !draggedPlayer || !fieldRef.current) return;
 
         const fieldRect = fieldRef.current.getBoundingClientRect();
         const x = ((e.clientX - fieldRect.left) / fieldRect.width) * 100;
-        const y = ((e.clientY - fieldRect.top) / fieldRect.height) * 100;
+        const y = ((e.clientY - fieldRect.top) / fieldRect.heightf) * 100;
 
         setPlayers(players.map(p =>
             p.id === draggedPlayer.id
@@ -92,21 +121,6 @@ const TacticsDetails: React.FC = () => {
     const handleMouseUp = () => {
         setIsDragging(false);
         setDraggedPlayer(null);
-    };
-
-    const handleLike = async () => {
-        try {
-            if (isLiked) {
-                await TacticEntity.unlike(id!);
-                setLikes(prev => prev - 1);
-            } else {
-                await TacticEntity.like(id!);
-                setLikes(prev => prev + 1);
-            }
-            setIsLiked(!isLiked);
-        } catch (err) {
-            console.error('Error toggling like:', err);
-        }
     };
 
     const handleSave = async () => {

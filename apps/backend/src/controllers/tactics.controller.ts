@@ -33,11 +33,11 @@ export class TacticsController {
   async likeTactic(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const userId = '';
+      const userId = 'e8cd138d-4017-466f-bd89-81a6a847e0ca';
       //req.user.id;
 
-      await tacticsService.toggleLike(id, userId);
-      res.json({ success: true });
+      const { isLiked } = await tacticsService.toggleLike(id, userId);
+      res.json({ success: true, data: { isLiked } });
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -47,7 +47,8 @@ export class TacticsController {
   async getTacticsById(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const tactics = await tacticsService.getTacticById(id);
+      const userId = '17fbb4d6-11fb-4456-b376-84579a1b99e6';
+      const tactics = await tacticsService.getTacticById(id, userId);
       res.json({ success: true, data: tactics });
     } catch (error) {
       console.error(error);
@@ -56,10 +57,7 @@ export class TacticsController {
   async getTacticLikes(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
-
-      const result = await tacticsService.getTacticLikes(id, page, limit);
+      const result = await tacticsService.getTacticLikes(id);
 
       res.json({
         success: true,

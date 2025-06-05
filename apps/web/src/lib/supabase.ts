@@ -13,3 +13,24 @@ export const handleLogout = async () => {
         window.location.href = '/login';
     }
 };
+
+serve(async (req) => {
+    const { event, user } = await req.json();
+
+    if (event === 'signup' || event === 'login') {
+        return new Response(
+            JSON.stringify({
+                // 👇 This will be injected into the user's JWT
+                jwt: {
+                    role: 'user',
+                    user_id: user.id,
+                    // Add custom claims here
+                    custom_claim: 'some-value',
+                },
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+        );
+    }
+
+    return new Response('Unhandled event', { status: 400 });
+});

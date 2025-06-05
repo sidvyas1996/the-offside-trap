@@ -50,6 +50,7 @@ export interface Comment {
 // Tactic Statistics
 export interface TacticStats {
   likes: number;
+  isLiked: boolean;
   comments: number;
   saves: number;
   views?: number;
@@ -105,6 +106,8 @@ export interface TacticListResponse {
 export interface TacticDetailResponse extends Tactic {
   stats: TacticStats;
   comments?: Comment[];
+  userInteraction: UserInteraction
+
 }
 
 // API Request Types

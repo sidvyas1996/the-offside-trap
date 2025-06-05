@@ -130,7 +130,7 @@ export class TacticsService {
   /**
    * Get a single tactic by ID
    */
-  async getTacticById(id: string, userId?: string) {
+  async getTacticById(id: string, userId: string) {
     const tactic = await prisma.tactic.findUnique({
       where: { id },
       include: {
@@ -564,7 +564,7 @@ export class TacticsService {
    * Get users who liked a tactic with pagination
    * @route GET /api/tactics/:id/likes
    */
-  async getTacticLikes(tacticId: string, page: number = 1, limit: number = 10) {
+  async getTacticLikes(tacticId: string) {
     // Check if tactic exists
     const tactic = await prisma.tactic.findUnique({
       where: { id: tacticId },
@@ -574,39 +574,13 @@ export class TacticsService {
       throw new Error('Tactic not found');
     }
 
-    const skip = (page - 1) * limit;
-
     // Get like count
     const total = await prisma.like.count({
       where: { tacticId },
     });
 
-    // Get users who liked this tactic
-    const likes = await prisma.like.findMany({
-      where: { tacticId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
-          },
-        },
-      },
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    });
-
     return {
-      users: likes.map(like => like.userId),
-      pagination: {
-        total,
-        page,
-        limit,
-        hasNext: skip + likes.length < total,
-        hasPrev: page > 1,
-      },
+      total,
     };
   }
 }

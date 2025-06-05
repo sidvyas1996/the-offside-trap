@@ -21,7 +21,6 @@ async function main() {
     data: {
       username: 'demo',
       email: 'demo@example.com',
-      password: hashedPassword,
     },
   });
 
@@ -29,7 +28,6 @@ async function main() {
     data: {
       username: 'coach',
       email: 'coach@example.com',
-      password: hashedPassword,
     },
   });
 

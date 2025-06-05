@@ -62,8 +62,17 @@ function AppRoutes() {
   );
 }
 
+
 const Header: React.FC = () => {
-  return (
+    const { displayName } = useAuth();
+    console.log(displayName);
+    const nameParts = displayName.trim().split(' ');
+    const initials =
+        nameParts.length >= 2
+            ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase()
+            : nameParts[0][0].toUpperCase();
+
+    return (
     <header className="  bg-[#1a1a1a] border border-[rgb(49,54,63)]">
       <div className="flex items-center h-16 px-6">
         {/* Logo - Far left */}
@@ -120,7 +129,7 @@ const Header: React.FC = () => {
             <div className="relative">
                 <DropdownMenu as="div" className="relative">
                     <DropdownMenu.Button className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white text-sm font-bold hover:ring-2 hover:ring-green-400 focus:outline-none">
-                        SV
+                        {initials}
                     </DropdownMenu.Button>
 
                     <Transition
@@ -131,13 +140,15 @@ const Header: React.FC = () => {
                         leaveFrom="transform opacity-100 scale-100"
                         leaveTo="transform opacity-0 scale-95"
                     >
-                        <DropdownMenu.Items className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                            <div className="py-1 text-sm text-gray-800">
+                        <DropdownMenu.Items className="absolute right-0 mt-3 w-40 bg-[#1a1a1a]  border border-[rgb(49,54,63)] text-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                            <div className="py-1 text-sm">
                                 <DropdownMenu.Item>
                                     {({ active }) => (
                                         <a
                                             href="/profile"
-                                            className={`flex items-center px-4 py-2 ${active ? 'bg-gray-100' : ''}`}
+                                            className={`flex items-center px-4 py-2 rounded-md ${
+                                                active ? 'bg-gray-700' : ''
+                                            }`}
                                         >
                                             <User className="w-4 h-4 mr-2" />
                                             Profile
@@ -148,7 +159,9 @@ const Header: React.FC = () => {
                                     {({ active }) => (
                                         <button
                                             onClick={handleLogout}
-                                            className={`w-full text-left flex items-center px-4 py-2 ${active ? 'bg-gray-100' : ''}`}
+                                            className={`w-full text-left flex items-center px-4 py-2 rounded-md ${
+                                                active ? 'bg-gray-700' : ''
+                                            }`}
                                         >
                                             <LogOut className="w-4 h-4 mr-2" />
                                             Logout
