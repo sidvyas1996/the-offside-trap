@@ -7,13 +7,8 @@ import type {
 } from '../../../../packages/shared';
 
 import axios from 'axios';
+import {api} from "../lib/api.ts";
 
-const api = axios.create({
-    baseURL: 'http://localhost:3001/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
 
 export class TacticEntity {
     static async list(params?: TacticFilters){

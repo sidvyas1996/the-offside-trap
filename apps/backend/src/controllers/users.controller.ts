@@ -1,6 +1,7 @@
 // apps/backend/src/controllers/users.controller.ts
 import { Request, Response } from 'express';
 import { usersService } from '../services/users.service';
+import { AuthedRequest } from '../middlewares/auth.middleware';
 
 export class UsersController {
   // Get all users
@@ -15,10 +16,10 @@ export class UsersController {
   }
 
   // Get user by ID
-  async getUserById(req: Request, res: Response): Promise<void> {
+  async getUserById(req: AuthedRequest, res: Response): Promise<void> {
     try {
-      const { id } = req.params;
-      const user = await usersService.getUserById(id);
+      const userId = req.user?.id;
+      const user = await usersService.getUserById(userId!);
 
       if (!user) {
         res.status(404).json({ success: false, error: 'User not found' });
@@ -85,10 +86,10 @@ export class UsersController {
   }
 
   // Delete user
-  async deleteUser(req: Request, res: Response) {
+  async deleteUser(req: AuthedRequest, res: Response) {
     try {
-      const { id } = req.params;
-      const result = await usersService.deleteUser(id);
+      const userId = req.user?.id;
+      const result = await usersService.deleteUser(userId!);
 
       if (!result) {
         return res.status(404).json({ success: false, error: 'User not found' });
@@ -102,11 +103,10 @@ export class UsersController {
   }
 
   // Get user profile (placeholder for when auth is added)
-  async getProfile(req: Request, res: Response) {
+  async getProfile(req: AuthedRequest, res: Response) {
     try {
-      // For now just return a mock user
-      // Later this will use the authenticated user's ID
-      const user = await usersService.getUserById('1');
+      const userId = req.user?.id;
+      const user = await usersService.getUserById(userId!);
 
       if (!user) {
         return res.status(404).json({ success: false, error: 'User not found' });

@@ -1,13 +1,14 @@
 import React from "react";
 import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
-import { ChevronDown, Search,LogOut, User } from "lucide-react";
+import { ChevronDown, Search, LogOut, User } from "lucide-react";
 import Home from "./pages/Home";
 import TacticsDetails from "./pages/TacticsDetails.tsx";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useAuth } from "./contexts/AuthContext";
 import { Login } from "./components/Login.tsx";
-import { Menu as DropdownMenu, Transition } from '@headlessui/react';
-import {handleLogout} from "./lib/supabase.ts";
+import { Menu as DropdownMenu, Transition } from "@headlessui/react";
+import { useLogout } from "./lib/logout.ts";
+import Create from "./pages/CreateTactics.tsx";
 
 function App() {
   return (
@@ -52,6 +53,14 @@ function AppRoutes() {
         element={
           <Layout>
             <TacticsDetails />
+          </Layout>
+        }
+      />
+      <Route
+        path="/create"
+        element={
+          <Layout>
+            <Create />
           </Layout>
         }
       />
@@ -117,49 +126,49 @@ const Header: React.FC = () => {
           </div>
 
           {/* User avatar */}
-            <div className="relative">
-                <DropdownMenu as="div" className="relative">
-                    <DropdownMenu.Button className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white text-sm font-bold hover:ring-2 hover:ring-green-400 focus:outline-none">
-                        SV
-                    </DropdownMenu.Button>
+          <div className="relative">
+            <DropdownMenu as="div" className="relative">
+              <DropdownMenu.Button className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white text-sm font-bold hover:ring-2 hover:ring-green-400 focus:outline-none">
+                SV
+              </DropdownMenu.Button>
 
-                    <Transition
-                        enter="transition ease-out duration-100"
-                        enterFrom="transform opacity-0 scale-95"
-                        enterTo="transform opacity-100 scale-100"
-                        leave="transition ease-in duration-75"
-                        leaveFrom="transform opacity-100 scale-100"
-                        leaveTo="transform opacity-0 scale-95"
-                    >
-                        <DropdownMenu.Items className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                            <div className="py-1 text-sm text-gray-800">
-                                <DropdownMenu.Item>
-                                    {({ active }) => (
-                                        <a
-                                            href="/profile"
-                                            className={`flex items-center px-4 py-2 ${active ? 'bg-gray-100' : ''}`}
-                                        >
-                                            <User className="w-4 h-4 mr-2" />
-                                            Profile
-                                        </a>
-                                    )}
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Item>
-                                    {({ active }) => (
-                                        <button
-                                            onClick={handleLogout}
-                                            className={`w-full text-left flex items-center px-4 py-2 ${active ? 'bg-gray-100' : ''}`}
-                                        >
-                                            <LogOut className="w-4 h-4 mr-2" />
-                                            Logout
-                                        </button>
-                                    )}
-                                </DropdownMenu.Item>
-                            </div>
-                        </DropdownMenu.Items>
-                    </Transition>
-                </DropdownMenu>
-            </div>
+              <Transition
+                enter="transition ease-out duration-100"
+                enterFrom="transform opacity-0 scale-95"
+                enterTo="transform opacity-100 scale-100"
+                leave="transition ease-in duration-75"
+                leaveFrom="transform opacity-100 scale-100"
+                leaveTo="transform opacity-0 scale-95"
+              >
+                <DropdownMenu.Items className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                  <div className="py-1 text-sm text-gray-800">
+                    <DropdownMenu.Item>
+                      {({ active }) => (
+                        <a
+                          href="/profile"
+                          className={`flex items-center px-4 py-2 ${active ? "bg-gray-100" : ""}`}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          Profile
+                        </a>
+                      )}
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={useLogout()}
+                          className={`w-full text-left flex items-center px-4 py-2 ${active ? "bg-gray-100" : ""}`}
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Logout
+                        </button>
+                      )}
+                    </DropdownMenu.Item>
+                  </div>
+                </DropdownMenu.Items>
+              </Transition>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
     </header>

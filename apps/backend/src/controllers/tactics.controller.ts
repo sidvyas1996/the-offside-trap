@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { TacticFormData } from '@the-offside-trap/shared';
 import { tacticsService } from '../services/tactics.service';
 import { commentsService } from '../services/comments.service';
+import { AuthedRequest } from '../middlewares/auth.middleware';
 
 export class TacticsController {
   async getTacticsSummary(req: Request, res: Response) {
@@ -15,13 +16,12 @@ export class TacticsController {
       res.status(500).json({ success: false, error: errorMessage });
     }
   }
-  async createTactic(req: Request, res: Response) {
+  async createTactic(req: AuthedRequest, res: Response) {
     try {
       const tacticData: TacticFormData = req.body;
-      const userId = '';
-      //req.user.id; // From auth middleware
+      const userId = req.user?.id;
 
-      const tactic = await tacticsService.createTactic(tacticData, userId);
+      const tactic = await tacticsService.createTactic(tacticData, userId!);
       res.status(201).json({ success: true, data: tactic });
     } catch (error) {
       console.error(error);
@@ -30,13 +30,12 @@ export class TacticsController {
     }
   }
 
-  async likeTactic(req: Request, res: Response) {
+  async likeTactic(req: AuthedRequest, res: Response) {
     try {
       const { id } = req.params;
-      const userId = '';
-      //req.user.id;
+      const userId = req.user?.id;
 
-      await tacticsService.toggleLike(id, userId);
+      await tacticsService.toggleLike(id, userId!);
       res.json({ success: true });
     } catch (error) {
       console.error(error);
@@ -72,14 +71,13 @@ export class TacticsController {
     }
   }
 
-  async addComment(req: Request, res: Response) {
+  async addComment(req: AuthedRequest, res: Response) {
     try {
       const { id } = req.params;
       const { content } = req.body;
-      const userId = '17fbb4d6-11fb-4456-b376-84579a1b99e6';
-      //req.user.id; // From auth middleware
+      const userId = req.user?.id;
 
-      const comment = await commentsService.addComment(id, userId, content);
+      const comment = await commentsService.addComment(id, userId!, content);
       res.status(201).json({ success: true, data: comment });
     } catch (error) {
       console.error(error);

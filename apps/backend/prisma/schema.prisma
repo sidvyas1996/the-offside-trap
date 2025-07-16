@@ -11,7 +11,6 @@ model User {
   id        String   @id @default(uuid())
   username  String   @unique
   email     String   @unique
-  password  String
   avatar    String?
   createdAt   DateTime @map("created_at")@default(now())
   updatedAt   DateTime @map("updated_at")@updatedAt

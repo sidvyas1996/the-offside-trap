@@ -1,14 +1,15 @@
 import { Router } from 'express';
 import { TacticsController } from '../controllers/tactics.controller';
+import { requireAuth } from '../middlewares/auth.middleware';
 
 const router = Router();
 const tacticsController = new TacticsController();
 
-router.get('/', tacticsController.getTacticsSummary);
-router.get('/:id', tacticsController.getTacticsById);
-router.post('/', tacticsController.createTactic);
-router.post('/:id/like', tacticsController.likeTactic);
-router.get('/:id/likes', tacticsController.getTacticLikes);
-router.post('/:id/comment', tacticsController.addComment);
-router.get('/:id/comments', tacticsController.getComments);
+router.get('/', requireAuth, tacticsController.getTacticsSummary);
+router.get('/:id', requireAuth, tacticsController.getTacticsById);
+router.post('/', requireAuth, tacticsController.createTactic);
+router.post('/:id/like', requireAuth, tacticsController.likeTactic);
+router.get('/:id/likes', requireAuth, tacticsController.getTacticLikes);
+router.post('/:id/comment', requireAuth, tacticsController.addComment);
+router.get('/:id/comments', requireAuth, tacticsController.getComments);
 export default router;

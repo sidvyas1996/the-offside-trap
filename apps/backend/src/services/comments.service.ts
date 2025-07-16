@@ -1,5 +1,4 @@
 import { prisma } from './db.service';
-import { TacticsService } from './tactics.service';
 
 export class CommentsService {
   async getComments(tacticId: string, page = 1, limit = 10) {

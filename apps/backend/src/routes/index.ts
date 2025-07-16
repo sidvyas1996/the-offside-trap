@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import usersRoutes from './user.routes';
 import tacticsRoutes from './tactics.routes';
+import authRoutes from './auth.routes';
 
 const router = Router();
 
@@ -8,6 +9,7 @@ const router = Router();
 router.use('/users', usersRoutes);
 router.use('/tactics', tacticsRoutes);
 router.use('/tactics-interactions', tacticsRoutes);
+router.use('/auth', authRoutes);
 
 // API info endpoint
 router.get('/', (req, res) => {
