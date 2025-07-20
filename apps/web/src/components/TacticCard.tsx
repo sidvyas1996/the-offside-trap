@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Heart, MessageCircle, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 
-import FootballField from "../components/FootballField";
+import MiniTacticCard from "./MiniTacticCard.tsx";
 import type {TacticSummary} from "../../../../packages/shared";
 
 interface TacticCardProps {
@@ -38,7 +38,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
                             className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                         />
                     ) : (
-                        <FootballField className="h-full" />
+                        <MiniTacticCard className="h-full" />
                     )}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
                         <p className="font-bold truncate text-white">{tactic.title || "Untitled Tactic"}</p>
