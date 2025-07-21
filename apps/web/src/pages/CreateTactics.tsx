@@ -46,6 +46,12 @@ export default function Create() {
     );
   };
 
+  const handleUpdatePlayer = (id: number, updates: Partial<Player>) => {
+    setPlayers((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
+    );
+  };
+
 
   const renderStartStep = () => (
       <div className="text-center py-12">
@@ -202,6 +208,7 @@ export default function Create() {
                 size={"fullscreen"}
                 isPlayerNameEditable={true}
                 onPlayerNameChange={handlePlayerNameChange}
+                onUpdatePlayer={handleUpdatePlayer}
             />
           </div>
 

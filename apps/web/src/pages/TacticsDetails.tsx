@@ -172,6 +172,7 @@ const TacticsDetails: React.FC = () => {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               fieldRef={fieldRef}
+              size={size}
             />
 
             {/* Formation & Tags */}

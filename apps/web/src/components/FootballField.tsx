@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Player } from "../../../../packages/shared";
-import PlayerMarker from "./PlayerMarker.tsx";
+import PlayerMarker from "./PlayerMarker";
 
 interface FootballFieldProps {
   players: Player[];
@@ -12,6 +12,7 @@ interface FootballFieldProps {
   size?: "default" | "fullscreen";
   isPlayerNameEditable?: boolean;
   onPlayerNameChange?: (id: number, name: string) => void;
+  onUpdatePlayer?: (id: number, updates: Partial<Player>) => void;
 }
 
 const FootballField: React.FC<FootballFieldProps> = ({
@@ -24,13 +25,34 @@ const FootballField: React.FC<FootballFieldProps> = ({
   size,
   isPlayerNameEditable = false,
   onPlayerNameChange,
+  onUpdatePlayer,
 }) => {
   const [scale, setScale] = useState(1);
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    playerId: number | null;
+  }>({ visible: false, x: 0, y: 0, playerId: null });
 
-  // Observe field size to calculate scale dynamically
+  const onShowContextMenu = (playerId: number, x: number, y: number) => {
+    setContextMenu({
+      visible: true,
+      x: Math.min(x, window.innerWidth - 180),
+      y: Math.min(y, window.innerHeight - 120),
+      playerId,
+    });
+  };
+
+  useEffect(() => {
+    const closeMenu = () => setContextMenu({ ...contextMenu, visible: false });
+    window.addEventListener("click", closeMenu);
+    return () => window.removeEventListener("click", closeMenu);
+  }, [contextMenu]);
+
+  // Observe field size for responsive scale
   useEffect(() => {
     if (!fieldRef.current) return;
-
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const fieldWidth = entry.contentRect.width;
@@ -38,10 +60,29 @@ const FootballField: React.FC<FootballFieldProps> = ({
         setScale(newScale);
       }
     });
-
     observer.observe(fieldRef.current);
     return () => observer.disconnect();
   }, [fieldRef]);
+
+  const handlePlayerAction = (action: string) => {
+    if (!contextMenu.playerId || !onUpdatePlayer) return;
+
+    if (action === "captain")
+      onUpdatePlayer(contextMenu.playerId, { isCaptain: true });
+    if (action === "yellow")
+      onUpdatePlayer(contextMenu.playerId, { hasYellowCard: true });
+    if (action === "red")
+      onUpdatePlayer(contextMenu.playerId, { hasRedCard: true });
+    // if (action === "star") onUpdatePlayer(contextMenu.playerId, { isStarPlayer: true });
+
+    setContextMenu({ ...contextMenu, visible: false });
+  };
+
+  useEffect(() => {
+    const closeMenu = () => setContextMenu({ ...contextMenu, visible: false });
+    window.addEventListener("click", closeMenu);
+    return () => window.removeEventListener("click", closeMenu);
+  }, [contextMenu]);
 
   return (
     <div
@@ -191,8 +232,50 @@ const FootballField: React.FC<FootballFieldProps> = ({
           onMouseDown={onMouseDown}
           editable={isPlayerNameEditable}
           onNameChange={onPlayerNameChange}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setContextMenu({
+              visible: true,
+              x: e.clientX,
+              y: e.clientY,
+              playerId: player.id,
+            });
+          }}
         />
       ))}
+
+      {/* Context Menu */}
+      {contextMenu.visible && (
+        <div
+          className="absolute bg-[#1a1a1a] rounded text-white rounded shadow-lg z-50"
+          style={{
+            position: "fixed",
+            top: `${contextMenu.y}px`,
+            left: `${contextMenu.x}px`,
+          }}
+        >
+          <ul className="p-2 space-y-2 w-44">
+            <li
+              className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
+              onClick={() => handlePlayerAction("captain")}
+            >
+              Assign as Captain
+            </li>
+            <li
+              className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
+              onClick={() => handlePlayerAction("yellow")}
+            >
+              Assign Yellow Card
+            </li>
+            <li
+              className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
+              onClick={() => handlePlayerAction("red")}
+            >
+              Assign Red Card
+            </li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
