@@ -68,16 +68,16 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           <img
             src="/yellow-card.png"
             alt="Yellow Card"
-            className="absolute -top-1 -left-1 w-7 h-8 object-contain hover:scale-125 transition-transform"
+            className="absolute -top-1 -left-1.5 w-7 h-8 object-contain hover:scale-125 transition-transform"
           />
         )}
 
-        {/* Red Card - Rounded (if both cards, show red) */}
+        {/* Red Card - Rounded */}
         {player.hasRedCard && (
           <img
             src="/red-card.png"
             alt="Red Card"
-            className="absolute -top-3 -left-2 w-7 h-8 object-contain hover:scale-125 transition-transform"
+            className="absolute -top-1 -left-0.5 w-7 h-8 object-contain hover:scale-125 transition-transform"
           />
         )}
 

@@ -1,40 +1,28 @@
-import React, { useState, useEffect } from "react";
-import type { Player } from "../../../../packages/shared";
+import React, { useEffect, useState } from "react";
 import PlayerMarker from "./PlayerMarker";
+import { CHARCOAL_GRAY, DEFAULT_FOOTBALL_FIELD_COLOUR } from "../utils/colors";
+import {useFootballField} from "../contexts/FootballFieldContext.tsx";
 
 interface FootballFieldProps {
-  players: Player[];
-  draggedPlayer: Player | null;
-  onMouseDown: (player: Player) => void;
-  onMouseMove: (e: React.MouseEvent) => void;
-  onMouseUp: () => void;
-  fieldRef: React.RefObject<HTMLDivElement | null>;
+  editable?: boolean;
   size?: "default" | "fullscreen";
-  isPlayerNameEditable?: boolean;
-  onPlayerNameChange?: (id: number, name: string) => void;
-  onUpdatePlayer?: (id: number, updates: Partial<Player>) => void;
 }
 
-const FootballField: React.FC<FootballFieldProps> = ({
-  players,
-  draggedPlayer,
-  onMouseDown,
-  onMouseMove,
-  onMouseUp,
-  fieldRef,
-  size,
-  isPlayerNameEditable = false,
-  onPlayerNameChange,
-  onUpdatePlayer,
-}) => {
-  const [scale, setScale] = useState(1);
-  const [contextMenu, setContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    playerId: number | null;
-  }>({ visible: false, x: 0, y: 0, playerId: null });
+const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
+  const {
+    players,
+    draggedPlayer,
+    options,
+    actions,
+    fieldRef,
+  } = useFootballField();
 
+  const { onUpdatePlayer, onPlayerNameChange, onMouseDown, onMouseMove, onMouseUp } = actions;
+
+  const [scale, setScale] = useState(1);
+  const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; playerId: number | null }>({ visible: false, x: 0, y: 0, playerId: null });
+
+  // Context menu clamping and close-on-click
   const onShowContextMenu = (playerId: number, x: number, y: number) => {
     setContextMenu({
       visible: true,
@@ -45,12 +33,13 @@ const FootballField: React.FC<FootballFieldProps> = ({
   };
 
   useEffect(() => {
-    const closeMenu = () => setContextMenu({ ...contextMenu, visible: false });
+    if (!contextMenu.visible) return;
+    const closeMenu = () => setContextMenu((cm) => ({ ...cm, visible: false }));
     window.addEventListener("click", closeMenu);
     return () => window.removeEventListener("click", closeMenu);
-  }, [contextMenu]);
+  }, [contextMenu.visible]);
 
-  // Observe field size for responsive scale
+  // Observe field size
   useEffect(() => {
     if (!fieldRef.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -66,217 +55,203 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
   const handlePlayerAction = (action: string) => {
     if (!contextMenu.playerId || !onUpdatePlayer) return;
-
-    if (action === "captain")
-      onUpdatePlayer(contextMenu.playerId, { isCaptain: true });
-    if (action === "yellow")
-      onUpdatePlayer(contextMenu.playerId, { hasYellowCard: true });
-    if (action === "red")
-      onUpdatePlayer(contextMenu.playerId, { hasRedCard: true });
-    // if (action === "star") onUpdatePlayer(contextMenu.playerId, { isStarPlayer: true });
-
+    const updates =
+      action === "captain"
+        ? { isCaptain: true }
+        : action === "yellow"
+        ? { hasYellowCard: true }
+        : { hasRedCard: true };
+    onUpdatePlayer(contextMenu.playerId, updates);
     setContextMenu({ ...contextMenu, visible: false });
   };
 
-  useEffect(() => {
-    const closeMenu = () => setContextMenu({ ...contextMenu, visible: false });
-    window.addEventListener("click", closeMenu);
-    return () => window.removeEventListener("click", closeMenu);
-  }, [contextMenu]);
+  // Responsive field sizing
+  const fieldStyle = size === "fullscreen" || options.size === "fullscreen"
+    ? {
+        backgroundColor: options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR,
+        aspectRatio: "11/7",
+        width: "100%",
+        maxWidth: "100%",
+        height: "auto",
+        maxHeight: "calc(100vh - 100px)",
+        margin: "0 auto",
+      }
+    : {
+        backgroundColor: options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR,
+        aspectRatio: "11/7",
+        width: "100%",
+        maxWidth: "800px",
+        margin: "0 auto",
+      };
 
   return (
-    <div
-      ref={fieldRef}
-      className="relative bg-green-800 rounded-xl overflow-hidden cursor-move mb-6"
-      style={
-        size === "fullscreen"
-          ? {
-              aspectRatio: "11/7",
-              width: "100%",
-              maxWidth: "100%",
-              height: "auto",
-              maxHeight: "calc(100vh - 100px)",
-              margin: "0 auto",
-            }
-          : {
-              aspectRatio: "11/7",
-              width: "100%",
-              maxWidth: "800px",
-              margin: "0 auto",
-            }
-      }
-      onMouseMove={onMouseMove}
-      onMouseUp={onMouseUp}
-      onMouseLeave={onMouseUp}
-    >
-      {/* Field Markings */}
-      <svg
-        className="absolute inset-0 w-full h-full opacity-30"
-        viewBox="0 0 550 350"
+      <div
+          ref={fieldRef}
+          className="relative rounded-xl overflow-hidden cursor-move mb-6"
+          style={fieldStyle}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
       >
-        <rect
-          x="20"
-          y="20"
-          width="510"
-          height="310"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <line
-          x1="275"
-          y1="20"
-          x2="275"
-          y2="330"
-          stroke="white"
-          strokeWidth="2.5"
-        />
-        <circle
-          cx="275"
-          cy="175"
-          r="45"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <circle cx="275" cy="175" r="3" fill="white" />
+        {/* Field Markings */}
+          <svg
+              className="absolute inset-0 w-full h-full opacity-30"
+              viewBox="0 0 550 350"
+          >
+              <rect
+                  x="20"
+                  y="20"
+                  width="510"
+                  height="310"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <line
+                  x1="275"
+                  y1="20"
+                  x2="275"
+                  y2="330"
+                  stroke="white"
+                  strokeWidth="2.5"
+              />
+              <circle
+                  cx="275"
+                  cy="175"
+                  r="45"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <circle cx="275" cy="175" r="3" fill="white" />
 
-        {/* Goal and Box Markings */}
-        <rect
-          x="20"
-          y="95"
-          width="70"
-          height="160"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <rect
-          x="460"
-          y="95"
-          width="70"
-          height="160"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <rect
-          x="20"
-          y="130"
-          width="30"
-          height="90"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <rect
-          x="500"
-          y="130"
-          width="30"
-          height="90"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <circle cx="65" cy="175" r="3" fill="white" />
-        <circle cx="485" cy="175" r="3" fill="white" />
+              {/* Goal and Box Markings */}
+              <rect
+                  x="20"
+                  y="95"
+                  width="70"
+                  height="160"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <rect
+                  x="460"
+                  y="95"
+                  width="70"
+                  height="160"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <rect
+                  x="20"
+                  y="130"
+                  width="30"
+                  height="90"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <rect
+                  x="500"
+                  y="130"
+                  width="30"
+                  height="90"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <circle cx="65" cy="175" r="3" fill="white" />
+              <circle cx="485" cy="175" r="3" fill="white" />
 
-        {/* Penalty Arcs */}
-        <path
-          d="M 90 155 A 30 30 0 0 1 90 195"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <path
-          d="M 460 155 A 30 30 0 0 0 460 195"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
+              {/* Penalty Arcs */}
+              <path
+                  d="M 90 155 A 30 30 0 0 1 90 195"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <path
+                  d="M 460 155 A 30 30 0 0 0 460 195"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
 
-        {/* Corner Arcs */}
-        <path
-          d="M 20 30 A 10 10 0 0 0 30 20"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <path
-          d="M 520 20 A 10 10 0 0 0 530 30"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <path
-          d="M 30 330 A 10 10 0 0 0 20 320"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <path
-          d="M 530 320 A 10 10 0 0 0 520 330"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-      </svg>
+              {/* Corner Arcs */}
+              <path
+                  d="M 20 30 A 10 10 0 0 0 30 20"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <path
+                  d="M 520 20 A 10 10 0 0 0 530 30"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <path
+                  d="M 30 330 A 10 10 0 0 0 20 320"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+              <path
+                  d="M 530 320 A 10 10 0 0 0 520 330"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  fill="none"
+              />
+          </svg>
 
-      {/* Players */}
-      {players.map((player) => (
-        <PlayerMarker
-          key={player.id}
-          player={player}
-          scale={scale}
-          isDragged={draggedPlayer?.id === player.id}
-          onMouseDown={onMouseDown}
-          editable={isPlayerNameEditable}
-          onNameChange={onPlayerNameChange}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            setContextMenu({
-              visible: true,
-              x: e.clientX,
-              y: e.clientY,
-              playerId: player.id,
-            });
-          }}
-        />
-      ))}
+        {/* Players */}
+        {players.map((player:any)  => (
+            <PlayerMarker
+                key={player.id}
+                player={player}
+                scale={scale}
+                isDragged={draggedPlayer?.id === player.id}
+                onMouseDown={() => onMouseDown && onMouseDown(player)}
+                editable={typeof editable === 'boolean' ? editable : options.editable}
+                onNameChange={onPlayerNameChange}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  onShowContextMenu(player.id, e.clientX, e.clientY);
+                }}
+            />
+        ))}
 
-      {/* Context Menu */}
-      {contextMenu.visible && (
-        <div
-          className="absolute bg-[#1a1a1a] rounded text-white rounded shadow-lg z-50"
-          style={{
-            position: "fixed",
-            top: `${contextMenu.y}px`,
-            left: `${contextMenu.x}px`,
-          }}
-        >
-          <ul className="p-2 space-y-2 w-44">
-            <li
-              className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
-              onClick={() => handlePlayerAction("captain")}
+        {/* Context Menu */}
+        {contextMenu.visible && (
+            <div
+                className="absolute rounded-2xl text-white shadow-lg z-50 opacity-70"
+                style={{
+                  position: "fixed",
+                  top: `${contextMenu.y}px`,
+                  left: `${contextMenu.x}px`,
+                  backgroundColor: CHARCOAL_GRAY,
+                }}
             >
-              Assign as Captain
-            </li>
-            <li
-              className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
-              onClick={() => handlePlayerAction("yellow")}
-            >
-              Assign Yellow Card
-            </li>
-            <li
-              className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
-              onClick={() => handlePlayerAction("red")}
-            >
-              Assign Red Card
-            </li>
-          </ul>
-        </div>
-      )}
-    </div>
+              <ul className="p-2 space-y-2 w-44">
+                {[
+                  { action: "captain", label: "Assign as Captain" },
+                  { action: "yellow", label: "Assign Yellow Card" },
+                  { action: "red", label: "Assign Red Card" },
+                ].map(({ action, label }) => (
+                  <li
+                    key={action}
+                    className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
+                    onClick={() => handlePlayerAction(action)}
+                  >
+                    {label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+        )}
+      </div>
   );
 };
 

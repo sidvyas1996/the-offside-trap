@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Save, Share2, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Loader2 } from "lucide-react";
 import { TacticEntity } from "../entities/TacticEntity";
 import type { Tactic, Player, Comment } from "../../../../packages/shared";
 import FootballField from "../components/FootballField.tsx";
-import { usePlayerDrag } from "../hooks/usePlayerDrag.ts";
 import { renderBackButton } from "../components/ui/back-button.tsx";
 import { Textarea } from "../components/ui/textarea.tsx";
+import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext.tsx";
+import { usePlayerDrag } from "../hooks/usePlayerDrag.ts";
 
-const TacticsDetails: React.FC = () => {
+const TacticsDetailsContent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -18,24 +19,30 @@ const TacticsDetails: React.FC = () => {
 
   // Tactic data
   const [tactic, setTactic] = useState<Tactic | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
-
-  // Interaction states
-  const [likes, setLikes] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  // Drag and drop
-  const {
-    draggedPlayer,
-    fieldRef,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
-  } = usePlayerDrag(players, setPlayers, { sticky: true });
+  // FootballField context
+  const { players, setPlayers, setOptions, setActions, setDraggedPlayer, fieldRef } = useFootballField();
+
+  // Sticky drag logic for details page, use context's fieldRef
+  const drag = usePlayerDrag(players, setPlayers, { sticky: true }, fieldRef as React.RefObject<HTMLDivElement>);
+
+  useEffect(() => {
+    setActions({
+      onMouseDown: drag.handleMouseDown,
+      onMouseMove: drag.handleMouseMove,
+      onMouseUp: drag.handleMouseUp,
+    });
+    setOptions((prev) => ({
+      ...prev,
+      size: "default",
+      editable: false,
+    }));
+    setDraggedPlayer(drag.draggedPlayer);
+    // eslint-disable-next-line
+  }, [setActions, setOptions, setDraggedPlayer, drag.draggedPlayer]);
 
   // Fetch tactic data on mount
   useEffect(() => {
@@ -43,31 +50,23 @@ const TacticsDetails: React.FC = () => {
       fetchTacticDetails();
       fetchComments();
     }
+    // eslint-disable-next-line
   }, [id]);
 
-    const fetchTacticDetails = async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const data = await TacticEntity.getById(id!);
-            setTactic(data);
-            setPlayers(data.players || []);
-            setLikes(data.stats?.likes || 0);
-            setIsLiked(data.userInteraction?.isLiked || false);
-            setIsSaved(data.userInteraction?.isSaved || false);
-
-            // If comments are included in the response
-            if ('comments' in data) {
-                setComments((data as any).comments || []);
-            }
-        } catch (err) {
-            console.error('Error fetching tactic:', err);
-            setError(err instanceof Error ? err.message : 'Failed to load tactic');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchTacticDetails = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await TacticEntity.getById(id!);
+      setTactic(data);
+      setPlayers(data.players || []);
+    } catch (err) {
+      console.error("Error fetching tactic:", err);
+      setError(err instanceof Error ? err.message : "Failed to load tactic");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchComments = async () => {
     try {
@@ -78,37 +77,8 @@ const TacticsDetails: React.FC = () => {
     }
   };
 
-  const handleLike = async () => {
-    try {
-      if (isLiked) {
-        await TacticEntity.unlike(id!);
-        setLikes((prev) => prev - 1);
-      } else {
-        await TacticEntity.like(id!);
-        setLikes((prev) => prev + 1);
-      }
-      setIsLiked(!isLiked);
-    } catch (err) {
-      console.error("Error toggling like:", err);
-    }
-  };
-
-  const handleSave = async () => {
-    try {
-      if (isSaved) {
-        await TacticEntity.unsave(id!);
-      } else {
-        await TacticEntity.save(id!);
-      }
-      setIsSaved(!isSaved);
-    } catch (err) {
-      console.error("Error toggling save:", err);
-    }
-  };
-
   const handleCommentSubmit = async () => {
     if (!newComment.trim() || isSubmittingComment) return;
-
     setIsSubmittingComment(true);
     try {
       const comment = await TacticEntity.addComment(id!, newComment);
@@ -165,16 +135,7 @@ const TacticsDetails: React.FC = () => {
               {renderBackButton(() => navigate(-1))}
               <h1 className="text-5xl font-bold ">{tactic.title}</h1>
             </div>
-            <FootballField
-              players={players}
-              draggedPlayer={draggedPlayer}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              fieldRef={fieldRef}
-              size={size}
-            />
-
+            <FootballField />
             {/* Formation & Tags */}
             <div className="flex flex-wrap px-10 gap-3 mb-6 mt-6">
               <span className="bg-[#1a1a1a] border border-[rgb(49,54,63)] px-4 py-2 rounded-full text-sm font-medium">
@@ -189,44 +150,6 @@ const TacticsDetails: React.FC = () => {
                 </span>
               ))}
             </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center px-10 gap-4 mb-8">
-              <button
-                onClick={handleLike}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 border group ${
-                  isLiked
-                    ? "bg-red-500/10 text-red-500 border-red-500/20"
-                    : "bg-[#1a1a1a] border border-[rgb(49,54,63)] hover:bg-gray-700 text-gray-300"
-                }`}
-              >
-                <Heart className={`h-5 w-5 ${isLiked ? "fill-current" : ""}`} />
-                <span>{likes}</span>
-              </button>
-
-              <button className="flex items-center gap-2 px-3 py-2 bg-[#1a1a1a] border border-[rgb(49,54,63)] hover:bg-gray-700 rounded-xl transition-all duration-200 text-gray-300">
-                <MessageCircle className="h-5 w-5" />
-                {/*<span>{tactic.stats?.comments || 0}</span>*/}
-              </button>
-
-              <button
-                onClick={handleSave}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors border ${
-                  isSaved
-                    ? "bg-green-600/10 text-green-500 border-green-500/20"
-                    : "bg-[#1a1a1a] border border-[rgb(49,54,63)] hover:bg-gray-700 text-gray-300 "
-                }`}
-              >
-                <Save className={`h-5 w-5 ${isSaved ? "fill-current" : ""}`} />
-                {isSaved ? "Saved" : "Save"}
-              </button>
-
-              <button className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-xl transition-colors text-white">
-                <Share2 className="h-5 w-5" />
-                Share
-              </button>
-            </div>
-
             {/* Description */}
             <div className="mb-12 px-10">
               <h3 className="text-2xl font-bold mb-4">Description</h3>
@@ -234,15 +157,13 @@ const TacticsDetails: React.FC = () => {
                 {tactic.description}
               </div>
             </div>
-
             {/* Comments Section */}
             <div>
               <h3 className="text-2xl px-10 font-bold mb-6">Comments</h3>
-
               {/* Add Comment */}
               <div className="flex gap-4 mb-6 px-10">
                 <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                  {/* User initial */}U
+                  U
                 </div>
                 <div className="flex-1 flex flex-col gap-3">
                   <Textarea
@@ -268,7 +189,6 @@ const TacticsDetails: React.FC = () => {
                   </div>
                 </div>
               </div>
-
               {/* Comments List */}
               {comments.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">
@@ -296,12 +216,10 @@ const TacticsDetails: React.FC = () => {
               )}
             </div>
           </div>
-
           {/* Right Sidebar */}
           <div className="w-80 flex-shrink-2" style={{ marginTop: "5  rem" }}>
             <div className="bg-[#1a1a1a] border border-[rgb(49,54,63)] rounded-xl p-6">
               <h3 className="text-xl font-bold mb-6">About the Creator</h3>
-
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                   {tactic.author.username.charAt(0).toUpperCase()}
@@ -315,7 +233,6 @@ const TacticsDetails: React.FC = () => {
                   </p>
                 </div>
               </div>
-
               <button
                 onClick={() => navigate("/create")}
                 className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl transition-colors font-medium"
@@ -329,5 +246,11 @@ const TacticsDetails: React.FC = () => {
     </div>
   );
 };
+
+const TacticsDetails: React.FC = () => (
+  <FootballFieldProvider>
+    <TacticsDetailsContent />
+  </FootballFieldProvider>
+);
 
 export default TacticsDetails;

@@ -5,11 +5,17 @@ interface UsePlayerDragOptions {
     sticky?: boolean; // true = snap back to original position
 }
 
-export function usePlayerDrag(players: Player[], setPlayers: (p: Player[]) => void, options: UsePlayerDragOptions = {}) {
+export function usePlayerDrag(
+    players: Player[],
+    setPlayers: (p: Player[]) => void,
+    options: UsePlayerDragOptions = {},
+    externalFieldRef?: React.RefObject<HTMLDivElement>
+) {
     const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [originalPositions, setOriginalPositions] = useState<{ [key: number]: { x: number; y: number } }>({});
-    const fieldRef = useRef<HTMLDivElement>(null);
+    const internalFieldRef = useRef<HTMLDivElement>(null);
+    const fieldRef = externalFieldRef || internalFieldRef;
 
     const handleMouseDown = (player: Player) => {
         setDraggedPlayer(player);
