@@ -54,7 +54,12 @@ const CreateTacticsContent = () => {
   } = useFootballField();
 
   // Drag-and-drop logic for create page, use context's fieldRef
-  const drag = usePlayerDrag(players, setPlayers, { sticky: false }, fieldRef as React.RefObject<HTMLDivElement>);
+  const drag = usePlayerDrag(
+    players,
+    setPlayers,
+    { sticky: false },
+    fieldRef as React.RefObject<HTMLDivElement>,
+  );
 
   const [currentStep, setCurrentStep] = useState<{
     step: string;
@@ -93,21 +98,35 @@ const CreateTacticsContent = () => {
   useEffect(() => {
     setPlayers(defaultLineupSingle);
     setActions({
-      onMouseDown: drag.handleMouseDown,
+      onMouseDown: (player) => {
+        drag.handleMouseDown(player);
+        setDraggedPlayer(player);
+      },
       onMouseMove: drag.handleMouseMove,
-      onMouseUp: drag.handleMouseUp,
+      onMouseUp: () => {
+        drag.handleMouseUp();
+        setDraggedPlayer(null);
+      },
       onPlayerNameChange: handlePlayerNameChange,
       onUpdatePlayer: handleUpdatePlayer,
     });
-    setDraggedPlayer(drag.draggedPlayer);
-     setOptions((prev) => ({
+
+    setOptions((prev) => ({
       ...prev,
       size: "fullscreen",
       editable: true,
       fieldColor: DEFAULT_FOOTBALL_FIELD_COLOUR,
       playerColor: CHARCOAL_GRAY,
     }));
-  }, [setActions, setDraggedPlayer, drag.handleMouseDown, drag.handleMouseMove, drag.handleMouseUp, drag.draggedPlayer]);
+  }, [
+    drag.handleMouseDown,
+    drag.handleMouseMove,
+    drag.handleMouseUp,
+    setActions,
+    setDraggedPlayer,
+    setPlayers,
+    setOptions,
+  ]);
   const renderStartStep = () => (
     <div className="text-center py-12">
       {renderBackButton(() => navigate(-1))}
@@ -357,9 +376,7 @@ const CreateTacticsContent = () => {
   };
 
   return (
-    <div className="min-h-screen py-8 px-4 lg:px-8">
-      {renderCurrentStep()}
-    </div>
+    <div className="min-h-screen py-8 px-4 lg:px-8">{renderCurrentStep()}</div>
   );
 };
 

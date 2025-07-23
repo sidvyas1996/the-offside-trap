@@ -1,68 +1,60 @@
-import { useRef, useState } from "react";
+import { useRef, useCallback } from "react";
 import type { Player } from "../../../../packages/shared";
 
 interface UsePlayerDragOptions {
-    sticky?: boolean; // true = snap back to original position
+    sticky?: boolean; // true = snap back after drag
 }
 
-export function usePlayerDrag(
+export const usePlayerDrag = (
     players: Player[],
-    setPlayers: (p: Player[]) => void,
-    options: UsePlayerDragOptions = {},
-    externalFieldRef?: React.RefObject<HTMLDivElement>
-) {
-    const [draggedPlayer, setDraggedPlayer] = useState<Player | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
-    const [originalPositions, setOriginalPositions] = useState<{ [key: number]: { x: number; y: number } }>({});
-    const internalFieldRef = useRef<HTMLDivElement>(null);
-    const fieldRef = externalFieldRef || internalFieldRef;
+    setPlayers: React.Dispatch<React.SetStateAction<Player[]>>,
+    options: UsePlayerDragOptions = { sticky: false },
+    fieldRef: React.RefObject<HTMLDivElement>
+) => {
+    const draggedPlayerRef = useRef<Player | null>(null);
 
-    const handleMouseDown = (player: Player) => {
-        setDraggedPlayer(player);
-        setIsDragging(true);
+    const handleMouseDown = useCallback((player: Player) => {
+        draggedPlayerRef.current = player;
+    }, []);
 
-        if (options.sticky) {
-            setOriginalPositions((prev) => ({
-                ...prev,
-                [player.id]: { x: player.x, y: player.y },
-            }));
+    const handleMouseMove = useCallback(
+        (e: React.MouseEvent) => {
+            if (!draggedPlayerRef.current || !fieldRef.current) return;
+
+            const rect = fieldRef.current.getBoundingClientRect();
+
+            const newX = ((e.clientX - rect.left) / rect.width) * 100;
+            const newY = ((e.clientY - rect.top) / rect.height) * 100;
+
+            const clampedX = Math.max(0, Math.min(100, newX));
+            const clampedY = Math.max(0, Math.min(100, newY));
+
+            const draggedId = draggedPlayerRef.current.id;
+            setPlayers((prev) =>
+                prev.map((p) =>
+                    p.id === draggedId ? { ...p, x: clampedX, y: clampedY } : p
+                )
+            );
+        },
+        [fieldRef, setPlayers]
+    );
+
+    const handleMouseUp = useCallback(() => {
+        if (options.sticky && draggedPlayerRef.current) {
+            const original = draggedPlayerRef.current;
+            setPlayers((prev) =>
+                prev.map((p) =>
+                    p.id === original.id ? { ...p, x: original.x, y: original.y } : p
+                )
+            );
         }
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging || !draggedPlayer || !fieldRef.current) return;
-
-        const rect = fieldRef.current.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-        setPlayers(
-            players.map((p) =>
-                p.id === draggedPlayer.id ? { ...p, x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) } : p
-            )
-        );
-    };
-
-    const handleMouseUp = () => {
-        if (draggedPlayer && options.sticky) {
-            const original = originalPositions[draggedPlayer.id];
-            if (original) {
-                setPlayers(
-                    players.map((p) =>
-                        p.id === draggedPlayer.id ? { ...p, x: original.x, y: original.y } : p
-                    )
-                );
-            }
-        }
-        setIsDragging(false);
-        setDraggedPlayer(null);
-    };
+        draggedPlayerRef.current = null;
+    }, [options.sticky, setPlayers]);
 
     return {
-        draggedPlayer,
-        fieldRef,
+        draggedPlayer: draggedPlayerRef.current,
         handleMouseDown,
         handleMouseMove,
         handleMouseUp,
     };
-}
+};

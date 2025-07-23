@@ -89,9 +89,9 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
           ref={fieldRef}
           className="relative rounded-xl overflow-hidden cursor-move mb-6"
           style={fieldStyle}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseUp}
+          onMouseMove={actions.onMouseMove}
+          onMouseUp={actions.onMouseUp}
+          onMouseLeave={actions.onMouseUp}
       >
         {/* Field Markings */}
           <svg
@@ -213,7 +213,7 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
                 player={player}
                 scale={scale}
                 isDragged={draggedPlayer?.id === player.id}
-                onMouseDown={() => onMouseDown && onMouseDown(player)}
+                onMouseDown={() => actions.onMouseDown && actions.onMouseDown(player)}
                 editable={typeof editable === 'boolean' ? editable : options.editable}
                 onNameChange={onPlayerNameChange}
                 onContextMenu={(e) => {
