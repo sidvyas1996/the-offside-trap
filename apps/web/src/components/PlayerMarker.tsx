@@ -13,6 +13,7 @@ interface PlayerMarkerProps {
   onContextMenu?: (e: React.MouseEvent, player: Player) => void;
   enableContextMenu?: boolean;
   showPlayerLabels?: boolean;
+  markerType?: 'circle' | 'shirt';
 }
 
 const PlayerMarker: React.FC<PlayerMarkerProps> = ({
@@ -26,6 +27,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   onContextMenu,
   enableContextMenu,
   showPlayerLabels = true,
+  markerType = 'circle',
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingPosition, setIsEditingPosition] = useState(false);
@@ -53,7 +55,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
         zIndex: isDragged ? 50 : 10,
         transform: `translate(-50%, -50%) scale(${scale})`,
         transformOrigin: "center",
-        transition: "transform 0.2s ease-in-out",
+        transition: isDragged ? "none" : "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
       onMouseDown={(e) => {
         e.preventDefault();
@@ -70,30 +72,64 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
       }}
     >
       <div className="relative flex flex-col items-center transition-all duration-300 ease-in-out">
-        <div 
-          className={`w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:bg-gray-700 transition-all duration-300 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''}`}
-          onDoubleClick={() => editable && setIsEditingPosition(true)}
-        >
-          {isEditingPosition ? (
-            <input
-              type="text"
-              value={position}
-              onChange={handlePositionChange}
-              onBlur={() => setIsEditingPosition(false)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  setIsEditingPosition(false);
-                }
-              }}
-              autoFocus
-              className="w-8 h-8 bg-transparent text-white font-bold text-lg text-center border-none outline-none"
-              maxLength={2}
+        {markerType === 'circle' ? (
+          <div 
+            className={`w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:bg-gray-700 transition-all duration-300 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''} ${isDragged ? 'scale-110 shadow-lg' : ''}`}
+            onDoubleClick={() => editable && setIsEditingPosition(true)}
+          >
+            {isEditingPosition ? (
+              <input
+                type="text"
+                value={position}
+                onChange={handlePositionChange}
+                onBlur={() => setIsEditingPosition(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    setIsEditingPosition(false);
+                  }
+                }}
+                autoFocus
+                className="w-8 h-8 bg-transparent text-white font-bold text-lg text-center border-none outline-none"
+                maxLength={2}
+              />
+            ) : (
+              position
+            )}
+          </div>
+        ) : (
+          <div 
+            className={`w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''} ${isDragged ? 'scale-110 shadow-lg' : ''}`}
+            onDoubleClick={() => editable && setIsEditingPosition(true)}
+          >
+            <img 
+              src="/football-shirt.png" 
+              alt="Player" 
+              className="w-full h-full object-contain"
             />
-          ) : (
-            position
-          )}
-        </div>
+            {isEditingPosition ? (
+              <input
+                type="text"
+                value={position}
+                onChange={handlePositionChange}
+                onBlur={() => setIsEditingPosition(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    setIsEditingPosition(false);
+                  }
+                }}
+                autoFocus
+                className="absolute w-8 h-8 bg-transparent text-white font-bold text-lg text-center border-none outline-none"
+                maxLength={2}
+              />
+            ) : (
+              <div className="absolute text-white font-bold text-lg">
+                {position}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Star Player Star Icon */}
         {player.isStarPlayer && (

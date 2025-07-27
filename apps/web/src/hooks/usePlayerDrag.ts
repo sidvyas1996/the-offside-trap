@@ -11,6 +11,8 @@ export const usePlayerDrag = (
     options: UsePlayerDragOptions = { sticky: false },
     fieldRef: React.RefObject<HTMLDivElement>
 ) => {
+    const lastUpdateRef = useRef<number>(0);
+    const updateThrottle = 16; // ~60fps
     const draggedPlayerRef = useRef<Player | null>(null);
     const originalPositionRef = useRef<{ x: number; y: number } | null>(null);
 
@@ -35,11 +37,17 @@ export const usePlayerDrag = (
 
             const draggedId = draggedPlayerRef.current.id;
             if (draggedId) {
-                setPlayers((prev) =>
-                    prev.map((p) =>
-                        p.id === draggedId ? { ...p, x: clampedX, y: clampedY } : p
-                    )
-                );
+                const now = performance.now();
+                if (now - lastUpdateRef.current >= updateThrottle) {
+                    lastUpdateRef.current = now;
+                    requestAnimationFrame(() => {
+                        setPlayers((prev) =>
+                            prev.map((p) =>
+                                p.id === draggedId ? { ...p, x: clampedX, y: clampedY } : p
+                            )
+                        );
+                    });
+                }
             }
         },
         [fieldRef, setPlayers]

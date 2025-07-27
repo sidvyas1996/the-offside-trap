@@ -10,6 +10,7 @@ interface FieldOptions {
     disableDesign?: boolean;
     enableContextMenu?: boolean;
     showPlayerLabels?: boolean;
+    markerType?: 'circle' | 'shirt';
 }
 
 interface FieldActions {
@@ -44,6 +45,7 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
         playerColor: CHARCOAL_GRAY,
         enableContextMenu: true,
         showPlayerLabels: true,
+        markerType: 'circle',
     });
     const [actions, setActions] = useState<FieldActions>({});
     const fieldRef = useRef<HTMLDivElement>(null);

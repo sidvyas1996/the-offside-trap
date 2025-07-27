@@ -57,6 +57,7 @@ const CreateTacticsContent = () => {
   // Toolbar state
   const [homeColor, setHomeColor] = useState("#16A34A");
   const [showPlayerLabels, setShowPlayerLabels] = useState(true);
+  const [markerType, setMarkerType] = useState<'circle' | 'shirt'>('circle');
 
   // Drag-and-drop logic for create page, use context's fieldRef
   const drag = usePlayerDrag(
@@ -104,6 +105,12 @@ const CreateTacticsContent = () => {
   const handleTogglePlayerLabels = () => {
     setShowPlayerLabels((prev) => !prev);
     setOptions((prev) => ({ ...prev, showPlayerLabels: !showPlayerLabels }));
+  };
+
+  const handleToggleMarkerType = () => {
+    const newMarkerType = markerType === 'circle' ? 'shirt' : 'circle';
+    setMarkerType(newMarkerType);
+    setOptions((prev) => ({ ...prev, markerType: newMarkerType }));
   };
 
   // Toolbar handlers
@@ -348,6 +355,8 @@ const CreateTacticsContent = () => {
             onTogglePlayerDesign={handleTogglePlayerDesign}
             onTogglePlayerLabels={handleTogglePlayerLabels}
             showPlayerLabels={showPlayerLabels}
+            onToggleMarkerType={handleToggleMarkerType}
+            markerType={markerType}
           />
         </div>
         <div>

@@ -232,6 +232,7 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
                 }}
                 enableContextMenu={options.enableContextMenu}
                 showPlayerLabels={options.showPlayerLabels}
+                markerType={options.markerType}
             />
         ))}
 
