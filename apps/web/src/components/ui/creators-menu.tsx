@@ -1,31 +1,33 @@
 import React from "react";
 
-import { Palette, Users, Layout, EyeOff, Circle, Shirt } from "lucide-react";
+import { Palette, Users, Layout, EyeOff, Circle, Shirt, CaseSensitive, Waypoints } from "lucide-react";
 import {Button} from "./button.tsx";
+import {DEFAULT_FOOTBALL_FIELD_COLOUR, DEFAULT_BORDER_LIGHT_GRAY} from "../../utils/colors.ts";
 
 interface CreatorsMenuProps {
     onChangeFieldColor: (color: string) => void;
     onChangePlayerColor: (color: string) => void;
-    onTogglePlayerDesign: () => void;
     onTogglePlayerLabels?: () => void;
     showPlayerLabels?: boolean;
     onToggleMarkerType?: () => void;
     markerType?: 'circle' | 'shirt';
+    onToggleWaypoints?: () => void;
+    waypointsMode?: boolean;
 }
 
 const COLORS = {
-    field: ["#006400", "#0044cc", "#222"],
-    player: ["#000", "#b30000", "#ffcc00"],
+    field: [DEFAULT_FOOTBALL_FIELD_COLOUR, "#0044cc", "#222"],
+
 };
 
 const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                                        onChangeFieldColor,
-                                                       onChangePlayerColor,
-                                                       onTogglePlayerDesign,
                                                        onTogglePlayerLabels,
                                                        showPlayerLabels = true,
                                                        onToggleMarkerType,
                                                        markerType = 'circle',
+                                                       onToggleWaypoints,
+                                                       waypointsMode = false,
                                                    }) => {
     return (
         <div className="w-full bg-[#1a1a1a] border border-[rgb(49,54,63)] rounded-xl p-4 flex gap-6 justify-center items-center mt-6 overflow-x-auto">
@@ -51,40 +53,6 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                 ))}
             </div>
 
-            {/* Change Player Colors */}
-            <div className="flex items-center gap-2">
-                <Users className="text-white" />
-                {COLORS.player.map((color, idx) => (
-                    <button
-                        key={idx}
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            onChangePlayerColor(color);
-                        }}
-                        style={{
-                            backgroundColor: color,
-                            width: "28px",
-                            height: "28px",
-                            borderRadius: "50%",
-                            border: "2px solid #fff",
-                        }}
-                    />
-                ))}
-            </div>
-
-            {/* Toggle Player Design */}
-            <Button
-                onClick={(e) => {
-                    e.preventDefault();
-                    onTogglePlayerDesign();
-                }}
-                className="btn-primary !px-3 !py-1.5 text-sm"
-                type="button"
-            >
-                <EyeOff size={18} /> Toggle Design
-            </Button>
-
             {/* Toggle Player Labels */}
             {onTogglePlayerLabels && (
                 <Button
@@ -92,10 +60,14 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                         e.preventDefault();
                         onTogglePlayerLabels();
                     }}
-                    className="btn-primary !px-3 !py-1.5 text-sm"
+                    className="!p-2"
+                    style={{ borderColor: DEFAULT_BORDER_LIGHT_GRAY, borderRadius: 6 }}
+                    variant="outline"
                     type="button"
+                    title={showPlayerLabels ? "Hide Player Labels" : "Show Player Labels"}
                 >
-                    <Users size={18} /> {showPlayerLabels ? "Hide Labels" : "Show Labels"}
+                    <Users size={18} />
+                    {showPlayerLabels && <CaseSensitive size={18} className="ml-1" />}
                 </Button>
             )}
 
@@ -106,11 +78,34 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                         e.preventDefault();
                         onToggleMarkerType();
                     }}
-                    className="btn-primary !px-3 !py-1.5 text-sm"
+                    className=""
+                    style={{ borderColor: DEFAULT_BORDER_LIGHT_GRAY, borderRadius: 6 }}
+                    variant="outline"
                     type="button"
+                    title={markerType === 'circle' ? "Switch to Shirt Markers" : "Switch to Circle Markers"}
                 >
-                    {markerType === 'circle' ? <Circle size={18} /> : <Shirt size={18} />} 
-                    {markerType === 'circle' ? "Shirt Markers" : "Circle Markers"}
+                    {markerType === 'circle' ? <Shirt size={18} /> : <Circle size={18} />}
+                </Button>
+            )}
+
+            {/* Toggle Waypoints */}
+            {onToggleWaypoints && (
+                <Button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        onToggleWaypoints();
+                    }}
+                    className=""
+                    style={{ 
+                        borderColor: waypointsMode ? '#16A34A' : DEFAULT_BORDER_LIGHT_GRAY, 
+                        borderRadius: 6,
+                        backgroundColor: waypointsMode ? 'rgba(22, 163, 74, 0.1)' : 'transparent'
+                    }}
+                    variant="outline"
+                    type="button"
+                    title={waypointsMode ? "Exit Waypoints Mode" : "Enter Waypoints Mode"}
+                >
+                    <Waypoints size={18} />
                 </Button>
             )}
         </div>

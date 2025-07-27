@@ -58,6 +58,7 @@ const CreateTacticsContent = () => {
   const [homeColor, setHomeColor] = useState("#16A34A");
   const [showPlayerLabels, setShowPlayerLabels] = useState(true);
   const [markerType, setMarkerType] = useState<'circle' | 'shirt'>('circle');
+  const [waypointsMode, setWaypointsMode] = useState(false);
 
   // Drag-and-drop logic for create page, use context's fieldRef
   const drag = usePlayerDrag(
@@ -67,19 +68,15 @@ const CreateTacticsContent = () => {
     fieldRef as React.RefObject<HTMLDivElement>,
   );
 
-  const [currentStep, setCurrentStep] = useState<{
-    step: string;
-    title?: string;
-  }>({ step: WORKFLOW_STEPS.START });
   const [loading, setLoading] = useState(false);
   const [selectedOptions] = useState(["motion graphic", "defending"]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
-  const handleStepNavigation = (data: { step: string; title?: string }) => {
-    setCurrentStep(data);
-    setContextStep(data.step);
-  };
+  // Set context step to final for toolbar visibility
+  useEffect(() => {
+    setContextStep(WORKFLOW_STEPS.FINAL);
+  }, [setContextStep]);
 
   const handlePlayerNameChange = (id: number, newName: string) => {
     setPlayers((prev) =>
@@ -111,6 +108,10 @@ const CreateTacticsContent = () => {
     const newMarkerType = markerType === 'circle' ? 'shirt' : 'circle';
     setMarkerType(newMarkerType);
     setOptions((prev) => ({ ...prev, markerType: newMarkerType }));
+  };
+
+  const handleToggleWaypoints = () => {
+    setWaypointsMode((prev) => !prev);
   };
 
   // Toolbar handlers
@@ -173,260 +174,184 @@ const CreateTacticsContent = () => {
     setOptions,
     homeColor,
   ]);
-  const renderStartStep = () => (
-    <div className="text-center py-12">
-      {renderBackButton(() => navigate(-1))}
-      <h1 className="text-4xl font-bold mb-4">Build My Tactics</h1>
-      <p className="text-[var(--text-secondary)] mb-8 text-lg">
-        Create professional football tactics with our step-by-step workflow
-      </p>
 
-      <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        <Card
-          className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all"
-          onClick={() =>
-            handleStepNavigation({
-              step: WORKFLOW_STEPS.BUILD_LINEUPS,
-              title: "Create Your Tactics",
-            })
-          }
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-[var(--primary)]" />
-              Build Lineups
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-[var(--text-secondary)]">
-              Set up team formations and player positions for your tactical
-              setup
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all"
-          onClick={() =>
-            handleStepNavigation({
-              step: WORKFLOW_STEPS.TACTICS_OPTIONS,
-              title: "Create Your Tactics",
-            })
-          }
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Target className="h-8 w-8 text-[var(--primary)]" />
-              Build Tactics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-[var(--text-secondary)]">
-              Create tactical movements, animations, and strategic plays
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-
-  const renderLineupBuilder = () => (
-    <div className="max-w-4xl mx-auto py-12">
-      {renderBackButton(() =>
-        handleStepNavigation({ step: WORKFLOW_STEPS.START }),
-      )}
-      <h2 className="text-2xl font-bold text-center mb-8">Lineup Options</h2>
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card
-          className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all"
-          onClick={() =>
-            handleStepNavigation({
-              step: WORKFLOW_STEPS.FINAL,
-              title: "Build Your Team",
-            })
-          }
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-[var(--primary)]" />
-              Single Team
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-[var(--text-secondary)]">
-              Focus on your team's formation and tactical setup
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all"
-          onClick={() => handleStepNavigation({ step: WORKFLOW_STEPS.FINAL })}
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-cyan-400" />
-              With Opposition
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-[var(--text-secondary)]">
-              Show both teams’ formations and tactical interactions
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-
-  const renderTacticsOptions = () => (
-    <div className="max-w-4xl mx-auto">
-      {renderBackButton(() =>
-        handleStepNavigation({ step: WORKFLOW_STEPS.START }),
-      )}
-      <h2 className="text-2xl font-bold text-center mb-8">Tactics Options</h2>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card
-          className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all"
-          onClick={() =>
-            handleStepNavigation({
-              step: WORKFLOW_STEPS.FINAL,
-              title: "Still Graphic Tactics",
-            })
-          }
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Settings className="h-8 w-8 text-amber-500" />
-              Still Graphic Tactics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-[var(--text-secondary)]">
-              Create static tactical diagrams with formations and positioning
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all"
-          onClick={() =>
-            handleStepNavigation({
-              step: WORKFLOW_STEPS.FINAL,
-              title: "Motion Graphic Tactics",
-            })
-          }
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Video className="h-8 w-8 text-purple-500" />
-              Motion Graphic Tactics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-[var(--text-secondary)]">
-              Build animated tactical movements and player sequences
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-
-  const renderFinalStep = (headerTitle?: string) => (
-    <div className="max-w-4xl mx-auto py-12">
+  const renderCreateTacticsPage = () => (
+    <div className="max-w-7xl mx-auto py-8 px-4">
       <div className="flex items-center gap-4 mb-8">
-        {renderBackButton(() =>
-          handleStepNavigation({ step: WORKFLOW_STEPS.START }),
-        )}
-        <h2 className="text-5xl font-bold">{headerTitle}</h2>
+        {renderBackButton(() => navigate(-1))}
+        <h1 className="text-4xl font-bold">Create Tactics</h1>
       </div>
 
-      <form className="space-y-6">
-        {/* Football Field */}
-        <div className="w-full flex justify-center mb-8">
-          <FootballField />
-        </div>
-        <div>
-          <CreatorsMenu
-            onChangeFieldColor={handleFieldColorChange}
-            onChangePlayerColor={handlePlayerColorChange}
-            onTogglePlayerDesign={handleTogglePlayerDesign}
-            onTogglePlayerLabels={handleTogglePlayerLabels}
-            showPlayerLabels={showPlayerLabels}
-            onToggleMarkerType={handleToggleMarkerType}
-            markerType={markerType}
-          />
-        </div>
-        <div>
-          <Label htmlFor="title">Tactic Title</Label>
-          <Textarea
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. High Press Counter Attack"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe your tactical approach..."
-          />
-        </div>
-
-        <div>
-          <Label>Selected Options</Label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {selectedOptions.map((opt, idx) => (
-              <Badge key={idx} className="bg-purple-600 text-white">
-                {opt}
-              </Badge>
-            ))}
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Left Column - Football Field */}
+        <div className="lg:col-span-2">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+            <h2 className="text-2xl font-bold mb-4">Tactical Field</h2>
+            <div className="w-full flex justify-center">
+              <FootballField waypointsMode={waypointsMode} />
+            </div>
+            <div className="mt-4">
+                          <CreatorsMenu
+              onChangeFieldColor={handleFieldColorChange}
+              onChangePlayerColor={handlePlayerColorChange}
+              onTogglePlayerLabels={handleTogglePlayerLabels}
+              showPlayerLabels={showPlayerLabels}
+              onToggleMarkerType={handleToggleMarkerType}
+              markerType={markerType}
+              onToggleWaypoints={handleToggleWaypoints}
+              waypointsMode={waypointsMode}
+            />
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Tactic...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Create Tactic
-              </>
-            )}
-          </Button>
+        {/* Right Column - Options and Details */}
+        <div className="space-y-6">
+          {/* Lineup Options */}
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Users className="h-5 w-5 text-[var(--primary)]" />
+              Lineup Options
+            </h2>
+            <div className="space-y-3">
+              <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[var(--primary)]" />
+                    Single Team
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Focus on your team's formation and tactical setup
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Users className="h-4 w-4 text-cyan-400" />
+                    With Opposition
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Show both teams' formations and tactical interactions
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Tactics Options */}
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-[var(--primary)]" />
+              Tactics Options
+            </h2>
+            <div className="space-y-3">
+              <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-amber-500" />
+                    Still Graphic Tactics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Create static tactical diagrams with formations and positioning
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Video className="h-4 w-4 text-purple-500" />
+                    Motion Graphic Tactics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    Build animated tactical movements and player sequences
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Tactic Details */}
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Save className="h-5 w-5 text-[var(--primary)]" />
+              Tactic Details
+            </h2>
+            <form className="space-y-4">
+              <div>
+                <Label htmlFor="title" className="text-sm">Tactic Title</Label>
+                <Textarea
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. High Press Counter Attack"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description" className="text-sm">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe your tactical approach..."
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm">Selected Options</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {selectedOptions.map((opt, idx) => (
+                    <Badge key={idx} className="bg-purple-600 text-white text-xs">
+                      {opt}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <Button type="submit" className="btn-primary w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating Tactic...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Create Tactic
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
+
+          {/* Preview */}
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-[var(--primary)]" />
+              Preview
+            </h2>
+            <MiniTacticCard />
+          </div>
         </div>
-        <div className="flex justify-end">
-          <MiniTacticCard></MiniTacticCard>
-        </div>
-      </form>
+      </div>
     </div>
   );
 
-  const renderCurrentStep = () => {
-    switch (currentStep.step) {
-      case WORKFLOW_STEPS.BUILD_LINEUPS:
-        return renderLineupBuilder();
-      case WORKFLOW_STEPS.TACTICS_OPTIONS:
-        return renderTacticsOptions();
-      case WORKFLOW_STEPS.FINAL:
-        return renderFinalStep(currentStep.title);
-      default:
-        return renderStartStep();
-    }
-  };
-
   return (
-    <div className="min-h-screen py-8 px-4 lg:px-8">{renderCurrentStep()}</div>
+    <div className="min-h-screen py-8 px-4 lg:px-8">{renderCreateTacticsPage()}</div>
   );
 };
 

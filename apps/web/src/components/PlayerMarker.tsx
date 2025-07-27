@@ -14,6 +14,9 @@ interface PlayerMarkerProps {
   enableContextMenu?: boolean;
   showPlayerLabels?: boolean;
   markerType?: 'circle' | 'shirt';
+  waypointsMode?: boolean;
+  isSelected?: boolean;
+  onWaypointsClick?: () => void;
 }
 
 const PlayerMarker: React.FC<PlayerMarkerProps> = ({
@@ -28,6 +31,9 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   enableContextMenu,
   showPlayerLabels = true,
   markerType = 'circle',
+  waypointsMode = false,
+  isSelected = false,
+  onWaypointsClick,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingPosition, setIsEditingPosition] = useState(false);
@@ -62,6 +68,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
         onMouseDown(player);
       }}
       onDoubleClick={() => editable && setIsEditing(true)}
+      onClick={() => waypointsMode && onWaypointsClick && onWaypointsClick()}
       onContextMenu={(e) => {
           if (!enableContextMenu) return;
           e.preventDefault();
@@ -73,10 +80,10 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
     >
       <div className="relative flex flex-col items-center transition-all duration-300 ease-in-out">
         {markerType === 'circle' ? (
-          <div 
-            className={`w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:bg-gray-700 transition-all duration-300 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''} ${isDragged ? 'scale-110 shadow-lg' : ''}`}
-            onDoubleClick={() => editable && setIsEditingPosition(true)}
-          >
+                  <div 
+          className={`w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:bg-gray-700 transition-all duration-300 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''} ${isDragged ? 'scale-110 shadow-lg' : ''} ${isSelected ? 'ring-4 ring-green-400' : ''}`}
+          onDoubleClick={() => editable && setIsEditingPosition(true)}
+        >
             {isEditingPosition ? (
               <input
                 type="text"
@@ -99,7 +106,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           </div>
         ) : (
           <div 
-            className={`w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''} ${isDragged ? 'scale-110 shadow-lg' : ''}`}
+            className={`w-12 h-12 flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''} ${isDragged ? 'scale-110 shadow-lg' : ''} ${isSelected ? 'ring-4 ring-green-400' : ''}`}
             onDoubleClick={() => editable && setIsEditingPosition(true)}
           >
             <img 

@@ -6,9 +6,10 @@ import {useFootballField} from "../contexts/FootballFieldContext.tsx";
 interface FootballFieldProps {
   editable?: boolean;
   size?: "default" | "fullscreen";
+  waypointsMode?: boolean;
 }
 
-const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
+const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypointsMode = false }) => {
   const {
     players,
     draggedPlayer,
@@ -21,6 +22,8 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
 
   const [scale, setScale] = useState(1);
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; playerId: number | null }>({ visible: false, x: 0, y: 0, playerId: null });
+  const [waypoints, setWaypoints] = useState<Array<{ from: number; to: number }>>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
 
   // Context menu clamping and close-on-click
   const onShowContextMenu = (playerId: number, x: number, y: number) => {
@@ -38,6 +41,8 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
     window.addEventListener("click", closeMenu);
     return () => window.removeEventListener("click", closeMenu);
   }, [contextMenu.visible]);
+
+
 
   // Observe field size
   useEffect(() => {
@@ -72,6 +77,25 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
         : {};
     onUpdatePlayer(contextMenu.playerId, updates);
     setContextMenu({ ...contextMenu, visible: false });
+  };
+
+  const handleWaypointsClick = (playerId: number) => {
+    if (!waypointsMode) return;
+    
+    if (selectedPlayer === null) {
+      setSelectedPlayer(playerId);
+    } else if (selectedPlayer === playerId) {
+      setSelectedPlayer(null);
+    } else {
+      // Create waypoint connection
+      const newWaypoint = { from: selectedPlayer, to: playerId };
+      setWaypoints(prev => [...prev, newWaypoint]);
+      setSelectedPlayer(null);
+    }
+  };
+
+  const handleRemoveLine = (lineIndex: number) => {
+    setWaypoints(prev => prev.filter((_, index) => index !== lineIndex));
   };
 
   // Responsive field sizing
@@ -215,6 +239,45 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
               />
           </svg>
 
+        {/* Waypoints Lines */}
+        {waypointsMode && waypoints.map((waypoint, index) => {
+          const fromPlayer = players.find(p => p.id === waypoint.from);
+          const toPlayer = players.find(p => p.id === waypoint.to);
+          
+          if (!fromPlayer || !toPlayer) return null;
+          
+          return (
+            <svg
+              key={index}
+              className="absolute inset-0 w-full h-full"
+              style={{ zIndex: 5 }}
+            >
+              <line
+                x1={`${fromPlayer.x}%`}
+                y1={`${fromPlayer.y}%`}
+                x2={`${toPlayer.x}%`}
+                y2={`${toPlayer.y}%`}
+                stroke="#16A34A"
+                strokeWidth="4"
+                strokeDasharray="16,16"
+                strokeDashoffset="0"
+                opacity="0.9"
+                className="animate-move-line cursor-pointer hover:stroke-green-300 transition-colors"
+                style={{
+                  filter: 'drop-shadow(0 0 4px rgba(22, 163, 74, 0.5))'
+                }}
+                onContextMenu={(e) => {
+                  if (waypointsMode) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRemoveLine(index);
+                  }
+                }}
+              />
+            </svg>
+          );
+        })}
+
         {/* Players */}
         {players.map((player:any)  => (
             <PlayerMarker
@@ -233,6 +296,9 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
                 enableContextMenu={options.enableContextMenu}
                 showPlayerLabels={options.showPlayerLabels}
                 markerType={options.markerType}
+                waypointsMode={waypointsMode}
+                isSelected={selectedPlayer === player.id}
+                onWaypointsClick={() => handleWaypointsClick(player.id)}
             />
         ))}
 
@@ -252,10 +318,15 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
                   const currentPlayer = players.find(p => p.id === contextMenu.playerId);
                   if (!currentPlayer) return [];
                   
+                  // Check if there's already a captain assigned
+                  const hasCaptain = players.some(p => p.isCaptain);
+                  const isCurrentPlayerCaptain = currentPlayer.isCaptain;
+                  
                   const menuItems = [
                     { 
                       action: "captain", 
-                      label: currentPlayer.isCaptain ? "Unassign Captain" : "Assign as Captain" 
+                      label: currentPlayer.isCaptain ? "Unassign Captain" : "Assign as Captain",
+                      disabled: !isCurrentPlayerCaptain && hasCaptain
                     },
                     { 
                       action: "yellow", 
@@ -271,11 +342,15 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
                     },
                   ];
                   
-                  return menuItems.map(({ action, label }) => (
+                  return menuItems.map(({ action, label, disabled }) => (
                     <li
                       key={action}
-                      className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
-                      onClick={() => handlePlayerAction(action)}
+                      className={`px-3 py-1 rounded ${
+                        disabled 
+                          ? "text-gray-500 cursor-not-allowed" 
+                          : "cursor-pointer hover:bg-gray-700"
+                      }`}
+                      onClick={() => !disabled && handlePlayerAction(action)}
                     >
                       {label}
                     </li>
@@ -284,6 +359,8 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
               </ul>
             </div>
         )}
+
+
       </div>
   );
 };

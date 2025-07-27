@@ -1,2 +1,3 @@
 export const DEFAULT_FOOTBALL_FIELD_COLOUR = '#166534';
 export const CHARCOAL_GRAY = '#1a1a1a';
+export const DEFAULT_BORDER_LIGHT_GRAY = '#31363f';

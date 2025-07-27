@@ -133,3 +133,29 @@
 .animate-ring-pulse {
     animation: ring-pulse 2s ease-in-out infinite;
 }
+
+@keyframes draw-line {
+    0% {
+        stroke-dashoffset: 100;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.animate-draw-line {
+    animation: draw-line 0.8s ease-out forwards;
+}
+
+@keyframes move-line {
+    0% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: -32;
+    }
+}
+
+.animate-move-line {
+    animation: move-line 1.5s linear infinite;
+}
