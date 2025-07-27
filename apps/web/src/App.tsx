@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
+import { Routes, Route, Navigate, BrowserRouter, useLocation } from "react-router-dom";
 import { ChevronDown, Search, LogOut, User } from "lucide-react";
 import Home from "./pages/Home";
 import TacticsDetails from "./pages/TacticsDetails.tsx";
@@ -9,6 +9,8 @@ import { Login } from "./components/Login.tsx";
 import { Menu as DropdownMenu, Transition } from "@headlessui/react";
 import { useLogout } from "./lib/logout.ts";
 import Create from "./pages/CreateTactics.tsx";
+import { Toolbar } from "./components/ui/toolbar";
+import { CreateTacticsProvider, useCreateTactics } from "./contexts/CreateTacticsContext";
 
 function App() {
   return (
@@ -59,9 +61,11 @@ function AppRoutes() {
       <Route
         path="/create"
         element={
-          <Layout>
-            <Create />
-          </Layout>
+          <CreateTacticsProvider>
+            <Layout>
+              <Create />
+            </Layout>
+          </CreateTacticsProvider>
         }
       />
 
@@ -73,7 +77,7 @@ function AppRoutes() {
 
 const Header: React.FC = () => {
   return (
-    <header className="  bg-[#1a1a1a] border border-[rgb(49,54,63)]">
+    <header className="bg-[#1a1a1a] border border-[rgb(49,54,63)] sticky top-0 z-50">
       <div className="flex items-center h-16 px-6">
         {/* Logo - Far left */}
         <div className="flex items-center">
@@ -235,15 +239,40 @@ const Footer: React.FC = () => {
 };
 // Layout component
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const isCreatePage = location.pathname === "/create";
+
   return (
     <div
       className="min-h-screen"
       style={{ backgroundColor: "var(--background)" }}
     >
       <Header />
+      {isCreatePage && (
+        <CreateTacticsLayout />
+      )}
       <main className="py-8">{children}</main>
       <Footer />
     </div>
+  );
+};
+
+// Separate component for create page layout with context
+const CreateTacticsLayout: React.FC = () => {
+  const { isFinalStep } = useCreateTactics();
+
+  return (
+    <>
+      {isFinalStep && (
+        <Toolbar
+          onSave={() => console.log("Save clicked")}
+          onLoad={() => console.log("Load clicked")}
+          onReset={() => console.log("Reset clicked")}
+          onHomeColorChange={(color) => console.log("Home color changed:", color)}
+          onAwayColorChange={(color) => console.log("Away color changed:", color)}
+        />
+      )}
+    </>
   );
 };
 

@@ -25,7 +25,6 @@ import { renderBackButton } from "../components/ui/back-button.tsx";
 import { useNavigate } from "react-router-dom";
 import { defaultLineupSingle } from "../utils/default-lineup-single.ts";
 import {
-  CHARCOAL_GRAY,
   DEFAULT_FOOTBALL_FIELD_COLOUR,
 } from "../utils/colors.ts";
 import CreatorsMenu from "../components/ui/creators-menu.tsx";
@@ -33,6 +32,7 @@ import {
   FootballFieldProvider,
   useFootballField,
 } from "../contexts/FootballFieldContext.tsx";
+import { useCreateTactics } from "../contexts/CreateTacticsContext";
 import type { Player } from "../../../../packages/shared/src";
 
 const WORKFLOW_STEPS = {
@@ -44,6 +44,7 @@ const WORKFLOW_STEPS = {
 
 const CreateTacticsContent = () => {
   const navigate = useNavigate();
+  const { setCurrentStep: setContextStep } = useCreateTactics();
   const {
     players,
     setPlayers,
@@ -52,6 +53,9 @@ const CreateTacticsContent = () => {
     setDraggedPlayer,
     fieldRef,
   } = useFootballField();
+
+  // Toolbar state
+  const [homeColor, setHomeColor] = useState("#16A34A");
 
   // Drag-and-drop logic for create page, use context's fieldRef
   const drag = usePlayerDrag(
@@ -72,6 +76,7 @@ const CreateTacticsContent = () => {
 
   const handleStepNavigation = (data: { step: string; title?: string }) => {
     setCurrentStep(data);
+    setContextStep(data.step);
   };
 
   const handlePlayerNameChange = (id: number, newName: string) => {
@@ -95,6 +100,32 @@ const CreateTacticsContent = () => {
   const handleTogglePlayerDesign = () =>
     setOptions((prev) => ({ ...prev, disableDesign: !prev.disableDesign }));
 
+  // Toolbar handlers
+  const handleSave = () => {
+    console.log("Saving tactic...");
+    // TODO: Implement save functionality
+  };
+
+  const handleLoad = () => {
+    console.log("Loading tactic...");
+    // TODO: Implement load functionality
+  };
+
+  const handleReset = () => {
+    console.log("Resetting tactic...");
+    setPlayers(defaultLineupSingle);
+  };
+
+  const handleHomeColorChange = (color: string) => {
+    setHomeColor(color);
+    setOptions((prev) => ({ ...prev, playerColor: color }));
+  };
+
+  const handleAwayColorChange = (color: string) => {
+    // TODO: Implement away team color change
+    console.log("Away color changed to:", color);
+  };
+
   useEffect(() => {
     setPlayers(defaultLineupSingle);
     setActions({
@@ -116,7 +147,7 @@ const CreateTacticsContent = () => {
       size: "fullscreen",
       editable: true,
       fieldColor: DEFAULT_FOOTBALL_FIELD_COLOUR,
-      playerColor: CHARCOAL_GRAY,
+      playerColor: homeColor,
       enableContextMenu: true
     }));
   }, [
@@ -127,6 +158,7 @@ const CreateTacticsContent = () => {
     setDraggedPlayer,
     setPlayers,
     setOptions,
+    homeColor,
   ]);
   const renderStartStep = () => (
     <div className="text-center py-12">

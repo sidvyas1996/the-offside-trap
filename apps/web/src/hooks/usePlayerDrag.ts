@@ -12,9 +12,13 @@ export const usePlayerDrag = (
     fieldRef: React.RefObject<HTMLDivElement>
 ) => {
     const draggedPlayerRef = useRef<Player | null>(null);
+    const originalPositionRef = useRef<{ x: number; y: number } | null>(null);
 
     const handleMouseDown = useCallback((player: Player) => {
-        draggedPlayerRef.current = player;
+        if (player && typeof player.x === 'number' && typeof player.y === 'number') {
+            draggedPlayerRef.current = player;
+            originalPositionRef.current = { x: player.x, y: player.y };
+        }
     }, []);
 
     const handleMouseMove = useCallback(
@@ -30,25 +34,34 @@ export const usePlayerDrag = (
             const clampedY = Math.max(0, Math.min(100, newY));
 
             const draggedId = draggedPlayerRef.current.id;
-            setPlayers((prev) =>
-                prev.map((p) =>
-                    p.id === draggedId ? { ...p, x: clampedX, y: clampedY } : p
-                )
-            );
+            if (draggedId) {
+                setPlayers((prev) =>
+                    prev.map((p) =>
+                        p.id === draggedId ? { ...p, x: clampedX, y: clampedY } : p
+                    )
+                );
+            }
         },
         [fieldRef, setPlayers]
     );
 
     const handleMouseUp = useCallback(() => {
-        if (options.sticky && draggedPlayerRef.current) {
-            const original = draggedPlayerRef.current;
-            setPlayers((prev) =>
-                prev.map((p) =>
-                    p.id === original.id ? { ...p, x: original.x, y: original.y } : p
-                )
-            );
+        if (options.sticky && draggedPlayerRef.current && originalPositionRef.current) {
+            const draggedId = draggedPlayerRef.current.id;
+            const originalPos = originalPositionRef.current;
+            
+            if (originalPos && typeof originalPos.x === 'number' && typeof originalPos.y === 'number') {
+                setPlayers((prev) =>
+                    prev.map((p) =>
+                        p.id === draggedId 
+                            ? { ...p, x: originalPos.x, y: originalPos.y } 
+                            : p
+                    )
+                );
+            }
         }
         draggedPlayerRef.current = null;
+        originalPositionRef.current = null;
     }, [options.sticky, setPlayers]);
 
     return {

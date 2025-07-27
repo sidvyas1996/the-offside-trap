@@ -10,7 +10,7 @@ import {
   FootballFieldProvider,
   useFootballField,
 } from "../contexts/FootballFieldContext.tsx";
-import { usePlayerDrag } from "../hooks/usePlayerDrag.ts";
+
 
 const TacticsDetailsContent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,18 +36,12 @@ const TacticsDetailsContent: React.FC = () => {
     fieldRef,
   } = useFootballField();
 
-  // Sticky drag logic for details page, use context's fieldRef
-  const drag = usePlayerDrag(
-    players,
-    setPlayers,
-    { sticky: true },
-    fieldRef as React.RefObject<HTMLDivElement>,
-  );
+  // Disable movement completely for details page
   useEffect(() => {
     setActions({
-      onMouseDown: drag.handleMouseDown,
-      onMouseMove: drag.handleMouseMove,
-      onMouseUp: drag.handleMouseUp,
+      onMouseDown: () => {}, // No-op function
+      onMouseMove: () => {}, // No-op function
+      onMouseUp: () => {}, // No-op function
     });
     setOptions((prev) => ({
       ...prev,
@@ -55,8 +49,8 @@ const TacticsDetailsContent: React.FC = () => {
       editable: false,
       enableContextMenu: false,
     }));
-    setDraggedPlayer(drag.draggedPlayer);
-  }, [setActions, setOptions, setDraggedPlayer, drag.draggedPlayer]);
+    setDraggedPlayer(null);
+  }, [setActions, setOptions, setDraggedPlayer]);
 
   // Fetch tactic data on mount
   useEffect(() => {
