@@ -4,9 +4,11 @@ export interface Player {
   y: number;
   number: number;
   name?: string;
+  position?: string;
   isCaptain?: boolean;
   hasYellowCard?: boolean;
   hasRedCard?: boolean;
+  isStarPlayer?: boolean;
 }
 
 

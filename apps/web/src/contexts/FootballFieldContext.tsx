@@ -9,6 +9,7 @@ interface FieldOptions {
     playerColor?: string;
     disableDesign?: boolean;
     enableContextMenu?: boolean;
+    showPlayerLabels?: boolean;
 }
 
 interface FieldActions {
@@ -42,6 +43,7 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
         fieldColor: DEFAULT_FOOTBALL_FIELD_COLOUR,
         playerColor: CHARCOAL_GRAY,
         enableContextMenu: true,
+        showPlayerLabels: true,
     });
     const [actions, setActions] = useState<FieldActions>({});
     const fieldRef = useRef<HTMLDivElement>(null);

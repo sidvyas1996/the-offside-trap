@@ -55,12 +55,21 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
 
   const handlePlayerAction = (action: string) => {
     if (!contextMenu.playerId || !onUpdatePlayer) return;
+    
+    // Find the current player to check their current status
+    const currentPlayer = players.find(p => p.id === contextMenu.playerId);
+    if (!currentPlayer) return;
+    
     const updates =
       action === "captain"
-        ? { isCaptain: true }
+        ? { isCaptain: !currentPlayer.isCaptain }
         : action === "yellow"
-        ? { hasYellowCard: true }
-        : { hasRedCard: true };
+        ? { hasYellowCard: !currentPlayer.hasYellowCard }
+        : action === "red"
+        ? { hasRedCard: !currentPlayer.hasRedCard }
+        : action === "key"
+        ? { isStarPlayer: !currentPlayer.isStarPlayer }
+        : {};
     onUpdatePlayer(contextMenu.playerId, updates);
     setContextMenu({ ...contextMenu, visible: false });
   };
@@ -216,11 +225,13 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
                 onMouseDown={() => actions.onMouseDown && actions.onMouseDown(player)}
                 editable={typeof editable === 'boolean' ? editable : options.editable}
                 onNameChange={onPlayerNameChange}
+                onPositionChange={actions.onUpdatePlayer ? (id, position) => actions.onUpdatePlayer!(id, { position }) : undefined}
                 onContextMenu={(e) => {
                   e.preventDefault();
                   onShowContextMenu(player.id, e.clientX, e.clientY);
                 }}
                 enableContextMenu={options.enableContextMenu}
+                showPlayerLabels={options.showPlayerLabels}
             />
         ))}
 
@@ -236,19 +247,39 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
                 }}
             >
               <ul className="p-2 space-y-2 w-44">
-                {[
-                  { action: "captain", label: "Assign as Captain" },
-                  { action: "yellow", label: "Assign Yellow Card" },
-                  { action: "red", label: "Assign Red Card" },
-                ].map(({ action, label }) => (
-                  <li
-                    key={action}
-                    className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
-                    onClick={() => handlePlayerAction(action)}
-                  >
-                    {label}
-                  </li>
-                ))}
+                {(() => {
+                  const currentPlayer = players.find(p => p.id === contextMenu.playerId);
+                  if (!currentPlayer) return [];
+                  
+                  const menuItems = [
+                    { 
+                      action: "captain", 
+                      label: currentPlayer.isCaptain ? "Unassign Captain" : "Assign as Captain" 
+                    },
+                    { 
+                      action: "yellow", 
+                      label: currentPlayer.hasYellowCard ? "Unassign Yellow Card" : "Assign Yellow Card" 
+                    },
+                    { 
+                      action: "red", 
+                      label: currentPlayer.hasRedCard ? "Unassign Red Card" : "Assign Red Card" 
+                    },
+                    { 
+                      action: "key", 
+                      label: currentPlayer.isStarPlayer ? "Unmark as Star Player" : "Mark as Star Player" 
+                    },
+                  ];
+                  
+                  return menuItems.map(({ action, label }) => (
+                    <li
+                      key={action}
+                      className="cursor-pointer hover:bg-gray-700 px-3 py-1 rounded"
+                      onClick={() => handlePlayerAction(action)}
+                    >
+                      {label}
+                    </li>
+                  ));
+                })()}
               </ul>
             </div>
         )}

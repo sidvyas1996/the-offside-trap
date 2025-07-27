@@ -119,3 +119,17 @@
 .content-card {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
+
+/* Custom ring animation for star players */
+@keyframes ring-pulse {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 0.9;
+    }
+}
+
+.animate-ring-pulse {
+    animation: ring-pulse 2s ease-in-out infinite;
+}

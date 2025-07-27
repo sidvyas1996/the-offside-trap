@@ -56,6 +56,7 @@ const CreateTacticsContent = () => {
 
   // Toolbar state
   const [homeColor, setHomeColor] = useState("#16A34A");
+  const [showPlayerLabels, setShowPlayerLabels] = useState(true);
 
   // Drag-and-drop logic for create page, use context's fieldRef
   const drag = usePlayerDrag(
@@ -99,6 +100,11 @@ const CreateTacticsContent = () => {
 
   const handleTogglePlayerDesign = () =>
     setOptions((prev) => ({ ...prev, disableDesign: !prev.disableDesign }));
+
+  const handleTogglePlayerLabels = () => {
+    setShowPlayerLabels((prev) => !prev);
+    setOptions((prev) => ({ ...prev, showPlayerLabels: !showPlayerLabels }));
+  };
 
   // Toolbar handlers
   const handleSave = () => {
@@ -340,6 +346,8 @@ const CreateTacticsContent = () => {
             onChangeFieldColor={handleFieldColorChange}
             onChangePlayerColor={handlePlayerColorChange}
             onTogglePlayerDesign={handleTogglePlayerDesign}
+            onTogglePlayerLabels={handleTogglePlayerLabels}
+            showPlayerLabels={showPlayerLabels}
           />
         </div>
         <div>
