@@ -127,7 +127,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           <img
             src="/yellow-card.png"
             alt="Yellow Card"
-            className="absolute -top-4 -left-2 w-7 h-8 object-contain hover:scale-125 transition-transform"
+            className="absolute -top-2.5 -left-2 w-7 h-8 object-contain hover:scale-125 transition-transform"
           />
         )}
 
