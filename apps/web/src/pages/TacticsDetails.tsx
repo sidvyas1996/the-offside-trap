@@ -6,7 +6,10 @@ import type { Tactic, Player, Comment } from "../../../../packages/shared";
 import FootballField from "../components/FootballField.tsx";
 import { renderBackButton } from "../components/ui/back-button.tsx";
 import { Textarea } from "../components/ui/textarea.tsx";
-import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext.tsx";
+import {
+  FootballFieldProvider,
+  useFootballField,
+} from "../contexts/FootballFieldContext.tsx";
 import { usePlayerDrag } from "../hooks/usePlayerDrag.ts";
 
 const TacticsDetailsContent: React.FC = () => {
@@ -24,11 +27,22 @@ const TacticsDetailsContent: React.FC = () => {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   // FootballField context
-  const { players, setPlayers, setOptions, setActions, setDraggedPlayer, fieldRef } = useFootballField();
+  const {
+    players,
+    setPlayers,
+    setOptions,
+    setActions,
+    setDraggedPlayer,
+    fieldRef,
+  } = useFootballField();
 
   // Sticky drag logic for details page, use context's fieldRef
-  const drag = usePlayerDrag(players, setPlayers, { sticky: true }, fieldRef as React.RefObject<HTMLDivElement>);
-
+  const drag = usePlayerDrag(
+    players,
+    setPlayers,
+    { sticky: true },
+    fieldRef as React.RefObject<HTMLDivElement>,
+  );
   useEffect(() => {
     setActions({
       onMouseDown: drag.handleMouseDown,
@@ -39,9 +53,9 @@ const TacticsDetailsContent: React.FC = () => {
       ...prev,
       size: "default",
       editable: false,
+      enableContextMenu: false,
     }));
     setDraggedPlayer(drag.draggedPlayer);
-    // eslint-disable-next-line
   }, [setActions, setOptions, setDraggedPlayer, drag.draggedPlayer]);
 
   // Fetch tactic data on mount

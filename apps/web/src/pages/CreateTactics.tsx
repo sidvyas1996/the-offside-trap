@@ -117,6 +117,7 @@ const CreateTacticsContent = () => {
       editable: true,
       fieldColor: DEFAULT_FOOTBALL_FIELD_COLOUR,
       playerColor: CHARCOAL_GRAY,
+      enableContextMenu: true
     }));
   }, [
     drag.handleMouseDown,

@@ -17,7 +17,7 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
     fieldRef,
   } = useFootballField();
 
-  const { onUpdatePlayer, onPlayerNameChange, onMouseDown, onMouseMove, onMouseUp } = actions;
+  const { onUpdatePlayer, onPlayerNameChange } = actions;
 
   const [scale, setScale] = useState(1);
   const [contextMenu, setContextMenu] = useState<{ visible: boolean; x: number; y: number; playerId: number | null }>({ visible: false, x: 0, y: 0, playerId: null });
@@ -220,6 +220,7 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size }) => {
                   e.preventDefault();
                   onShowContextMenu(player.id, e.clientX, e.clientY);
                 }}
+                enableContextMenu={options.enableContextMenu}
             />
         ))}
 

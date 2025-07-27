@@ -9,6 +9,7 @@ interface PlayerMarkerProps {
   editable?: boolean;
   onNameChange?: (id: number, name: string) => void;
   onContextMenu?: (e: React.MouseEvent, player: Player) => void;
+    enableContextMenu?: boolean;
 }
 
 const PlayerMarker: React.FC<PlayerMarkerProps> = ({
@@ -19,6 +20,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   editable = false,
   onNameChange,
   onContextMenu,
+  enableContextMenu,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(player.name || `Player ${player.number}`);
@@ -45,8 +47,12 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
       }}
       onDoubleClick={() => editable && setIsEditing(true)}
       onContextMenu={(e) => {
-        e.preventDefault();
-        if (onContextMenu) onContextMenu(e, player);
+          if (!enableContextMenu) return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (onContextMenu) {
+              onContextMenu(e, player);
+          }
       }}
     >
       <div className="relative flex flex-col items-center">
@@ -59,7 +65,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           <img
             src="/armband.png"
             alt="Captain"
-                className="fixed bottom-7 -left-3 transform -translate w-8 h-8 object-contain hover:scale-125 transition-transform"
+            className="fixed bottom-7 -left-3 transform -translate w-8 h-8 object-contain hover:scale-125 transition-transform"
           />
         )}
 
