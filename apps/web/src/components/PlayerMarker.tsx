@@ -118,7 +118,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           <img
             src="/armband.png"
             alt="Captain"
-            className={`relative bottom-3 -left-7 w-8 h-8 object-contain hover:scale-125 transition-transform ${showPlayerLabels ? 'bottom-7.5' : '-bottom-1'}`}
+            className="absolute top-2.5 -left-2 w-7 h-8 object-contain hover:scale-125 transition-transform"
           />
         )}
 
