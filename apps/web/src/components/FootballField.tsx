@@ -44,6 +44,8 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypoints
 
 
 
+
+
   // Observe field size
   useEffect(() => {
     if (!fieldRef.current) return;
@@ -262,7 +264,7 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypoints
                 strokeDasharray="8,8"
                 strokeDashoffset="0"
                 opacity="0.9"
-                className="animate-move-line cursor-pointer hover:stroke-green-300 transition-colors"
+                className="cursor-pointer hover:stroke-green-300 transition-colors"
                 style={{
                   filter: 'drop-shadow(0 0 4px rgba(22, 163, 74, 0.5))'
                 }}
