@@ -59,6 +59,8 @@ const CreateTacticsContent = () => {
   const [showPlayerLabels, setShowPlayerLabels] = useState(true);
   const [markerType, setMarkerType] = useState<'circle' | 'shirt'>('circle');
   const [waypointsMode, setWaypointsMode] = useState(false);
+  const [horizontalZonesMode, setHorizontalZonesMode] = useState(false);
+  const [verticalSpacesMode, setVerticalSpacesMode] = useState(false);
 
   // Drag-and-drop logic for create page, use context's fieldRef
   const drag = usePlayerDrag(
@@ -96,9 +98,6 @@ const CreateTacticsContent = () => {
   const handlePlayerColorChange = (color: string) =>
     setOptions((prev) => ({ ...prev, playerColor: color }));
 
-  const handleTogglePlayerDesign = () =>
-    setOptions((prev) => ({ ...prev, disableDesign: !prev.disableDesign }));
-
   const handleTogglePlayerLabels = () => {
     setShowPlayerLabels((prev) => !prev);
     setOptions((prev) => ({ ...prev, showPlayerLabels: !showPlayerLabels }));
@@ -112,6 +111,14 @@ const CreateTacticsContent = () => {
 
   const handleToggleWaypoints = () => {
     setWaypointsMode((prev) => !prev);
+  };
+
+  const handleToggleHorizontalZones = () => {
+    setHorizontalZonesMode((prev) => !prev);
+  };
+
+  const handleToggleVerticalSpaces = () => {
+    setVerticalSpacesMode((prev) => !prev);
   };
 
   // Toolbar handlers
@@ -188,7 +195,11 @@ const CreateTacticsContent = () => {
           <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
             <h2 className="text-2xl font-bold mb-4">Tactical Field</h2>
             <div className="w-full flex justify-center">
-              <FootballField waypointsMode={waypointsMode} />
+              <FootballField 
+                waypointsMode={waypointsMode} 
+                horizontalZonesMode={horizontalZonesMode}
+                verticalSpacesMode={verticalSpacesMode}
+              />
             </div>
             <div className="mt-4">
                           <CreatorsMenu
@@ -200,6 +211,10 @@ const CreateTacticsContent = () => {
               markerType={markerType}
               onToggleWaypoints={handleToggleWaypoints}
               waypointsMode={waypointsMode}
+              onToggleHorizontalZones={handleToggleHorizontalZones}
+              horizontalZonesMode={horizontalZonesMode}
+              onToggleVerticalSpaces={handleToggleVerticalSpaces}
+              verticalSpacesMode={verticalSpacesMode}
             />
             </div>
           </div>

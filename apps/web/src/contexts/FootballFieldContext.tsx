@@ -7,7 +7,6 @@ interface FieldOptions {
     editable?: boolean;
     fieldColor?: string;
     playerColor?: string;
-    disableDesign?: boolean;
     enableContextMenu?: boolean;
     showPlayerLabels?: boolean;
     markerType?: 'circle' | 'shirt';

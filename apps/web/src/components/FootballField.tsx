@@ -1,15 +1,23 @@
-import React, { useEffect, useState } from "react";
-import PlayerMarker from "./PlayerMarker";
-import { CHARCOAL_GRAY, DEFAULT_FOOTBALL_FIELD_COLOUR } from "../utils/colors";
-import {useFootballField} from "../contexts/FootballFieldContext.tsx";
+import React, { useState, useEffect } from "react";
+import { useFootballField } from "../contexts/FootballFieldContext.tsx";
+import PlayerMarker from "./PlayerMarker.tsx";
+import { DEFAULT_FOOTBALL_FIELD_COLOUR, CHARCOAL_GRAY } from "../utils/colors.ts";
 
 interface FootballFieldProps {
   editable?: boolean;
   size?: "default" | "fullscreen";
   waypointsMode?: boolean;
+  horizontalZonesMode?: boolean;
+  verticalSpacesMode?: boolean;
 }
 
-const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypointsMode = false }) => {
+const FootballField: React.FC<FootballFieldProps> = ({ 
+  editable, 
+  size, 
+  waypointsMode = false, 
+  horizontalZonesMode = false,
+  verticalSpacesMode = false 
+}) => {
   const {
     players,
     draggedPlayer,
@@ -153,7 +161,7 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypoints
               <circle
                   cx="275"
                   cy="175"
-                  r="45"
+                  r="40"
                   stroke="white"
                   strokeWidth="2.5"
                   fill="none"
@@ -163,36 +171,36 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypoints
               {/* Goal and Box Markings */}
               <rect
                   x="20"
-                  y="95"
+                  y="90"
                   width="70"
-                  height="160"
+                  height="170"
                   stroke="white"
                   strokeWidth="2.5"
                   fill="none"
               />
               <rect
                   x="460"
-                  y="95"
+                  y="90"
                   width="70"
-                  height="160"
+                  height="170"
                   stroke="white"
                   strokeWidth="2.5"
                   fill="none"
               />
               <rect
                   x="20"
-                  y="130"
+                  y="135"
                   width="30"
-                  height="90"
+                  height="80"
                   stroke="white"
                   strokeWidth="2.5"
                   fill="none"
               />
               <rect
                   x="500"
-                  y="130"
+                  y="135"
                   width="30"
-                  height="90"
+                  height="80"
                   stroke="white"
                   strokeWidth="2.5"
                   fill="none"
@@ -239,6 +247,96 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypoints
                   strokeWidth="2.5"
                   fill="none"
               />
+
+              {/* Tactical Overlay */}
+              {horizontalZonesMode && (
+                <g>
+                  {/* Defensive Third - Left penalty box area */}
+                  <rect 
+                    x="20" y="20" width="127.5" height="310" 
+                    fill="rgba(255, 255, 255, 0.1)" 
+                    stroke="rgba(255, 255, 255, 0.8)" 
+                    strokeWidth="2" 
+                    strokeDasharray="5.5"
+                  />
+                  <text x="93.75" y="340" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Defensive third</text>
+                  
+                  {/* Middle Third - Center area between penalty boxes */}
+                  <rect 
+                    x="147.5" y="20" width="255" height="310"
+                    fill="rgba(255, 255, 255, 0.1)" 
+                    stroke="rgba(255, 255, 255, 0.8)" 
+                    strokeWidth="2" 
+                    strokeDasharray="5.5"
+                  />
+                  <text x="275" y="340" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Middle third</text>
+                  
+                  {/* Final Third - Right penalty box area */}
+                  <rect 
+                    x="402.5" y="20" width="127.5" height="310" 
+                    fill="rgba(255, 255, 255, 0.1)" 
+                    stroke="rgba(255, 255, 255, 0.8)" 
+                    strokeWidth="2" 
+                    strokeDasharray="5.5"
+                  />
+                  <text x="466.25" y="340" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Final third</text>
+                </g>
+              )}
+              
+              {verticalSpacesMode && (
+                <g>
+                  {/* Wide Area Top - Outside penalty box */}
+                  <rect
+                    // x="20" y="260" width="510" height="70"
+                      x="20" y="20" width="510" height="70"
+                    fill="rgba(255, 255, 255, 0.15)" 
+                    stroke="rgba(255, 255, 255, 0.9)" 
+                    strokeWidth="2"
+                    strokeDasharray="5,5"
+                  />
+                  <text x="275" y="43.25" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Wide area</text>
+                  
+                  {/* Half-space Top - Inside penalty box */}
+                  {/*<rect */}
+                  {/*  x="20" y="66.5" width="510" height="31" */}
+                  {/*  fill="rgba(255, 255, 255, 0.2)" */}
+                  {/*  stroke="rgba(255, 255, 255, 0.9)" */}
+                  {/*  strokeWidth="2"*/}
+                  {/*  strokeDasharray="5,5"*/}
+                  {/*/>*/}
+                  {/*<text x="275" y="82" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Half-space</text>*/}
+                  
+                  {/* Center - Center circle area */}
+                  <rect 
+                    x="20" y="135" width="510" height="80"
+                    fill="rgba(255, 255, 255, 0.15)" 
+                    stroke="rgba(255, 255, 255, 0.9)" 
+                    strokeWidth="2"
+                    strokeDasharray="5.5"
+                  />
+                  <text x="275" y="175" textAnchor="middle" fill="white" fontSize="14" dominantBaseline="middle" fontWeight="bold">Centre</text>
+                  
+                  {/*/!* Half-space Bottom - Inside penalty box *!/*/}
+                  {/*<rect*/}
+                  {/*  x="20" y="250" width="510" height="31"*/}
+                  {/*  fill="rgba(255, 255, 255, 0.2)"*/}
+                  {/*  stroke="rgba(255, 255, 255, 0.9)"*/}
+                  {/*  strokeWidth="2"*/}
+                  {/*  strokeDasharray="5,5"*/}
+                  {/*/>*/}
+                  {/*<text x="275" y="268" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Half-space</text>*/}
+                  
+                  {/* Wide Area Bottom - Outside penalty box */}
+                  <rect 
+                    x="20" y="260" width="510" height="70"
+                    fill="rgba(255, 255, 255, 0.15)" 
+                    stroke="rgba(255, 255, 255, 0.9)" 
+                    strokeWidth="2"
+                    strokeDasharray="5,5"
+                  />
+                  <text x="275" y="306.75" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Wide area</text>
+                </g>
+              )}
           </svg>
 
         {/* Waypoints Lines */}
@@ -247,6 +345,11 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypoints
           const toPlayer = players.find(p => p.id === waypoint.to);
           
           if (!fromPlayer || !toPlayer) return null;
+          
+          // Determine waypoint line color based on field color
+          const isDarkField = options.fieldColor === '#222';
+          const waypointColor = isDarkField ? '#16A34A' : '#d7d7d7';
+          const waypointShadowColor = isDarkField ? 'rgba(22, 163, 74, 0.5)' : 'rgba(255, 255, 255, 0.5)';
           
           return (
             <svg
@@ -259,14 +362,14 @@ const FootballField: React.FC<FootballFieldProps> = ({ editable, size, waypoints
                 y1={`${fromPlayer.y}%`}
                 x2={`${toPlayer.x}%`}
                 y2={`${toPlayer.y}%`}
-                stroke="#16A34A"
+                stroke={waypointColor}
                 strokeWidth="4"
                 strokeDasharray="8,8"
                 strokeDashoffset="0"
                 opacity="0.9"
                 className="cursor-pointer hover:stroke-green-300 transition-colors"
                 style={{
-                  filter: 'drop-shadow(0 0 4px rgba(22, 163, 74, 0.5))'
+                  filter: `drop-shadow(0 0 4px ${waypointShadowColor})`
                 }}
                 onContextMenu={(e) => {
                   if (waypointsMode) {
