@@ -37,37 +37,37 @@ const TacticalOverlay: React.FC<TacticalOverlayProps> = ({
       {showHorizontalZones && (
         <g>
           {/* Defensive Third - Left penalty box area */}
-          <rect 
-            x="0" y="0" width="25" height="100" 
-            fill="rgba(255, 255, 255, 0.05)" 
-            stroke="rgba(255, 255, 255, 0.2)" 
-            strokeWidth="0.5" 
+          <rect
+            x="0" y="0" width="25" height="100"
+            fill="rgba(255, 255, 255, 0.05)"
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth="0.5"
             strokeDasharray="2,2"
             className="cursor-pointer hover:fill-[rgba(255,255,255,0.15)] transition-colors"
             onMouseEnter={() => setHoveredArea("defensive")}
             onMouseLeave={() => setHoveredArea(null)}
           />
           <text x="12.5" y="50" textAnchor="middle" fill="white" fontSize="1.8" dominantBaseline="middle" fontWeight="bold">Defensive third</text>
-          
+
           {/* Middle Third - Center area between penalty boxes */}
-          <rect 
-            x="25" y="0" width="50" height="100" 
-            fill="rgba(255, 255, 255, 0.05)" 
-            stroke="rgba(255, 255, 255, 0.2)" 
-            strokeWidth="0.5" 
+          <rect
+            x="25" y="0" width="50" height="100"
+            fill="rgba(255, 255, 255, 0.05)"
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth="0.5"
             strokeDasharray="2,2"
             className="cursor-pointer hover:fill-[rgba(255,255,255,0.15)] transition-colors"
             onMouseEnter={() => setHoveredArea("middle")}
             onMouseLeave={() => setHoveredArea(null)}
           />
           <text x="50" y="50" textAnchor="middle" fill="white" fontSize="1.8" dominantBaseline="middle" fontWeight="bold">Middle third</text>
-          
+
           {/* Final Third - Right penalty box area */}
-          <rect 
-            x="75" y="0" width="25" height="100" 
-            fill="rgba(255, 255, 255, 0.05)" 
-            stroke="rgba(255, 255, 255, 0.2)" 
-            strokeWidth="0.5" 
+          <rect
+            x="75" y="0" width="25" height="100"
+            fill="rgba(255, 255, 255, 0.05)"
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth="0.5"
             strokeDasharray="2,2"
             className="cursor-pointer hover:fill-[rgba(255,255,255,0.15)] transition-colors"
             onMouseEnter={() => setHoveredArea("final")}
@@ -76,69 +76,69 @@ const TacticalOverlay: React.FC<TacticalOverlayProps> = ({
           <text x="87.5" y="50" textAnchor="middle" fill="white" fontSize="1.8" dominantBaseline="middle" fontWeight="bold">Final third</text>
         </g>
       )}
-      
+
       {/* Vertical Lanes (Spaces) - Aligned with field markings */}
       {showVerticalSpaces && (
         <g>
           {/* Wide Area Left - Outside penalty box */}
-          <rect 
-            x="0" y="0" width="15" height="100" 
-            fill="rgba(255, 255, 255, 0.1)" 
-            stroke="rgba(255, 255, 255, 0.3)" 
+          <rect
+            x="0" y="0" width="15" height="100"
+            fill="rgba(255, 255, 255, 0.1)"
+            stroke="rgba(255, 255, 255, 0.3)"
             strokeWidth="0.5"
             className="cursor-pointer hover:fill-[rgba(255,255,255,0.2)] transition-colors"
             onMouseEnter={() => setHoveredArea("wide-left")}
             onMouseLeave={() => setHoveredArea(null)}
           />
-          <text x="7.5" y="50" textAnchor="middle" fill="white" fontSize="2" dominantBaseline="middle" fontWeight="bold">Wide area</text>
-          
+          <text x="7.5" y="50" textAnchor="middle" fill="white" fontSize="2" dominantBaseline="middle" fontWeight="bold">Wide Space</text>
+
           {/* Half-space Left - Inside penalty box */}
-          <rect 
-            x="15" y="0" width="10" height="100" 
-            fill="rgba(255, 255, 255, 0.15)" 
-            stroke="rgba(255, 255, 255, 0.3)" 
+          <rect
+            x="15" y="0" width="10" height="100"
+            fill="rgba(255, 255, 255, 0.15)"
+            stroke="rgba(255, 255, 255, 0.3)"
             strokeWidth="0.5"
             className="cursor-pointer hover:fill-[rgba(255,255,255,0.25)] transition-colors"
             onMouseEnter={() => setHoveredArea("half-left")}
             onMouseLeave={() => setHoveredArea(null)}
           />
           <text x="20" y="50" textAnchor="middle" fill="white" fontSize="1.8" dominantBaseline="middle" fontWeight="bold">Half-space</text>
-          
+
           {/* Center - Center circle area */}
-          <rect 
-            x="25" y="0" width="50" height="100" 
-            fill="rgba(255, 255, 255, 0.1)" 
-            stroke="rgba(255, 255, 255, 0.3)" 
+          <rect
+            x="25" y="0" width="50" height="100"
+            fill="rgba(255, 255, 255, 0.1)"
+            stroke="rgba(255, 255, 255, 0.3)"
             strokeWidth="0.5"
             className="cursor-pointer hover:fill-[rgba(255,255,255,0.2)] transition-colors"
             onMouseEnter={() => setHoveredArea("center")}
             onMouseLeave={() => setHoveredArea(null)}
           />
           <text x="50" y="50" textAnchor="middle" fill="white" fontSize="2.5" dominantBaseline="middle" fontWeight="bold">Centre</text>
-          
+
           {/* Half-space Right - Inside penalty box */}
-          <rect 
-            x="75" y="0" width="10" height="100" 
-            fill="rgba(255, 255, 255, 0.15)" 
-            stroke="rgba(255, 255, 255, 0.3)" 
+          <rect
+            x="75" y="0" width="10" height="100"
+            fill="rgba(255, 255, 255, 0.15)"
+            stroke="rgba(255, 255, 255, 0.3)"
             strokeWidth="0.5"
             className="cursor-pointer hover:fill-[rgba(255,255,255,0.25)] transition-colors"
             onMouseEnter={() => setHoveredArea("half-right")}
             onMouseLeave={() => setHoveredArea(null)}
           />
           <text x="80" y="50" textAnchor="middle" fill="white" fontSize="1.8" dominantBaseline="middle" fontWeight="bold">Half-space</text>
-          
+
           {/* Wide Area Right - Outside penalty box */}
-          <rect 
-            x="85" y="0" width="15" height="100" 
-            fill="rgba(255, 255, 255, 0.1)" 
-            stroke="rgba(255, 255, 255, 0.3)" 
+          <rect
+            x="85" y="0" width="15" height="100"
+            fill="rgba(255, 255, 255, 0.1)"
+            stroke="rgba(255, 255, 255, 0.3)"
             strokeWidth="0.5"
             className="cursor-pointer hover:fill-[rgba(255,255,255,0.2)] transition-colors"
             onMouseEnter={() => setHoveredArea("wide-right")}
             onMouseLeave={() => setHoveredArea(null)}
           />
-          <text x="92.5" y="50" textAnchor="middle" fill="white" fontSize="2" dominantBaseline="middle" fontWeight="bold">Wide area</text>
+          <text x="92.5" y="50" textAnchor="middle" fill="white" fontSize="2" dominantBaseline="middle" fontWeight="bold">Wide Space</text>
         </g>
       )}
 
@@ -161,4 +161,4 @@ const TacticalOverlay: React.FC<TacticalOverlayProps> = ({
   );
 };
 
-export default TacticalOverlay; 
+export default TacticalOverlay;

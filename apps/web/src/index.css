@@ -6,7 +6,7 @@
 
 /* CSS Variables for the black/dark gray theme */
 :root {
-  --background: #000000; /* Pure black background */
+  --background: #1a1a1a; /* Pure black background */
   --card: #1a1a1a; /* Dark gray for cards */
   --border: #333333; /* Medium gray for borders */
   --text-primary: #ffffff; /* White for primary text */
