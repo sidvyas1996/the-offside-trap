@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Palette, Users, Circle, Shirt, CaseSensitive, Waypoints, Sun, Moon, Grid3X3, SplitSquareVertical, SplitSquareHorizontal } from "lucide-react";
+import { Palette, Users, Circle, Shirt, CaseSensitive, Waypoints, Sun, Moon, Grid3X3, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2 } from "lucide-react";
 import {Button} from "./button.tsx";
 import {DEFAULT_FOOTBALL_FIELD_COLOUR, DEFAULT_BORDER_LIGHT_GRAY} from "../../utils/colors.ts";
 
@@ -17,6 +17,8 @@ interface CreatorsMenuProps {
     horizontalZonesMode?: boolean;
     onToggleVerticalSpaces?: () => void;
     verticalSpacesMode?: boolean;
+    onToggleFullScreen?: () => void;
+    isFullScreen?: boolean;
 }
 
 const COLORS = {
@@ -36,6 +38,8 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                                        horizontalZonesMode = false,
                                                        onToggleVerticalSpaces,
                                                        verticalSpacesMode = false,
+                                                       onToggleFullScreen,
+                                                       isFullScreen = false,
                                                    }) => {
     // Track which color is currently active (light or dark)
     const [isDark, setIsDark] = React.useState(false);
@@ -154,6 +158,27 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                     title={verticalSpacesMode ? "Hide Vertical Spaces" : "Show Vertical Spaces"}
                 >
                     <SplitSquareVertical size={18} />
+                </Button>
+            )}
+
+            {/* Toggle Full Screen */}
+            {onToggleFullScreen && (
+                <Button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        onToggleFullScreen();
+                    }}
+                    className=""
+                    style={{ 
+                        borderColor: isFullScreen ? '#16A34A' : DEFAULT_BORDER_LIGHT_GRAY, 
+                        borderRadius: 6,
+                        backgroundColor: isFullScreen ? 'rgba(22, 163, 74, 0.1)' : 'transparent'
+                    }}
+                    variant="outline"
+                    type="button"
+                    title={isFullScreen ? "Exit Full Screen" : "Enter Full Screen"}
+                >
+                    {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                 </Button>
             )}
         </div>

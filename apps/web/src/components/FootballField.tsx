@@ -12,6 +12,7 @@ interface FootballFieldProps {
   waypointsMode?: boolean;
   horizontalZonesMode?: boolean;
   verticalSpacesMode?: boolean;
+  isFullScreen?: boolean;
 }
 
 const FootballField: React.FC<FootballFieldProps> = ({
@@ -20,6 +21,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
   waypointsMode = false,
   horizontalZonesMode = false,
   verticalSpacesMode = false,
+  isFullScreen = false,
 }) => {
   const { players, draggedPlayer, options, actions, fieldRef } =
     useFootballField();
@@ -111,14 +113,13 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
   // Responsive field sizing
   const fieldStyle =
-    size === "fullscreen" || options.size === "fullscreen"
+    size === "fullscreen" || options.size === "fullscreen" || isFullScreen
       ? {
           backgroundColor: options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR,
           aspectRatio: "11/7",
           width: "100%",
           maxWidth: "100%",
           height: "auto",
-          maxHeight: "calc(100vh - 100px)",
           margin: "0 auto",
         }
       : {
@@ -132,7 +133,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
   return (
     <div
       ref={fieldRef}
-      className="relative rounded-xl overflow-hidden cursor-move mb-6"
+      className={`relative rounded-xl overflow-hidden cursor-move ${isFullScreen ? '' : 'mb-6'}`}
       style={fieldStyle}
       onMouseMove={actions.onMouseMove}
       onMouseUp={actions.onMouseUp}

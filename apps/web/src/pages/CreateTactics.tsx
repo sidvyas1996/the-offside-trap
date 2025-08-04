@@ -61,6 +61,7 @@ const CreateTacticsContent = () => {
   const [waypointsMode, setWaypointsMode] = useState(false);
   const [horizontalZonesMode, setHorizontalZonesMode] = useState(false);
   const [verticalSpacesMode, setVerticalSpacesMode] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Drag-and-drop logic for create page, use context's fieldRef
   const drag = usePlayerDrag(
@@ -189,179 +190,223 @@ const CreateTacticsContent = () => {
         <h1 className="text-4xl font-bold">Create Tactics</h1>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left Column - Football Field */}
-        <div className="lg:col-span-2">
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
-            <h2 className="text-2xl font-bold mb-4">Tactical Field</h2>
-            <div className="w-full flex justify-center">
+      {isFullScreen ? (
+        // Full screen layout - scrollable
+        <div className="min-h-screen bg-[var(--background)] transition-all duration-300 ease-in-out">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 m-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">Tactical Field</h2>
+              <div className="text-sm text-[var(--text-secondary)]">
+                Full Screen Mode - Drag players to position them
+              </div>
+            </div>
+            <div className="w-full flex justify-center items-center">
               <FootballField 
                 waypointsMode={waypointsMode} 
                 horizontalZonesMode={horizontalZonesMode}
                 verticalSpacesMode={verticalSpacesMode}
+                isFullScreen={isFullScreen}
               />
             </div>
             <div className="mt-4">
-                          <CreatorsMenu
-              onChangeFieldColor={handleFieldColorChange}
-              onChangePlayerColor={handlePlayerColorChange}
-              onTogglePlayerLabels={handleTogglePlayerLabels}
-              showPlayerLabels={showPlayerLabels}
-              onToggleMarkerType={handleToggleMarkerType}
-              markerType={markerType}
-              onToggleWaypoints={handleToggleWaypoints}
-              waypointsMode={waypointsMode}
-              onToggleHorizontalZones={handleToggleHorizontalZones}
-              horizontalZonesMode={horizontalZonesMode}
-              onToggleVerticalSpaces={handleToggleVerticalSpaces}
-              verticalSpacesMode={verticalSpacesMode}
-            />
+              <CreatorsMenu
+                onChangeFieldColor={handleFieldColorChange}
+                onChangePlayerColor={handlePlayerColorChange}
+                onTogglePlayerLabels={handleTogglePlayerLabels}
+                showPlayerLabels={showPlayerLabels}
+                onToggleMarkerType={handleToggleMarkerType}
+                markerType={markerType}
+                onToggleWaypoints={handleToggleWaypoints}
+                waypointsMode={waypointsMode}
+                onToggleHorizontalZones={handleToggleHorizontalZones}
+                horizontalZonesMode={horizontalZonesMode}
+                onToggleVerticalSpaces={handleToggleVerticalSpaces}
+                verticalSpacesMode={verticalSpacesMode}
+                onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
+                isFullScreen={isFullScreen}
+              />
             </div>
           </div>
         </div>
-
-        {/* Right Column - Options and Details */}
-        <div className="space-y-6">
-          {/* Lineup Options */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Users className="h-5 w-5 text-[var(--primary)]" />
-              Lineup Options
-            </h2>
-            <div className="space-y-3">
-              <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Users className="h-4 w-4 text-[var(--primary)]" />
-                    Single Team
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    Focus on your team's formation and tactical setup
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Users className="h-4 w-4 text-cyan-400" />
-                    With Opposition
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    Show both teams' formations and tactical interactions
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Tactics Options */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Target className="h-5 w-5 text-[var(--primary)]" />
-              Tactics Options
-            </h2>
-            <div className="space-y-3">
-              <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Settings className="h-4 w-4 text-amber-500" />
-                    Still Graphic Tactics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    Create static tactical diagrams with formations and positioning
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Video className="h-4 w-4 text-purple-500" />
-                    Motion Graphic Tactics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-[var(--text-secondary)]">
-                    Build animated tactical movements and player sequences
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Tactic Details */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Save className="h-5 w-5 text-[var(--primary)]" />
-              Tactic Details
-            </h2>
-            <form className="space-y-4">
-              <div>
-                <Label htmlFor="title" className="text-sm">Tactic Title</Label>
-                <Textarea
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. High Press Counter Attack"
-                  className="mt-1"
+      ) : (
+        // Normal layout
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Column - Football Field and Tactic Details */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+              <h2 className="text-2xl font-bold mb-4">Tactical Field</h2>
+              <div className="w-full flex justify-center">
+                <FootballField 
+                  waypointsMode={waypointsMode} 
+                  horizontalZonesMode={horizontalZonesMode}
+                  verticalSpacesMode={verticalSpacesMode}
+                  isFullScreen={isFullScreen}
                 />
               </div>
-
-              <div>
-                <Label htmlFor="description" className="text-sm">Description</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe your tactical approach..."
-                  className="mt-1"
+              <div className="mt-4">
+                <CreatorsMenu
+                  onChangeFieldColor={handleFieldColorChange}
+                  onChangePlayerColor={handlePlayerColorChange}
+                  onTogglePlayerLabels={handleTogglePlayerLabels}
+                  showPlayerLabels={showPlayerLabels}
+                  onToggleMarkerType={handleToggleMarkerType}
+                  markerType={markerType}
+                  onToggleWaypoints={handleToggleWaypoints}
+                  waypointsMode={waypointsMode}
+                  onToggleHorizontalZones={handleToggleHorizontalZones}
+                  horizontalZonesMode={horizontalZonesMode}
+                  onToggleVerticalSpaces={handleToggleVerticalSpaces}
+                  verticalSpacesMode={verticalSpacesMode}
+                  onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
+                  isFullScreen={isFullScreen}
                 />
               </div>
+            </div>
 
-              <div>
-                <Label className="text-sm">Selected Options</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {selectedOptions.map((opt, idx) => (
-                    <Badge key={idx} className="bg-purple-600 text-white text-xs">
-                      {opt}
-                    </Badge>
-                  ))}
+            {/* Tactic Details - Moved here */}
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Save className="h-5 w-5 text-[var(--primary)]" />
+                Tactic Details
+              </h2>
+              <form className="space-y-4">
+                <div>
+                  <Label htmlFor="title" className="text-sm">Tactic Title</Label>
+                  <Textarea
+                    id="title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. High Press Counter Attack"
+                    className="mt-1"
+                  />
                 </div>
-              </div>
 
-              <Button type="submit" className="btn-primary w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Tactic...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Create Tactic
-                  </>
-                )}
-              </Button>
-            </form>
+                <div>
+                  <Label htmlFor="description" className="text-sm">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe your tactical approach..."
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-sm">Selected Options</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedOptions.map((opt, idx) => (
+                      <Badge key={idx} className="bg-purple-600 text-white text-xs">
+                        {opt}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <Button type="submit" className="btn-primary w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Tactic...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Create Tactic
+                    </>
+                  )}
+                </Button>
+              </form>
+            </div>
           </div>
 
-          {/* Preview */}
-          <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Target className="h-5 w-5 text-[var(--primary)]" />
-              Preview
-            </h2>
-            <MiniTacticCard />
+          {/* Right Column - Options and Preview */}
+          <div className="space-y-6">
+            {/* Lineup Options */}
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Users className="h-5 w-5 text-[var(--primary)]" />
+                Lineup Options
+              </h2>
+              <div className="space-y-3">
+                <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Users className="h-4 w-4 text-[var(--primary)]" />
+                      Single Team
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      Focus on your team's formation and tactical setup
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Users className="h-4 w-4 text-cyan-400" />
+                      With Opposition
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      Show both teams' formations and tactical interactions
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Tactics Options */}
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Target className="h-5 w-5 text-[var(--primary)]" />
+                Tactics Options
+              </h2>
+              <div className="space-y-3">
+                <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Settings className="h-4 w-4 text-amber-500" />
+                      Still Graphic Tactics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      Create static tactical diagrams with formations and positioning
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-[var(--card)] border-[var(--border)] cursor-pointer hover:bg-[var(--card-hover)] transition-all">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Video className="h-4 w-4 text-purple-500" />
+                      Motion Graphic Tactics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      Build animated tactical movements and player sequences
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Preview */}
+            <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Target className="h-5 w-5 text-[var(--primary)]" />
+                Preview
+              </h2>
+              <MiniTacticCard />
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
