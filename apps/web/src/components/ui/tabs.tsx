@@ -74,3 +74,28 @@ export function TabsTrigger({
         </button>
     );
 }
+
+export function TabsContent({
+                                children,
+                                value,
+                                className,
+                            }: {
+    children: React.ReactNode;
+    value: string;
+    className?: string;
+}) {
+    const context = useContext(TabsContext);
+    if (!context) {
+        throw new Error('TabsContent must be used within Tabs');
+    }
+
+    if (context.value !== value) {
+        return null;
+    }
+
+    return (
+        <div className={cn("", className)}>
+            {children}
+        </div>
+    );
+}

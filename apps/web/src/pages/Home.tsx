@@ -140,9 +140,14 @@ const Home: React.FC = () => {
                                 Create, analyze and discuss football formations and strategies with the community
                             </p>
                             <div className="flex flex-wrap gap-4">
-                                <Link to={createPageUrl("Create")}>
+                                <Link to="/create-tactics">
                                     <button className="btn-primary">
                                         Create Tactics
+                                    </button>
+                                </Link>
+                                <Link to="/create-lineups">
+                                    <button className="btn-outline">
+                                        Create Lineups
                                     </button>
                                 </Link>
                                 <button className="btn-outline">

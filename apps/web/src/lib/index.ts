@@ -4,7 +4,9 @@ export const createPageUrl = (page: string): string => {
     // Convert page names to routes
     const pageToRoute: Record<string, string> = {
         'Home': '/',
-        'Create': '/create',
+        'Create': '/create-tactics',
+        'CreateTactics': '/create-tactics',
+        'CreateLineups': '/create-lineups',
         'Detail': '/detail',
         'MyTactics': '/my-tactics',
         'My Tactics': '/my-tactics',

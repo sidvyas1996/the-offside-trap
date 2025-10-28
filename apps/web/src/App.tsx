@@ -8,7 +8,8 @@ import { useAuth } from "./contexts/AuthContext";
 import { Login } from "./components/Login.tsx";
 import { Menu as DropdownMenu, Transition } from "@headlessui/react";
 import { useLogout } from "./lib/logout.ts";
-import Create from "./pages/CreateTactics.tsx";
+import CreateTactics from "./pages/CreateTactics.tsx";
+import CreateLineups from "./pages/CreateLineups.tsx";
 import { Toolbar } from "./components/ui/toolbar";
 import { CreateTacticsProvider, useCreateTactics } from "./contexts/CreateTacticsContext";
 
@@ -63,7 +64,27 @@ function AppRoutes() {
         element={
           <CreateTacticsProvider>
             <Layout>
-              <Create />
+              <CreateTactics />
+            </Layout>
+          </CreateTacticsProvider>
+        }
+      />
+      <Route
+        path="/create-tactics"
+        element={
+          <CreateTacticsProvider>
+            <Layout>
+              <CreateTactics />
+            </Layout>
+          </CreateTacticsProvider>
+        }
+      />
+      <Route
+        path="/create-lineups"
+        element={
+          <CreateTacticsProvider>
+            <Layout>
+              <CreateLineups />
             </Layout>
           </CreateTacticsProvider>
         }
@@ -240,7 +261,9 @@ const Footer: React.FC = () => {
 // Layout component
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const isCreatePage = location.pathname === "/create";
+  const isCreatePage = location.pathname === "/create" || 
+                      location.pathname === "/create-tactics" || 
+                      location.pathname === "/create-lineups";
 
   return (
     <div
