@@ -17,6 +17,7 @@ interface PlayerMarkerProps {
   waypointsMode?: boolean;
   isSelected?: boolean;
   onWaypointsClick?: () => void;
+  rotationAngle?: number;
 }
 
 const PlayerMarker: React.FC<PlayerMarkerProps> = ({
@@ -34,6 +35,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   waypointsMode = false,
   isSelected = false,
   onWaypointsClick,
+  rotationAngle = 0,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingPosition, setIsEditingPosition] = useState(false);
@@ -84,25 +86,33 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           className={`w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center text-white font-bold text-lg cursor-pointer hover:bg-gray-700 transition-all duration-300 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''} ${isDragged ? 'scale-110 shadow-lg' : ''} ${isSelected ? 'ring-4 ring-green-400' : ''}`}
           onDoubleClick={() => editable && setIsEditingPosition(true)}
         >
-            {isEditingPosition ? (
-              <input
-                type="text"
-                value={position}
-                onChange={handlePositionChange}
-                onBlur={() => setIsEditingPosition(false)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    setIsEditingPosition(false);
-                  }
-                }}
-                autoFocus
-                className="w-8 h-8 bg-transparent text-white font-bold text-lg text-center border-none outline-none"
-                maxLength={2}
-              />
-            ) : (
-              position
-            )}
+            <div
+              className="flex items-center justify-center"
+              style={{
+                transform: `rotate(${-rotationAngle}deg)`,
+                transformOrigin: 'center',
+              }}
+            >
+              {isEditingPosition ? (
+                <input
+                  type="text"
+                  value={position}
+                  onChange={handlePositionChange}
+                  onBlur={() => setIsEditingPosition(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      setIsEditingPosition(false);
+                    }
+                  }}
+                  autoFocus
+                  className="w-8 h-8 bg-transparent text-white font-bold text-lg text-center border-none outline-none"
+                  maxLength={2}
+                />
+              ) : (
+                <span className="text-center">{position}</span>
+              )}
+            </div>
           </div>
         ) : (
           <div 
@@ -128,10 +138,30 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
                 }}
                 autoFocus
                 className="absolute w-8 h-8 bg-transparent text-white font-bold text-lg text-center border-none outline-none"
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  transform: `
+                    translate(-50%, -50%) 
+                    rotate(${-rotationAngle}deg)
+                  `,
+                  transformOrigin: 'center',
+                }}
                 maxLength={2}
               />
             ) : (
-              <div className="absolute text-white font-bold text-lg">
+              <div 
+                className="absolute text-white font-bold text-lg"
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  transform: `
+                    translate(-50%, -50%) 
+                    rotate(${-rotationAngle}deg)
+                  `,
+                  transformOrigin: 'center',
+                }}
+              >
                 {position}
               </div>
             )}
@@ -184,7 +214,19 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
         )}
 
         {/* Player Name */}
-        <div className={`transition-all duration-300 ease-in-out ${showPlayerLabels ? 'opacity-100 max-h-8' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+        <div 
+          className={`absolute transition-all duration-300 ease-in-out ${showPlayerLabels ? 'opacity-100 max-h-8' : 'opacity-0 max-h-0 overflow-hidden'}`}
+          style={{
+            left: '50%',
+            top: '50%',
+            transform: `
+              translate(-50%, -50%) 
+              translate(${35 * Math.sin(rotationAngle * Math.PI / 180)}px, ${35 * Math.cos(rotationAngle * Math.PI / 180)}px)
+              rotate(${-rotationAngle}deg)
+            `,
+            transformOrigin: 'center',
+          }}
+        >
           {isEditing ? (
             <input
               type="text"
@@ -198,10 +240,10 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
                 }
               }}
               autoFocus
-              className="bg-[#1a1a1a] text-white font-semibold mt-1 px-2 py-1 rounded border border-gray-900 w-24 text-center"
+              className="bg-[#1a1a1a] text-white font-semibold mt-1 px-2 py-1 rounded border border-gray-900 max-w-[120px] text-center whitespace-nowrap overflow-hidden text-ellipsis"
             />
           ) : (
-            <div className="bg-[#1a1a1a] text-white font-semibold mt-1 px-2 py-1 rounded opacity-70">
+            <div className="bg-[#1a1a1a] text-white font-semibold mt-1 px-2 py-1 rounded opacity-70 whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">
               {name}
             </div>
           )}

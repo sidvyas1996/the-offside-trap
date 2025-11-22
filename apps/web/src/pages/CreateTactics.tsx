@@ -62,43 +62,43 @@ const CreateTacticsContent: React.FC = () => {
           onToggleFullScreen={state.handleToggleFullScreen}
         />
       ) : (
-        <div className="grid lg:grid-cols-3 gap-8 transition-all duration-300 ease-in-out">
-          {/* Left Column - Football Field and Tactic Details */}
-          <div className="lg:col-span-2 space-y-6">
-            <TacticalField
-              waypointsMode={state.waypointsMode}
-              horizontalZonesMode={state.horizontalZonesMode}
-              verticalSpacesMode={state.verticalSpacesMode}
-              isFullScreen={state.isFullScreen}
-              onChangeFieldColor={state.handleFieldColorChange}
-              onChangePlayerColor={state.handlePlayerColorChange}
-              onTogglePlayerLabels={state.handleTogglePlayerLabels}
-              showPlayerLabels={state.showPlayerLabels}
-              onToggleMarkerType={state.handleToggleMarkerType}
-              markerType={state.markerType}
-              onToggleWaypoints={state.handleToggleWaypoints}
-              onToggleHorizontalZones={state.handleToggleHorizontalZones}
-              onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
-              onToggleFullScreen={state.handleToggleFullScreen}
-            />
+    <div className="grid lg:grid-cols-3 gap-8 transition-all duration-300 ease-in-out">
+      {/* Left Column - Football Field and Tactic Details */}
+      <div className="lg:col-span-2 space-y-6">
+        <TacticalField
+          waypointsMode={state.waypointsMode}
+          horizontalZonesMode={state.horizontalZonesMode}
+          verticalSpacesMode={state.verticalSpacesMode}
+          isFullScreen={state.isFullScreen}
+          onChangeFieldColor={state.handleFieldColorChange}
+          onChangePlayerColor={state.handlePlayerColorChange}
+          onTogglePlayerLabels={state.handleTogglePlayerLabels}
+          showPlayerLabels={state.showPlayerLabels}
+          onToggleMarkerType={state.handleToggleMarkerType}
+          markerType={state.markerType}
+          onToggleWaypoints={state.handleToggleWaypoints}
+          onToggleHorizontalZones={state.handleToggleHorizontalZones}
+          onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
+          onToggleFullScreen={state.handleToggleFullScreen}
+        />
 
-            <TacticDetails
-              title={form.title}
-              setTitle={form.setTitle}
-              description={form.description}
-              setDescription={form.setDescription}
-              selectedOptions={form.selectedOptions}
-              loading={form.loading}
-              onSubmit={handleSubmit}
-            />
-          </div>
+        <TacticDetails
+          title={form.title}
+          setTitle={form.setTitle}
+          description={form.description}
+          setDescription={form.setDescription}
+          selectedOptions={form.selectedOptions}
+          loading={form.loading}
+          onSubmit={handleSubmit}
+        />
+      </div>
 
-          {/* Right Column - Options and Preview */}
-          <div className="space-y-6">
-            <TacticsOptions />
-            <Preview />
-          </div>
-        </div>
+      {/* Right Column - Options and Preview */}
+      <div className="space-y-6">
+        <TacticsOptions />
+        <Preview />
+      </div>
+    </div>
       )}
     </div>
   );
