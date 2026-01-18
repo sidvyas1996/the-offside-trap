@@ -50,7 +50,8 @@
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.0.1",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "playwright": "^1.56.1"
   },
   "include": [
     "src/**/*",

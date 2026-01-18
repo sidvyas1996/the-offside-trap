@@ -10,6 +10,7 @@ import { Menu as DropdownMenu, Transition } from "@headlessui/react";
 import { useLogout } from "./lib/logout.ts";
 import CreateTactics from "./pages/CreateTactics.tsx";
 import CreateLineups from "./pages/CreateLineups.tsx";
+import ExportPreview from "./pages/ExportPreview.tsx";
 import { Toolbar } from "./components/ui/toolbar";
 import { CreateTacticsProvider, useCreateTactics } from "./contexts/CreateTacticsContext";
 
@@ -40,6 +41,12 @@ function AppRoutes() {
       <Route
         path="/login"
         element={user ? <Navigate to="/" replace /> : <Login />}
+      />
+
+      {/* Export preview - no layout */}
+      <Route
+        path="/export-preview"
+        element={<ExportPreview />}
       />
 
       {/* Protected routes inside Layout */}

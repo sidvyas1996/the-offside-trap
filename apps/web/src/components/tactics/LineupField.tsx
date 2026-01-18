@@ -81,36 +81,36 @@ const LineupField: React.FC<LineupFieldProps> = ({
   const [localTiltAngle, setLocalTiltAngle] = useState(20);
   const rotationAngle = propRotationAngle !== undefined ? propRotationAngle : localRotationAngle;
   const tiltAngle = propTiltAngle !== undefined ? propTiltAngle : localTiltAngle;
-  // Zoom state: 1.0 = default (100%), 0.75 = zoomed out (75%), 1.2 = zoomed in (120%)
-  // Default can zoom out to 0.75, then from 0.75 can zoom in to 1.0, then to 1.2
+  // Zoom state: 1.0 = default (100%), 0.5 = zoomed out (50%), 1.2 = zoomed in (120%)
+  // Default can zoom out to 0.5, then from 0.5 can zoom in to 1.0, then to 1.2
   const [localZoomLevel, setLocalZoomLevel] = useState(1.0);
   const zoomLevel = propZoomLevel !== undefined ? propZoomLevel : localZoomLevel;
 
   // Function to calculate and update context menu position
   const updateContextMenuPosition = (playerId: number) => {
     if (!fieldRef.current || !contextMenu.visible || contextMenu.playerId !== playerId) return;
-    
+
     // Find the marker wrapper by data attribute
     const markerWrapper = fieldRef.current.querySelector(`[data-player-id="${playerId}"]`) as HTMLElement;
     if (!markerWrapper) return;
-    
+
     const markerRect = markerWrapper.getBoundingClientRect();
     const fieldRect = fieldRef.current.getBoundingClientRect();
-    
+
     // Calculate the center of the marker wrapper in viewport coordinates
     const markerCenterX = markerRect.left + markerRect.width / 2;
     const markerCenterY = markerRect.top + markerRect.height / 2;
-    
+
     // Convert to container-relative coordinates
     const relativeX = markerCenterX - fieldRect.left;
     const relativeY = markerCenterY - fieldRect.top;
-    
+
     // Position menu to the bottom right of the marker
     const menuOffsetX = 79; // Offset to the right of the marker
     const menuOffsetY = 40; // Offset below the marker
     const menuX = relativeX + menuOffsetX;
     const menuY = relativeY + menuOffsetY;
-    
+
     setContextMenu((prev) => ({
       ...prev,
       x: Math.min(menuX, fieldRect.width - 180),
@@ -121,28 +121,28 @@ const LineupField: React.FC<LineupFieldProps> = ({
   // Context menu clamping and close-on-click
   const onShowContextMenu = (e: React.MouseEvent, player: { id: number; x: number; y: number }) => {
     if (!fieldRef.current) return;
-    
+
     // Get the wrapper div that contains the PlayerMarker (parent of currentTarget)
     const markerWrapper = (e.currentTarget as HTMLElement).parentElement;
     if (!markerWrapper) return;
-    
+
     const markerRect = markerWrapper.getBoundingClientRect();
     const fieldRect = fieldRef.current.getBoundingClientRect();
-    
+
     // Calculate the center of the marker wrapper in viewport coordinates
     const markerCenterX = markerRect.left + markerRect.width / 2;
     const markerCenterY = markerRect.top + markerRect.height / 2;
-    
+
     // Convert to container-relative coordinates
     const relativeX = markerCenterX - fieldRect.left;
     const relativeY = markerCenterY - fieldRect.top;
-    
+
     // Position menu to the bottom right of the marker
     const menuOffsetX = 79;
     const menuOffsetY = 40;
     const menuX = relativeX + menuOffsetX;
     const menuY = relativeY + menuOffsetY;
-    
+
     setContextMenu({
       visible: true,
       x: Math.min(menuX, fieldRect.width - 180),
@@ -150,7 +150,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
       playerId: player.id,
     });
   };
-  
+
   // Update context menu position when rotation, tilt, or zoom changes
   useEffect(() => {
     if (contextMenu.visible && contextMenu.playerId !== null) {
@@ -222,107 +222,6 @@ const LineupField: React.FC<LineupFieldProps> = ({
     setWaypoints((prev) => prev.filter((_, index) => index !== lineIndex));
   };
 
-  // Rotation and tilt handlers
-  const handleRotateLeft = () => {
-    if (propOnRotateLeft) {
-      propOnRotateLeft();
-    } else {
-      const newAngle = (rotationAngle - 15 + 360) % 360;
-      if (onRotationChange) {
-        onRotationChange(newAngle);
-      } else {
-        setLocalRotationAngle(newAngle);
-      }
-    }
-  };
-
-  const handleRotateRight = () => {
-    if (propOnRotateRight) {
-      propOnRotateRight();
-    } else {
-      const newAngle = (rotationAngle + 15) % 360;
-      if (onRotationChange) {
-        onRotationChange(newAngle);
-      } else {
-        setLocalRotationAngle(newAngle);
-      }
-    }
-  };
-
-  const handleTiltUp = () => {
-    if (propOnTiltUp) {
-      propOnTiltUp();
-    } else {
-      const newAngle = Math.min(45, tiltAngle + 5);
-      if (onTiltChange) {
-        onTiltChange(newAngle);
-      } else {
-        setLocalTiltAngle(newAngle);
-      }
-    }
-  };
-
-  const handleTiltDown = () => {
-    if (propOnTiltDown) {
-      propOnTiltDown();
-    } else {
-      const newAngle = Math.max(0, tiltAngle - 5);
-      if (onTiltChange) {
-        onTiltChange(newAngle);
-      } else {
-        setLocalTiltAngle(newAngle);
-      }
-    }
-  };
-
-  // Zoom handlers
-  // Zoom out: 1.2 -> 1.0 -> 0.75 (75% min)
-  // Zoom in: 0.75 -> 1.0 -> 1.2 (120% max)
-  const handleZoomOut = () => {
-    if (propOnZoomOut) {
-      propOnZoomOut();
-    } else {
-      if (zoomLevel === 1.2) {
-        const newLevel = 1.0;
-        if (onZoomChange) {
-          onZoomChange(newLevel);
-        } else {
-          setLocalZoomLevel(newLevel);
-        }
-      } else if (zoomLevel === 1.0) {
-        const newLevel = 0.75;
-        if (onZoomChange) {
-          onZoomChange(newLevel);
-        } else {
-          setLocalZoomLevel(newLevel);
-        }
-      }
-    }
-  };
-
-  const handleZoomIn = () => {
-    if (propOnZoomIn) {
-      propOnZoomIn();
-    } else {
-      if (zoomLevel === 0.75) {
-        const newLevel = 1.0;
-        if (onZoomChange) {
-          onZoomChange(newLevel);
-        } else {
-          setLocalZoomLevel(newLevel);
-        }
-      } else if (zoomLevel === 1.0) {
-        const newLevel = 1.2;
-        if (onZoomChange) {
-          onZoomChange(newLevel);
-        } else {
-          setLocalZoomLevel(newLevel);
-        }
-      }
-    }
-  };
-
-
   const fieldStyle = {
     backgroundColor: options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR,
     aspectRatio: "11/7",
@@ -332,7 +231,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
   };
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
+    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 ">
       <h2 className="text-2xl font-bold mb-4">Lineup Field</h2>
       <div className="w-full flex justify-center relative">
         {/* 3D Perspective Container */}

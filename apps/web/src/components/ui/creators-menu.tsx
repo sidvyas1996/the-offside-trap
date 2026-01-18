@@ -294,12 +294,12 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                     e.preventDefault();
                                     onZoomOut();
                                 }}
-                                disabled={zoomLevel === 0.75}
+                                disabled={zoomLevel === 0.5}
                                 className="!p-2"
                                 style={{ borderColor: 'var(--border)', borderRadius: 6 }}
                                 variant="outline"
                                 type="button"
-                                title="Zoom Out (min 75%)"
+                                title="Zoom Out (min 50%)"
                             >
                                 <ZoomOut size={18} />
                             </Button>

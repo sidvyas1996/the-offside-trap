@@ -158,7 +158,11 @@ const CreateLineupsContent: React.FC = () => {
         {/* Options and Preview - Below Field */}
         <div className="grid lg:grid-cols-2 gap-6">
           <LineupOptions />
-          <Preview />
+          <Preview 
+            rotationAngle={rotationAngle}
+            tiltAngle={tiltAngle}
+            zoomLevel={zoomLevel}
+          />
         </div>
       </div>
     </div>
