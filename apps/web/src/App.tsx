@@ -1,19 +1,14 @@
 import React from "react";
-import { Routes, Route, Navigate, BrowserRouter, useLocation } from "react-router-dom";
-import { ChevronDown, Search, LogOut, User } from "lucide-react";
+import { Routes, Route, Navigate, BrowserRouter, useLocation, NavLink } from "react-router-dom";
+import { LayoutDashboard, Swords, Users, Settings, Plus } from "lucide-react";
 import Home from "./pages/Home";
 import TacticsDetails from "./pages/TacticsDetails.tsx";
 import { AuthProvider } from "./contexts/AuthContext";
-import { useAuth } from "./contexts/AuthContext";
-import { Login } from "./components/Login.tsx";
-import { Menu as DropdownMenu, Transition } from "@headlessui/react";
-import { useLogout } from "./lib/logout.ts";
 import CreateTactics from "./pages/CreateTactics.tsx";
 import CreateLineups from "./pages/CreateLineups.tsx";
 import ExportPreview from "./pages/ExportPreview.tsx";
 import TacticsExportPreview from "./pages/TacticsExportPreview.tsx";
-import { Toolbar } from "./components/ui/toolbar";
-import { CreateTacticsProvider, useCreateTactics } from "./contexts/CreateTacticsContext";
+import { CreateTacticsProvider } from "./contexts/CreateTacticsContext";
 
 function App() {
   return (
@@ -26,29 +21,39 @@ function App() {
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
-      </div>
-    );
-  }
-
   return (
     <Routes>
-      {/* Public route - Login */}
-      <Route
-        path="/login"
-        element={user ? <Navigate to="/" replace /> : <Login />}
-      />
-
-      {/* Export preview routes - no layout */}
+      {/* Export preview routes — no layout */}
       <Route path="/export-preview" element={<ExportPreview />} />
       <Route path="/tactics-export-preview" element={<TacticsExportPreview />} />
 
-      {/* Protected routes inside Layout */}
+      {/* Studio routes — full-screen, no sidebar */}
+      <Route
+        path="/create"
+        element={
+          <CreateTacticsProvider>
+            <CreateTactics />
+          </CreateTacticsProvider>
+        }
+      />
+      <Route
+        path="/create-tactics"
+        element={
+          <CreateTacticsProvider>
+            <CreateTactics />
+          </CreateTacticsProvider>
+        }
+      />
+      <Route
+        path="/create-lineups"
+        element={
+          <CreateTacticsProvider>
+            <CreateLineups />
+          </CreateTacticsProvider>
+        }
+      />
+
+      {/* Main app — sidebar layout */}
       <Route
         path="/"
         element={
@@ -65,243 +70,130 @@ function AppRoutes() {
           </Layout>
         }
       />
-      <Route
-        path="/create"
-        element={
-          <CreateTacticsProvider>
-            <Layout>
-              <CreateTactics />
-            </Layout>
-          </CreateTacticsProvider>
-        }
-      />
-      <Route
-        path="/create-tactics"
-        element={
-          <CreateTacticsProvider>
-            <Layout>
-              <CreateTactics />
-            </Layout>
-          </CreateTacticsProvider>
-        }
-      />
-      <Route
-        path="/create-lineups"
-        element={
-          <CreateTacticsProvider>
-            <Layout>
-              <CreateLineups />
-            </Layout>
-          </CreateTacticsProvider>
-        }
-      />
-
-      {/* Catch-all */}
+      <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
 
-const Header: React.FC = () => {
-  return (
-    <header className="bg-[#1a1a1a] border border-[rgb(49,54,63)] sticky top-0 z-50">
-      <div className="flex items-center h-16 px-6">
-        {/* Logo - Far left */}
-        <div className="flex items-center">
-          <h1 className="text-xl font-bold text-[var(--primary)]">
-            The Offside Trap
-          </h1>
-        </div>
+const NAV_ITEMS = [
+  { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/create-tactics", icon: Swords, label: "Tactics Studio" },
+  { to: "/create-lineups", icon: Users, label: "Lineup Creator" },
+  { to: "/settings", icon: Settings, label: "Settings" },
+];
 
-        {/* Navigation - Center */}
-        <div className="flex-1 flex justify-center">
-          <nav className="hidden md:flex items-center space-x-8">
-            <a
-              href="/"
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              Home
-            </a>
-            <a
-              href="/create"
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              Create
-            </a>
-            <a
-              href="/my-tactics"
-              className="text-white hover:text-gray-200 transition-colors"
-            >
-              My Tactics
-            </a>
-            <div className="relative">
-              <button className="flex items-center space-x-2 text-white hover:bg-gray-700 transition-colors px-4 py-2 rounded-full">
-                <span className="text-sm font-medium">Categories</span>
-                <ChevronDown className="h-4 w-4" />
-              </button>
-            </div>
-          </nav>
-        </div>
-
-        {/* Search and User - Far right */}
-        <div className="flex items-center space-x-4">
-          <div className="relative hidden md:block rounded-3xl text-white">
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[var(--text-secondary)]">
-              <Search className="h-4 w-4" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search tactics..."
-              className="search-input w-64 rounded-3xl"
-            />
-          </div>
-
-          {/* User avatar */}
-          <div className="relative">
-            <DropdownMenu as="div" className="relative">
-              <DropdownMenu.Button className="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white text-sm font-bold hover:ring-2 hover:ring-green-400 focus:outline-none">
-                SV
-              </DropdownMenu.Button>
-
-              <Transition
-                enter="transition ease-out duration-100"
-                enterFrom="transform opacity-0 scale-95"
-                enterTo="transform opacity-100 scale-100"
-                leave="transition ease-in duration-75"
-                leaveFrom="transform opacity-100 scale-100"
-                leaveTo="transform opacity-0 scale-95"
-              >
-                <DropdownMenu.Items className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                  <div className="py-1 text-sm text-gray-800">
-                    <DropdownMenu.Item>
-                      {({ active }) => (
-                        <a
-                          href="/profile"
-                          className={`flex items-center px-4 py-2 ${active ? "bg-gray-100" : ""}`}
-                        >
-                          <User className="w-4 h-4 mr-2" />
-                          Profile
-                        </a>
-                      )}
-                    </DropdownMenu.Item>
-                    <DropdownMenu.Item>
-                      {({ active }) => (
-                        <button
-                          onClick={useLogout()}
-                          className={`w-full text-left flex items-center px-4 py-2 ${active ? "bg-gray-100" : ""}`}
-                        >
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Logout
-                        </button>
-                      )}
-                    </DropdownMenu.Item>
-                  </div>
-                </DropdownMenu.Items>
-              </Transition>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-};
-
-// Footer component
-const Footer: React.FC = () => {
-  return (
-    <footer className="footer bg-black text-white">
-      <div className="px-6">
-        {/* Main footer content with better spacing */}
-        <div className="flex items-center py-3">
-          <div className="footer-brand">
-            <h3 className="text-xl font-bold text-[var(--primary)] mb-2">
-              The Offside Trap
-            </h3>
-            <p className="text-gray-400 text-base">
-              The ultimate hub for football tactics
-            </p>
-          </div>
-
-          <div className="flex-1 flex justify-center">
-            <div className="footer-links flex items-center space-x-5">
-              <a
-                href="/about"
-                className="text-gray-300 hover:text-white transition-colors text-base font-medium"
-              >
-                About
-              </a>
-              <a
-                href="/privacy"
-                className="text-gray-300 hover:text-white transition-colors text-base font-medium"
-              >
-                Privacy
-              </a>
-              <a
-                href="/terms"
-                className="text-gray-300 hover:text-white transition-colors text-base font-medium"
-              >
-                Terms
-              </a>
-              <a
-                href="/contact"
-                className="text-gray-300 hover:text-white transition-colors text-base font-medium"
-              >
-                Contact
-              </a>
-            </div>
-          </div>
-
-          <div className="w-[200px]"></div>
-        </div>
-
-        {/* Bottom section with better separation */}
-        <div className="footer-bottom border-t border-gray-800 py-6">
-          <p className="text-gray-400 text-center text-base">
-            © 2025 The Offside Trap. All rights reserved.
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-};
-// Layout component
-const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Sidebar: React.FC = () => {
   const location = useLocation();
-  const isCreatePage = location.pathname === "/create" || 
-                      location.pathname === "/create-tactics" || 
-                      location.pathname === "/create-lineups";
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: "var(--background)" }}
+    <aside
+      style={{
+        width: 220,
+        flexShrink: 0,
+        background: "var(--surface-container)",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        position: "sticky",
+        top: 0,
+        height: "100vh",
+      }}
     >
-      <Header />
-      {isCreatePage && (
-        <CreateTacticsLayout />
-      )}
-      <main className="py-8">{children}</main>
-      <Footer />
-    </div>
+      {/* Logo */}
+      <div style={{ padding: "28px 20px 24px" }}>
+        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--outline)", marginBottom: 4 }}>
+          The Offside Trap
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif", color: "var(--primary)", lineHeight: 1.2 }}>
+          Tactical<br />Platform
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "0 12px" }}>
+        {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
+          const active = to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 12px",
+                borderRadius: 10,
+                marginBottom: 2,
+                fontSize: 14,
+                fontWeight: active ? 600 : 400,
+                color: active ? "var(--on-surface)" : "var(--on-surface-variant)",
+                background: active ? "var(--surface-high)" : "transparent",
+                textDecoration: "none",
+                transition: "all 0.15s",
+              }}
+            >
+              <Icon
+                size={16}
+                style={{ color: active ? "var(--primary)" : "var(--outline)", flexShrink: 0 }}
+              />
+              {label}
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      {/* New Project button */}
+      <div style={{ padding: "16px 12px 24px" }}>
+        <NavLink
+          to="/create-tactics"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "10px 14px",
+            borderRadius: 10,
+            background: "linear-gradient(135deg, var(--primary-light), var(--primary))",
+            color: "var(--on-primary)",
+            fontSize: 13,
+            fontWeight: 700,
+            fontFamily: "'Space Grotesk', sans-serif",
+            textDecoration: "none",
+            letterSpacing: "0.02em",
+          }}
+        >
+          <Plus size={15} />
+          New Project
+        </NavLink>
+        {/* User avatar */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, padding: "8px 4px" }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: "50%",
+            background: "var(--surface-high)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 700, color: "var(--primary)",
+            flexShrink: 0,
+          }}>
+            SV
+          </div>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--on-surface)" }}>Analyst</div>
+            <div style={{ fontSize: 10, color: "var(--on-surface-variant)" }}>Free plan</div>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 };
 
-// Separate component for create page layout with context
-const CreateTacticsLayout: React.FC = () => {
-  const { isFinalStep } = useCreateTactics();
-
+const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <>
-      {isFinalStep && (
-        <Toolbar
-          onSave={() => console.log("Save clicked")}
-          onLoad={() => console.log("Load clicked")}
-          onReset={() => console.log("Reset clicked")}
-          onHomeColorChange={(color) => console.log("Home color changed:", color)}
-          onAwayColorChange={(color) => console.log("Away color changed:", color)}
-        />
-      )}
-    </>
+    <div style={{ display: "flex", minHeight: "100vh", background: "var(--surface)" }}>
+      <Sidebar />
+      <main style={{ flex: 1, overflowY: "auto", minWidth: 0 }}>
+        {children}
+      </main>
+    </div>
   );
 };
 

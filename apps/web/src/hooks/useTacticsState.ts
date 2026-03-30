@@ -70,6 +70,12 @@ export const useTacticsState = () => {
   const handlePlayerColorChange = (color: string) =>
     setOptions((prev) => ({ ...prev, playerColor: color }));
 
+  const handleMarkerBgColorChange = (color: string) =>
+    setOptions((prev) => ({ ...prev, markerBgColor: color }));
+
+  const handleMarkerBorderColorChange = (color: string) =>
+    setOptions((prev) => ({ ...prev, markerBorderColor: color }));
+
   const handleTogglePlayerLabels = () => {
     setShowPlayerLabels((prev) => !prev);
     setOptions((prev) => ({ ...prev, showPlayerLabels: !showPlayerLabels }));
@@ -134,6 +140,8 @@ export const useTacticsState = () => {
     handleUpdatePlayer,
     handleFieldColorChange,
     handlePlayerColorChange,
+    handleMarkerBgColorChange,
+    handleMarkerBorderColorChange,
     handleTogglePlayerLabels,
     handleToggleMarkerType,
     handleToggleWaypoints,

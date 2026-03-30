@@ -106,63 +106,63 @@ const CreateLineupsContent: React.FC = () => {
         <h1 className="text-4xl font-bold">Create Lineups</h1>
       </div>
 
-      <div className="flex gap-4 items-start transition-all duration-300 ease-in-out">
-        {/* Lineup Field - Left Side */}
-        <div className="flex-1">
-          <LineupField
-            waypointsMode={state.waypointsMode}
-            horizontalZonesMode={state.horizontalZonesMode}
-            verticalSpacesMode={state.verticalSpacesMode}
-            onChangeFieldColor={state.handleFieldColorChange}
-            onChangePlayerColor={state.handlePlayerColorChange}
-            onTogglePlayerLabels={state.handleTogglePlayerLabels}
-            showPlayerLabels={state.showPlayerLabels}
-            onToggleMarkerType={state.handleToggleMarkerType}
-            markerType={state.markerType}
-            onToggleWaypoints={state.handleToggleWaypoints}
-            onToggleHorizontalZones={state.handleToggleHorizontalZones}
-            onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
-            rotationAngle={rotationAngle}
-            tiltAngle={tiltAngle}
-            onRotationChange={setRotationAngle}
-            onTiltChange={setTiltAngle}
-            zoomLevel={zoomLevel}
-            onZoomChange={setZoomLevel}
-            onRotateLeft={handleRotateLeft}
-            onRotateRight={handleRotateRight}
-            onTiltUp={handleTiltUp}
-            onTiltDown={handleTiltDown}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-          />
-        </div>
-        
-        {/* CreatorsMenu - Vertical on the right */}
-        <div className="flex-shrink-0 self-start">
-          <CreatorsMenu
-            onChangeFieldColor={state.handleFieldColorChange}
-            onChangePlayerColor={state.handlePlayerColorChange}
-            onTogglePlayerLabels={state.handleTogglePlayerLabels}
-            showPlayerLabels={state.showPlayerLabels}
-            onToggleMarkerType={state.handleToggleMarkerType}
-            markerType={state.markerType}
-            onToggleWaypoints={state.handleToggleWaypoints}
-            waypointsMode={state.waypointsMode}
-            onToggleHorizontalZones={state.handleToggleHorizontalZones}
-            horizontalZonesMode={state.horizontalZonesMode}
-            onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
-            verticalSpacesMode={state.verticalSpacesMode}
-            rotationAngle={rotationAngle}
-            tiltAngle={tiltAngle}
-            zoomLevel={zoomLevel}
-            onRotateLeft={handleRotateLeft}
-            onRotateRight={handleRotateRight}
-            onTiltUp={handleTiltUp}
-            onTiltDown={handleTiltDown}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-          />
-        </div>
+      <div className="flex flex-col gap-4 transition-all duration-300 ease-in-out">
+        {/* Lineup Field */}
+        <LineupField
+          waypointsMode={state.waypointsMode}
+          horizontalZonesMode={state.horizontalZonesMode}
+          verticalSpacesMode={state.verticalSpacesMode}
+          onChangeFieldColor={state.handleFieldColorChange}
+          onChangePlayerColor={state.handlePlayerColorChange}
+          onTogglePlayerLabels={state.handleTogglePlayerLabels}
+          showPlayerLabels={state.showPlayerLabels}
+          onToggleMarkerType={state.handleToggleMarkerType}
+          markerType={state.markerType}
+          onToggleWaypoints={state.handleToggleWaypoints}
+          onToggleHorizontalZones={state.handleToggleHorizontalZones}
+          onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
+          rotationAngle={rotationAngle}
+          tiltAngle={tiltAngle}
+          onRotationChange={setRotationAngle}
+          onTiltChange={setTiltAngle}
+          zoomLevel={zoomLevel}
+          onZoomChange={setZoomLevel}
+          onRotateLeft={handleRotateLeft}
+          onRotateRight={handleRotateRight}
+          onTiltUp={handleTiltUp}
+          onTiltDown={handleTiltDown}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+        />
+
+        {/* CreatorsMenu - Horizontal toolbar below field */}
+        <CreatorsMenu
+          onChangeFieldColor={state.handleFieldColorChange}
+          onChangePlayerColor={state.handlePlayerColorChange}
+          onTogglePlayerLabels={state.handleTogglePlayerLabels}
+          showPlayerLabels={state.showPlayerLabels}
+          onToggleMarkerType={state.handleToggleMarkerType}
+          markerType={state.markerType}
+          onToggleWaypoints={state.handleToggleWaypoints}
+          waypointsMode={state.waypointsMode}
+          onToggleHorizontalZones={state.handleToggleHorizontalZones}
+          horizontalZonesMode={state.horizontalZonesMode}
+          onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
+          verticalSpacesMode={state.verticalSpacesMode}
+          rotationAngle={rotationAngle}
+          tiltAngle={tiltAngle}
+          zoomLevel={zoomLevel}
+          onRotateLeft={handleRotateLeft}
+          onRotateRight={handleRotateRight}
+          onTiltUp={handleTiltUp}
+          onTiltDown={handleTiltDown}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          markerBgColor={options.markerBgColor}
+          markerBorderColor={options.markerBorderColor}
+          onChangeMarkerBgColor={state.handleMarkerBgColorChange}
+          onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
+        />
       </div>
       
       <div className="space-y-6 transition-all duration-300 ease-in-out">

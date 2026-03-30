@@ -12,6 +12,10 @@ interface LineupFieldProps {
   verticalSpacesMode: boolean;
   onChangeFieldColor: (color: string) => void;
   onChangePlayerColor: (color: string) => void;
+  markerBgColor?: string;
+  markerBorderColor?: string;
+  onChangeMarkerBgColor?: (color: string) => void;
+  onChangeMarkerBorderColor?: (color: string) => void;
   onTogglePlayerLabels: () => void;
   showPlayerLabels: boolean;
   onToggleMarkerType: () => void;
@@ -39,6 +43,10 @@ const LineupField: React.FC<LineupFieldProps> = ({
   verticalSpacesMode,
   onChangeFieldColor,
   onChangePlayerColor,
+  markerBgColor,
+  markerBorderColor,
+  onChangeMarkerBgColor,
+  onChangeMarkerBorderColor,
   onTogglePlayerLabels,
   showPlayerLabels,
   onToggleMarkerType,
@@ -241,7 +249,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
             perspective: "1500px",
             perspectiveOrigin: "center center",
             width: "100%",
-            maxWidth: "100%",
+            maxWidth: "90%",
             // Center field so it doesn't clip on rotation.
             display: "flex",
             alignItems: "center",
@@ -250,7 +258,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
             // At 45°: bounding_h = containerW * 0.675 * zoom * (sin45 + 7/11*sin45) = containerW * 0.675 * zoom * 1.157
             // Using zoom only (not rotationAngle) means the container never resizes during rotation,
             // preventing layout jumps when clicking rotate.
-            aspectRatio: 1 / (0.675 * zoomLevel * 1.157 * 1.3),
+            aspectRatio: 1 / (0.45 * zoomLevel * 1.157 * 1.3),
           }}
         >
           <div
@@ -259,7 +267,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
             style={{
               ...fieldStyle,
               transformStyle: "preserve-3d",
-              transform: `rotateX(${tiltAngle}deg) rotateZ(${rotationAngle}deg) scale(${0.675 * zoomLevel})`,
+              transform: `rotateX(${tiltAngle}deg) rotateZ(${rotationAngle}deg) scale(${0.45 * zoomLevel})`,
               transformOrigin: "center center",
             }}
             onMouseMove={actions.onMouseMove}
@@ -601,6 +609,8 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   isSelected={selectedPlayer === player.id}
                   onWaypointsClick={() => handleWaypointsClick(player.id)}
                   rotationAngle={rotationAngle}
+                  markerBgColor={options.markerBgColor}
+                  markerBorderColor={options.markerBorderColor}
                 />
               </div>
             ))}

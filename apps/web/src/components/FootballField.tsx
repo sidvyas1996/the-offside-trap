@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { RotateCw } from "lucide-react";
 import { useFootballField } from "../contexts/FootballFieldContext.tsx";
 import PlayerMarker from "./PlayerMarker.tsx";
 import {
@@ -13,6 +14,7 @@ interface FootballFieldProps {
   horizontalZonesMode?: boolean;
   verticalSpacesMode?: boolean;
   isFullScreen?: boolean;
+  fieldOfViewMode?: boolean;
 }
 
 const FootballField: React.FC<FootballFieldProps> = ({
@@ -22,6 +24,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
   horizontalZonesMode = false,
   verticalSpacesMode = false,
   isFullScreen = false,
+  fieldOfViewMode = false,
 }) => {
   const { players, draggedPlayer, options, actions, fieldRef } =
     useFootballField();
@@ -39,6 +42,44 @@ const FootballField: React.FC<FootballFieldProps> = ({
     Array<{ from: number; to: number }>
   >([]);
   const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
+  // Per-player FOV rotation angle (degrees). Default 0 = pointing right.
+  const [fovAngles, setFovAngles] = useState<Record<number, number>>({});
+  const [hoveredPlayerId, setHoveredPlayerId] = useState<number | null>(null);
+  const [rotatingPlayerId, setRotatingPlayerId] = useState<number | null>(null);
+  // Refs so document listeners always see latest values without re-subscribing
+  const rotatingPlayerIdRef = useRef<number | null>(null);
+  const playersRef = useRef<any[]>(players);
+  useEffect(() => { playersRef.current = players; });
+
+  // Drag-to-rotate: angle = atan2(mouse - playerCenter)
+  useEffect(() => {
+    if (rotatingPlayerId === null) return;
+    rotatingPlayerIdRef.current = rotatingPlayerId;
+
+    const onMove = (e: MouseEvent) => {
+      const pid = rotatingPlayerIdRef.current;
+      if (pid === null || !fieldRef.current) return;
+      const player = playersRef.current.find((p: any) => p.id === pid);
+      if (!player) return;
+      const rect = fieldRef.current.getBoundingClientRect();
+      const cx = (player.x / 100) * rect.width + rect.left;
+      const cy = (player.y / 100) * rect.height + rect.top;
+      const angle = (Math.atan2(e.clientY - cy, e.clientX - cx) * 180) / Math.PI;
+      setFovAngles(prev => ({ ...prev, [pid]: (angle + 360) % 360 }));
+    };
+
+    const onUp = () => {
+      setRotatingPlayerId(null);
+      rotatingPlayerIdRef.current = null;
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [rotatingPlayerId]);
 
   // Context menu clamping and close-on-click
   const onShowContextMenu = (playerId: number, x: number, y: number) => {
@@ -112,10 +153,21 @@ const FootballField: React.FC<FootballFieldProps> = ({
   };
 
   // Responsive field sizing
+  const fieldColor = options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR;
+  // Subtle alternating stripe — slightly lighter than base color
+  const stripeColor = 'rgba(255,255,255,0.04)';
+  const pitchBackground = `repeating-linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 9.09%,
+    ${stripeColor} 9.09%,
+    ${stripeColor} 18.18%
+  ), ${fieldColor}`;
+
   const fieldStyle =
     size === "fullscreen" || options.size === "fullscreen" || isFullScreen
       ? {
-          backgroundColor: options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR,
+          background: pitchBackground,
           aspectRatio: "11/7",
           width: "100%",
           maxWidth: "100%",
@@ -123,7 +175,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
           margin: "0 auto",
         }
       : {
-          backgroundColor: options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR,
+          background: pitchBackground,
           aspectRatio: "11/7",
           width: "100%",
           maxWidth: "800px",
@@ -141,7 +193,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
     >
       {/* Field Markings */}
       <svg
-        className="absolute inset-0 w-full h-full opacity-30"
+        className="absolute inset-0 w-full h-full opacity-55"
         viewBox="0 0 550 350"
       >
         <rect
@@ -473,6 +525,78 @@ const FootballField: React.FC<FootballFieldProps> = ({
           );
         })}
 
+      {/* Field of View — 120° sector per player with per-player rotation */}
+      {fieldOfViewMode && (
+        <>
+          <svg
+            className="absolute inset-0 w-full h-full"
+            viewBox="0 0 550 350"
+            style={{ pointerEvents: "none" }}
+          >
+            <defs>
+              <radialGradient id="fovGradient" cx="0" cy="0" r="45" gradientUnits="userSpaceOnUse">
+                <stop offset="0%"   stopColor="#ffff80" stopOpacity="0.45" />
+                <stop offset="70%"  stopColor="#ffff80" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="#ffff80" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            {players.map((player: any) => {
+              const px = player.x * 5.5;
+              const py = player.y * 3.5;
+              const r = 45;
+              const angle = fovAngles[player.id] ?? 0;
+              const sx = r * 0.5;
+              const sy = r * 0.866;
+              const d = `M 0 0 L ${sx} ${-sy} A ${r} ${r} 0 0 1 ${sx} ${sy} Z`;
+              return (
+                <g key={player.id} transform={`translate(${px}, ${py}) rotate(${angle})`}>
+                  <path d={d} fill="url(#fovGradient)" />
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* Rotate handles — appear only when hovering over a player */}
+          {players.map((player: any) => {
+            if (hoveredPlayerId !== player.id) return null;
+            return (
+              <button
+                key={player.id}
+                onMouseDown={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setRotatingPlayerId(player.id);
+                  rotatingPlayerIdRef.current = player.id;
+                }}
+                onMouseEnter={() => setHoveredPlayerId(player.id)}
+                onMouseLeave={() => setHoveredPlayerId(null)}
+                title="Drag to rotate player's field of view"
+                style={{
+                  position: "absolute",
+                  left: `calc(${player.x}% + 22px)`,
+                  top: `calc(${player.y}% - 22px)`,
+                  transform: "translate(-50%, -50%)",
+                  zIndex: 30,
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: "rgba(255,255,80,0.92)",
+                  border: "1.5px solid rgba(120,120,0,0.8)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: rotatingPlayerId === player.id ? "grabbing" : "grab",
+                  padding: 0,
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                }}
+              >
+                <RotateCw size={12} color="#444400" />
+              </button>
+            );
+          })}
+        </>
+      )}
+
       {/* Players */}
       {players.map((player: any) => (
         <PlayerMarker
@@ -498,6 +622,11 @@ const FootballField: React.FC<FootballFieldProps> = ({
           waypointsMode={waypointsMode}
           isSelected={selectedPlayer === player.id}
           onWaypointsClick={() => handleWaypointsClick(player.id)}
+          fovAngle={fieldOfViewMode ? (fovAngles[player.id] ?? 0) : undefined}
+          onMouseEnter={fieldOfViewMode ? () => setHoveredPlayerId(player.id) : undefined}
+          onMouseLeave={fieldOfViewMode ? () => setHoveredPlayerId(null) : undefined}
+          markerBgColor={options.markerBgColor}
+          markerBorderColor={options.markerBorderColor}
         />
       ))}
 

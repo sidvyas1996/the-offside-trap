@@ -9,6 +9,10 @@ interface FullscreenLayoutProps {
   isFullScreen: boolean;
   onChangeFieldColor: (color: string) => void;
   onChangePlayerColor: (color: string) => void;
+  markerBgColor?: string;
+  markerBorderColor?: string;
+  onChangeMarkerBgColor?: (color: string) => void;
+  onChangeMarkerBorderColor?: (color: string) => void;
   onTogglePlayerLabels: () => void;
   showPlayerLabels: boolean;
   onToggleMarkerType: () => void;
@@ -30,6 +34,10 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
   isFullScreen,
   onChangeFieldColor,
   onChangePlayerColor,
+  markerBgColor,
+  markerBorderColor,
+  onChangeMarkerBgColor,
+  onChangeMarkerBorderColor,
   onTogglePlayerLabels,
   showPlayerLabels,
   onToggleMarkerType,
@@ -59,6 +67,10 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
           isFullScreen={isFullScreen}
           onChangeFieldColor={onChangeFieldColor}
           onChangePlayerColor={onChangePlayerColor}
+          markerBgColor={markerBgColor}
+          markerBorderColor={markerBorderColor}
+          onChangeMarkerBgColor={onChangeMarkerBgColor}
+          onChangeMarkerBorderColor={onChangeMarkerBorderColor}
           onTogglePlayerLabels={onTogglePlayerLabels}
           showPlayerLabels={showPlayerLabels}
           onToggleMarkerType={onToggleMarkerType}

@@ -4,28 +4,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables for the black/dark gray theme */
+/* CSS Variables — Tactical Precision design system */
 :root {
-  --background: #1a1a1a; /* Pure black background */
-  --card: #1a1a1a; /* Dark gray for cards */
-  --border: #333333; /* Medium gray for borders */
-  --text-primary: #ffffff; /* White for primary text */
-  --text-secondary: #a3a3a3; /* Light gray for secondary text */
-  --primary: #16A34A; /* Emerald green for accents */
-  --primary-hover: #0b7431; /* Darker emerald for hover */
-  --hero-overlay: rgba(0, 0, 0, 0.8); /* Dark overlay for hero section */
+  /* ── Surface hierarchy (tonal layering, no hard borders) ── */
+  --surface:              #060e20;
+  --surface-low:          #091328;
+  --surface-container:    #0f1930;
+  --surface-high:         #141f38;
+  --surface-highest:      #192540;
+
+  /* ── Accent / primary ── */
+  --primary:              #cefc22;
+  --primary-light:        #f4ffc9;
+  --on-primary:           #3b4a00;
+  --primary-hover:        #b8e800;
+
+  /* ── Text ── */
+  --on-surface:           #dee5ff;
+  --on-surface-variant:   #a3aac4;
+  --outline:              #6d758c;
+
+  /* ── Semantic aliases ── */
+  --background:           #060e20;
+  --foreground:           #dee5ff;
+  --card:                 #0f1930;
+  --card-foreground:      #dee5ff;
+  --border:               rgba(64,72,93,0.25);
+  --input:                #141f38;
+  --text-primary:         #dee5ff;
+  --text-secondary:       #a3aac4;
+  --hero-overlay:         rgba(0,0,0,0.8);
+
+  /* ── Studio theme aliases ── */
+  --theme-bg:             #060e20;
+  --theme-card:           #0f1930;
+  --theme-stage:          #060e20;
+  --theme-panel:          #141f38;
+  --theme-border:         rgba(64,72,93,0.30);
+  --theme-border-btn:     rgba(64,72,93,0.50);
+  --theme-muted:          #6d758c;
+  --theme-secondary-text: #a3aac4;
+  --theme-bright-text:    #dee5ff;
+  --theme-badge-bg:       #141f38;
 }
 
 /* Dark theme base styles */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-  'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-  sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--background);
-  color: var(--text-primary);
+  background-color: var(--surface);
+  color: var(--on-surface);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  color: var(--on-surface);
 }
 
 * {
@@ -74,18 +109,21 @@ a {
 
 /* Button styles */
 .btn-primary {
-  background-color: var(--primary);
-  color: white;
+  background: linear-gradient(135deg, var(--primary-light), var(--primary));
+  color: var(--on-primary);
   padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  border-radius: 0.75rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s;
   border: none;
   cursor: pointer;
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-hover);
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  box-shadow: 0 0 20px rgba(206,252,34,0.25);
 }
 
 .btn-outline {
@@ -134,17 +172,16 @@ a {
 
 /* Tactic card styles */
 .tactic-card {
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  background: var(--surface-high);
+  border-radius: 14px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .tactic-card:hover {
+  background: var(--surface-highest);
   transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
-  border-color: var(--primary);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.3);
 }
 
 /* Football field pattern for default cards */

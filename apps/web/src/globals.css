@@ -6,72 +6,50 @@
 
 @layer base {
     :root {
-        /* Background colors */
-        --background: 222.2 84% 4.9%; /* Very dark gray */
-        --foreground: 210 40% 98%; /* Very light gray */
-
-        /* Card colors */
-        --card: 222.2 84% 7.9%; /* Dark gray */
-        --card-foreground: 210 40% 98%; /* Light gray */
-
-        /* Popup colors */
-        --popover: 222.2 84% 4.9%; /* Dark gray */
-        --popover-foreground: 210 40% 98%; /* Light gray */
-
-        /* Primary colors (emerald theme) */
-        --primary: 142.1 76.2% 36.3%; /* Emerald */
-        --primary-foreground: 355.7 100% 97.3%; /* White */
-
-        /* Secondary colors */
-        --secondary: 217.2 32.6% 17.5%; /* Dark gray */
-        --secondary-foreground: 210 40% 98%; /* Light gray */
-
-        /* Muted colors */
-        --muted: 217.2 32.6% 17.5%; /* Dark gray */
-        --muted-foreground: 215 20.2% 65.1%; /* Medium gray */
-
-        /* Accent colors */
-        --accent: 217.2 32.6% 17.5%; /* Dark gray */
-        --accent-foreground: 210 40% 98%; /* Light gray */
-
-        /* Destructive colors */
-        --destructive: 0 62.8% 30.6%; /* Dark red */
-        --destructive-foreground: 210 40% 98%; /* Light gray */
-
-        /* Border and input */
-        --border: 217.2 32.6% 17.5%; /* Dark gray */
-        --input: 217.2 32.6% 17.5%; /* Dark gray */
-        --ring: 142.1 76.2% 36.3%; /* Emerald */
-
-        /* Border radius */
-        --radius: 0.5rem;
-
-        /* Custom variables for your app */
-        --text-primary: 210 40% 98%;
-        --text-secondary: 215 20.2% 65.1%;
+        --background: 222 57% 8%;
+        --foreground: 230 60% 93%;
+        --card: 222 45% 14%;
+        --card-foreground: 230 60% 93%;
+        --popover: 222 57% 8%;
+        --popover-foreground: 230 60% 93%;
+        --primary: 73 97% 56%;       /* lime #cefc22 */
+        --primary-foreground: 74 100% 12%; /* dark on lime */
+        --secondary: 222 40% 19%;
+        --secondary-foreground: 230 60% 93%;
+        --muted: 222 40% 19%;
+        --muted-foreground: 225 20% 63%;
+        --accent: 222 40% 19%;
+        --accent-foreground: 230 60% 93%;
+        --destructive: 14 100% 66%;  /* #ff7351 */
+        --destructive-foreground: 230 60% 93%;
+        --border: 222 20% 30%;
+        --input: 222 35% 22%;
+        --ring: 73 97% 56%;
+        --radius: 0.75rem;
+        --text-primary: 230 60% 93%;
+        --text-secondary: 225 20% 63%;
     }
 
     .dark {
-        /* Dark mode colors (same as root for this dark theme) */
-        --background: 222.2 84% 4.9%;
-        --foreground: 210 40% 98%;
-        --card: 222.2 84% 7.9%;
-        --card-foreground: 210 40% 98%;
-        --popover: 222.2 84% 4.9%;
-        --popover-foreground: 210 40% 98%;
-        --primary: 142.1 76.2% 36.3%;
-        --primary-foreground: 355.7 100% 97.3%;
-        --secondary: 217.2 32.6% 17.5%;
-        --secondary-foreground: 210 40% 98%;
-        --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 65.1%;
-        --accent: 217.2 32.6% 17.5%;
-        --accent-foreground: 210 40% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 210 40% 98%;
-        --border: 217.2 32.6% 17.5%;
-        --input: 217.2 32.6% 17.5%;
-        --ring: 142.1 76.2% 36.3%;
+        --background: 222 57% 8%;
+        --foreground: 230 60% 93%;
+        --card: 222 45% 14%;
+        --card-foreground: 230 60% 93%;
+        --popover: 222 57% 8%;
+        --popover-foreground: 230 60% 93%;
+        --primary: 73 97% 56%;
+        --primary-foreground: 74 100% 12%;
+        --secondary: 222 40% 19%;
+        --secondary-foreground: 230 60% 93%;
+        --muted: 222 40% 19%;
+        --muted-foreground: 225 20% 63%;
+        --accent: 222 40% 19%;
+        --accent-foreground: 230 60% 93%;
+        --destructive: 14 100% 66%;
+        --destructive-foreground: 230 60% 93%;
+        --border: 222 20% 30%;
+        --input: 222 35% 22%;
+        --ring: 73 97% 56%;
     }
 }
 
