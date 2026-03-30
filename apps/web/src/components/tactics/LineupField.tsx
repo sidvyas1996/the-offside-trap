@@ -232,7 +232,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
 
   return (
     <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 ">
-      <h2 className="text-2xl font-bold mb-4">Lineup Field</h2>
+      <h2 className="text-2xl font-bold mb-4 ">Lineup Field</h2>
       <div className="w-full flex justify-center relative">
         {/* 3D Perspective Container */}
         <div
@@ -242,8 +242,15 @@ const LineupField: React.FC<LineupFieldProps> = ({
             perspectiveOrigin: "center center",
             width: "100%",
             maxWidth: "100%",
-            aspectRatio: "11/7",
-            minHeight: "486px",
+            // Center field so it doesn't clip on rotation.
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            // Size the container for the worst-case rotation (45°) at the current zoom.
+            // At 45°: bounding_h = containerW * 0.675 * zoom * (sin45 + 7/11*sin45) = containerW * 0.675 * zoom * 1.157
+            // Using zoom only (not rotationAngle) means the container never resizes during rotation,
+            // preventing layout jumps when clicking rotate.
+            aspectRatio: 1 / (0.675 * zoomLevel * 1.157 * 1.3),
           }}
         >
           <div

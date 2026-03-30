@@ -191,6 +191,8 @@ export class TacticsService {
         tags,
         description: data.description,
         players: JSON.stringify(data.players),
+        fieldSettings: data.fieldSettings ? JSON.stringify(data.fieldSettings) : undefined,
+        animation: data.animation ? JSON.stringify(data.animation) : undefined,
         author: {
           connect: { id: userId },
         },
@@ -538,6 +540,8 @@ export class TacticsService {
       tags: tactic.tags,
       description: tactic.description,
       players: tactic.players as Player[],
+      fieldSettings: tactic.fieldSettings ?? null,
+      animation: tactic.animation ?? null,
       author: {
         id: tactic.author.id,
         username: tactic.author.username,

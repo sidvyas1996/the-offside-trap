@@ -43,7 +43,7 @@ export class ScreenshotService {
     }
   }
 
-  static async captureField(state: FieldState, format: 'png' | 'jpeg'): Promise<Buffer> {
+  static async captureField(state: FieldState, format: 'png' | 'jpeg', previewType: 'lineup' | 'tactics' = 'lineup'): Promise<Buffer> {
     const browser = await this.getBrowser();
     
     // Create a new context with device scale factor for high-DPI rendering
@@ -56,7 +56,9 @@ export class ScreenshotService {
     try {
       // Get frontend URL from environment or use default
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      const exportUrl = `${frontendUrl}/export-preview`;
+      const exportUrl = previewType === 'tactics'
+        ? `${frontendUrl}/tactics-export-preview`
+        : `${frontendUrl}/export-preview`;
 
       // Viewport is already set via context (3840x2160 with 2x scale = 7680x4320 effective)
 

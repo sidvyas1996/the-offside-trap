@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { renderBackButton } from "../components/ui/back-button";
-import { FootballFieldProvider } from "../contexts/FootballFieldContext";
+import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
 import { useTacticsForm } from "../hooks/useTacticsForm";
 import { useTacticsState } from "../hooks/useTacticsState";
 import { useTacticsActions } from "../hooks/useTacticsActions";
@@ -10,10 +10,13 @@ import TacticDetails from "../components/tactics/TacticDetails";
 import LineupOptions from "../components/tactics/LineupOptions";
 import Preview from "../components/tactics/Preview";
 import CreatorsMenu from "../components/ui/creators-menu";
+import { TacticEntity } from "../entities/TacticEntity";
+import type { TacticFormData } from "../../../../packages/shared/src";
 
 const CreateLineupsContent: React.FC = () => {
   const navigate = useNavigate();
-  
+  const { players, options } = useFootballField();
+
   // Custom hooks
   const form = useTacticsForm();
   const state = useTacticsState();
@@ -66,14 +69,34 @@ const CreateLineupsContent: React.FC = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!form.isFormValid()) {
+      alert("Please fill in title (3+ chars), description (10+ chars), and a valid formation (e.g. 4-3-3).");
+      return;
+    }
     form.setLoading(true);
-    // TODO: Implement lineup creation
-    console.log("Creating lineup:", form.getFormData());
-    setTimeout(() => {
+    try {
+      const payload: TacticFormData = {
+        title: form.title,
+        formation: form.formation,
+        tags: form.tags,
+        description: form.description,
+        players,
+        fieldSettings: {
+          fieldColor: options.fieldColor || '#0d4b3e',
+          playerColor: options.playerColor || '#1a1a1a',
+          showPlayerLabels: state.showPlayerLabels,
+          markerType: state.markerType,
+        },
+      };
+      await new TacticEntity().create(payload);
+      navigate('/');
+    } catch (err) {
+      console.error("Failed to create lineup:", err);
+      alert("Failed to save lineup. Please try again.");
+    } finally {
       form.setLoading(false);
-      // Navigate to tactics list or show success message
-    }, 1000);
+    }
   };
 
   const renderCreateLineupsPage = () => (
@@ -150,6 +173,8 @@ const CreateLineupsContent: React.FC = () => {
             setTitle={form.setTitle}
             description={form.description}
             setDescription={form.setDescription}
+            formation={form.formation}
+            setFormation={form.setFormation}
             selectedOptions={form.selectedOptions}
             loading={form.loading}
             onSubmit={handleSubmit}

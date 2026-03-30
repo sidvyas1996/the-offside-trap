@@ -11,6 +11,7 @@ import { useLogout } from "./lib/logout.ts";
 import CreateTactics from "./pages/CreateTactics.tsx";
 import CreateLineups from "./pages/CreateLineups.tsx";
 import ExportPreview from "./pages/ExportPreview.tsx";
+import TacticsExportPreview from "./pages/TacticsExportPreview.tsx";
 import { Toolbar } from "./components/ui/toolbar";
 import { CreateTacticsProvider, useCreateTactics } from "./contexts/CreateTacticsContext";
 
@@ -43,11 +44,9 @@ function AppRoutes() {
         element={user ? <Navigate to="/" replace /> : <Login />}
       />
 
-      {/* Export preview - no layout */}
-      <Route
-        path="/export-preview"
-        element={<ExportPreview />}
-      />
+      {/* Export preview routes - no layout */}
+      <Route path="/export-preview" element={<ExportPreview />} />
+      <Route path="/tactics-export-preview" element={<TacticsExportPreview />} />
 
       {/* Protected routes inside Layout */}
       <Route

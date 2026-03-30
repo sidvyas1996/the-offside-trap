@@ -27,10 +27,29 @@ export const usePlayerDrag = (
         (e: React.MouseEvent) => {
             if (!draggedPlayerRef.current || !fieldRef.current) return;
 
-            const rect = fieldRef.current.getBoundingClientRect();
+            const el = fieldRef.current;
+            const parent = el.parentElement;
 
-            const newX = ((e.clientX - rect.left) / rect.width) * 100;
-            const newY = ((e.clientY - rect.top) / rect.height) * 100;
+            if (!parent) return;
+
+            const parentRect = parent.getBoundingClientRect();
+
+            // Offset of cursor from the perspective container's center
+            const cx = parentRect.width / 2;
+            const cy = parentRect.height / 2;
+            const localX = e.clientX - parentRect.left - cx;
+            const localY = e.clientY - parentRect.top - cy;
+
+            // Read the live CSS transform matrix (rotateX + rotateZ + scale)
+            // and invert it to map viewport coords back to field-local coords
+            const rawTransform = window.getComputedStyle(el).transform;
+            const matrix = new DOMMatrix(rawTransform === 'none' ? undefined : rawTransform);
+            const inv = matrix.inverse();
+            const pt = inv.transformPoint(new DOMPoint(localX, localY, 0, 1));
+
+            // Map centered local coords back to 0–100%
+            const newX = ((pt.x + parentRect.width / 2) / parentRect.width) * 100;
+            const newY = ((pt.y + parentRect.height / 2) / parentRect.height) * 100;
 
             const clampedX = Math.max(0, Math.min(100, newX));
             const clampedY = Math.max(0, Math.min(100, newY));

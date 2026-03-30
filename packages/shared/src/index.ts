@@ -24,6 +24,30 @@ export interface TacticSummary {
   updatedAt: Date;
 }
 
+// Field visual settings (CreateTactics / 2D field only)
+export interface FieldSettings {
+  fieldColor: string;
+  playerColor: string;
+  showPlayerLabels: boolean;
+  markerType: 'circle' | 'shirt';
+}
+
+// Single keyframe snapshot
+export interface Keyframe {
+  id: string;           // uuid, client-generated
+  timeMs: number;       // position on timeline in ms
+  players: Player[];    // full 11-player snapshot
+  fieldSettings: FieldSettings;
+  label?: string;
+}
+
+// Full animation attached to a tactic
+export interface AnimationData {
+  durationMs: number;   // total duration, default 5000
+  fps: number;          // export fps, default 24
+  keyframes: Keyframe[];
+}
+
 // Tactic Form Data
 export interface TacticFormData {
   title: string;
@@ -31,6 +55,8 @@ export interface TacticFormData {
   tags: string[];
   description: string;
   players: Player[];
+  fieldSettings?: FieldSettings;  // saved with both tactics and lineups
+  animation?: AnimationData;      // tactics only
 }
 
 // User Types

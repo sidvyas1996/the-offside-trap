@@ -5,7 +5,39 @@ const playerSchema = z.object({
   x: z.number().min(0).max(100),
   y: z.number().min(0).max(100),
   number: z.number().min(1).max(11),
+  name: z.string().optional(),
+  position: z.string().optional(),
+  isCaptain: z.boolean().optional(),
+  hasYellowCard: z.boolean().optional(),
+  hasRedCard: z.boolean().optional(),
+  isStarPlayer: z.boolean().optional(),
 });
+
+const fieldSettingsSchema = z.object({
+  fieldColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  playerColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  showPlayerLabels: z.boolean(),
+  markerType: z.enum(['circle', 'shirt']),
+}).optional();
+
+const keyframeSchema = z.object({
+  id: z.string().uuid(),
+  timeMs: z.number().min(0),
+  players: z.array(playerSchema).length(11),
+  fieldSettings: z.object({
+    fieldColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    playerColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    showPlayerLabels: z.boolean(),
+    markerType: z.enum(['circle', 'shirt']),
+  }),
+  label: z.string().optional(),
+});
+
+const animationDataSchema = z.object({
+  durationMs: z.number().min(500).max(60000),
+  fps: z.number().int().min(1).max(60),
+  keyframes: z.array(keyframeSchema),
+}).optional();
 
 export const createTacticSchema = z.object({
   body: z.object({
@@ -20,6 +52,8 @@ export const createTacticSchema = z.object({
       .min(10, 'Description must be at least 10 characters')
       .max(1000, 'Description must be less than 1000 characters'),
     players: z.array(playerSchema).length(11, 'Exactly 11 players required'),
+    fieldSettings: fieldSettingsSchema,
+    animation: animationDataSchema,
   }),
 });
 
@@ -33,6 +67,8 @@ export const updateTacticSchema = z.object({
     tags: z.array(z.string()).max(5).optional(),
     description: z.string().min(10).max(1000).optional(),
     players: z.array(playerSchema).length(11).optional(),
+    fieldSettings: fieldSettingsSchema,
+    animation: animationDataSchema,
   }),
 });
 

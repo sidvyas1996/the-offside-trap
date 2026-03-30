@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { ScreenshotService } from '../services/screenshot.service';
+import { VideoExportService } from '../services/video.export.service';
+import type { AnimationData } from '@the-offside-trap/shared';
 
 interface ExportRequest {
   rotationAngle: number;
@@ -54,9 +56,10 @@ export const exportField = async (req: Request, res: Response) => {
 
     const format = fieldState.format || 'png';
     const imageFormat = format === 'jpg' ? 'jpeg' : 'png';
+    const previewType: 'lineup' | 'tactics' = (req.body.previewType === 'tactics') ? 'tactics' : 'lineup';
 
     // Capture screenshot
-    const screenshot = await ScreenshotService.captureField(fieldState, imageFormat);
+    const screenshot = await ScreenshotService.captureField(fieldState, imageFormat, previewType);
 
     // Set response headers
     res.setHeader('Content-Type', `image/${imageFormat}`);
@@ -70,6 +73,50 @@ export const exportField = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to export field image',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+export const exportVideo = async (req: Request, res: Response) => {
+  try {
+    const { animation, baseFieldState } = req.body as {
+      animation: AnimationData;
+      baseFieldState: {
+        fieldColor: string;
+        players: Array<{ id: number; x: number; y: number; name: string; number: string; }>;
+        showPlayerLabels: boolean;
+        markerType: 'circle' | 'shirt';
+      };
+    };
+
+    if (!animation || !animation.keyframes || animation.keyframes.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Animation must have at least 2 keyframes',
+      });
+    }
+
+    if (!baseFieldState || !Array.isArray(baseFieldState.players)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid base field state',
+      });
+    }
+
+    console.log(`Video export: ${animation.keyframes.length} keyframes, ${animation.durationMs}ms, ${animation.fps}fps`);
+
+    const mp4Buffer = await VideoExportService.exportAnimation(animation, baseFieldState);
+
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', 'attachment; filename="tactic.mp4"');
+    res.setHeader('Content-Length', mp4Buffer.length.toString());
+    res.send(mp4Buffer);
+  } catch (error) {
+    console.error('Error exporting video:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to export video',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }

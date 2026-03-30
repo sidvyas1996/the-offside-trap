@@ -3,14 +3,16 @@ import { Save, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
+import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
-import type { TacticFormData } from "../../hooks/useTacticsForm";
 
 interface TacticDetailsProps {
   title: string;
   setTitle: (title: string) => void;
   description: string;
   setDescription: (description: string) => void;
+  formation?: string;
+  setFormation?: (f: string) => void;
   selectedOptions: string[];
   loading: boolean;
   onSubmit: () => void;
@@ -21,6 +23,8 @@ const TacticDetails: React.FC<TacticDetailsProps> = ({
   setTitle,
   description,
   setDescription,
+  formation,
+  setFormation,
   selectedOptions,
   loading,
   onSubmit,
@@ -58,6 +62,19 @@ const TacticDetails: React.FC<TacticDetailsProps> = ({
             className="mt-1"
           />
         </div>
+
+        {setFormation !== undefined && (
+          <div>
+            <Label htmlFor="formation" className="text-sm">Formation</Label>
+            <Input
+              id="formation"
+              value={formation}
+              onChange={(e) => setFormation(e.target.value)}
+              placeholder="e.g. 4-3-3"
+              className="mt-1"
+            />
+          </div>
+        )}
 
         <div>
           <Label className="text-sm">Selected Options</Label>

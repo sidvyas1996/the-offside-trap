@@ -29,7 +29,9 @@ model Tactic {
   formation   String
   tags        String[]
   description String
-  players     Json     // Store Player[] as JSON
+  players       Json     // Store Player[] as JSON
+  fieldSettings Json?    // FieldSettings | null
+  animation     Json?    // AnimationData | null (tactics only)
   authorId    String @map("author_id")
   createdAt   DateTime @map("created_at")@default(now())
   updatedAt   DateTime @map("updated_at")@updatedAt
