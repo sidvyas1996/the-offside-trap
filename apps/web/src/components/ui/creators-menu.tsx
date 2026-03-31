@@ -1,4 +1,5 @@
 import React from "react";
+import type { MarkerDesign } from "../../contexts/FootballFieldContext";
 
 import { Users, Circle, Shirt, CaseSensitive, Waypoints, Eye, Sun, Moon, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2, RotateCw, RotateCcw, ChevronUp, ChevronDown, ZoomIn, ZoomOut, Info } from "lucide-react";
 import {Button} from "./button.tsx";
@@ -9,8 +10,14 @@ interface CreatorsMenuProps {
     onChangePlayerColor: (color: string) => void;
     markerBgColor?: string;
     markerBorderColor?: string;
+    markerTextColor?: string;
+    markerSecondaryColor?: string;
+    markerDesign?: MarkerDesign;
     onChangeMarkerBgColor?: (color: string) => void;
     onChangeMarkerBorderColor?: (color: string) => void;
+    onChangeMarkerTextColor?: (color: string) => void;
+    onChangeMarkerSecondaryColor?: (color: string) => void;
+    onChangeMarkerDesign?: (design: MarkerDesign) => void;
     onTogglePlayerLabels?: () => void;
     showPlayerLabels?: boolean;
     onToggleMarkerType?: () => void;
@@ -57,8 +64,14 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
     markerType = 'circle',
     markerBgColor = '#111827',
     markerBorderColor = '#ffffff',
+    markerTextColor = '#ffffff',
+    markerSecondaryColor = '#ffffff',
+    markerDesign = 'solid',
     onChangeMarkerBgColor,
     onChangeMarkerBorderColor,
+    onChangeMarkerTextColor,
+    onChangeMarkerSecondaryColor,
+    onChangeMarkerDesign,
     onToggleWaypoints,
     waypointsMode = false,
     onToggleFieldOfView,
@@ -230,45 +243,121 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
             <div className="flex flex-col flex-1 min-w-0">
                 <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)] mb-2">Player Properties</span>
                 <div className="flex flex-row items-center gap-1.5 flex-wrap">
-                    {/* Marker background color */}
-                    {onChangeMarkerBgColor && (
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">BG</span>
-                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                <div style={{
-                                    width: 30, height: 30, borderRadius: 6,
-                                    background: markerBgColor,
-                                    border: '1.5px solid var(--theme-border-btn)',
-                                    cursor: 'pointer',
-                                }} />
-                                <input
-                                    type="color"
-                                    value={markerBgColor}
-                                    onChange={(e) => onChangeMarkerBgColor(e.target.value)}
-                                    style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-                                />
-                            </label>
+                    {/* Design dropdown + color pickers group */}
+                    {(onChangeMarkerDesign || onChangeMarkerBgColor || onChangeMarkerBorderColor || onChangeMarkerTextColor) && (
+                        <div className="flex flex-row items-center gap-2">
+                            {onChangeMarkerDesign && (
+                                <label className="flex flex-row items-center gap-1">
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Style</span>
+                                    <select
+                                        value={markerDesign}
+                                        onChange={(e) => onChangeMarkerDesign(e.target.value as MarkerDesign)}
+                                        style={{
+                                            background: 'var(--theme-panel)',
+                                            color: 'var(--theme-secondary-text)',
+                                            border: '1.5px solid var(--theme-border-btn)',
+                                            borderRadius: 5,
+                                            padding: '2px 4px',
+                                            fontSize: 11,
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            height: 24,
+                                            outline: 'none',
+                                        }}
+                                    >
+                                        <option value="solid">Solid</option>
+                                        <option value="stripes">Stripes</option>
+                                        <option value="diagonal-left">Diag ╲</option>
+                                        <option value="diagonal-right">Diag ╱</option>
+                                        <option value="horizontal-split">H Split</option>
+                                        <option value="vertical-split">V Split</option>
+                                    </select>
+                                </label>
+                            )}
+                            {onChangeMarkerBgColor && (
+                                <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">
+                                        {markerDesign !== 'solid' ? 'Primary' : 'BG'}
+                                    </span>
+                                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                                        <div style={{
+                                            width: 24, height: 24, borderRadius: 5,
+                                            background: markerBgColor,
+                                            border: '1.5px solid var(--theme-border-btn)',
+                                            cursor: 'pointer',
+                                        }} />
+                                        <input
+                                            type="color"
+                                            value={markerBgColor}
+                                            onChange={(e) => onChangeMarkerBgColor(e.target.value)}
+                                            style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                        />
+                                    </div>
+                                </label>
+                            )}
+                            {onChangeMarkerSecondaryColor && markerDesign !== 'solid' && (
+                                <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">2nd</span>
+                                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                                        <div style={{
+                                            width: 24, height: 24, borderRadius: 5,
+                                            background: markerSecondaryColor,
+                                            border: '1.5px solid var(--theme-border-btn)',
+                                            cursor: 'pointer',
+                                        }} />
+                                        <input
+                                            type="color"
+                                            value={markerSecondaryColor}
+                                            onChange={(e) => onChangeMarkerSecondaryColor(e.target.value)}
+                                            style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                        />
+                                    </div>
+                                </label>
+                            )}
+                            {onChangeMarkerBorderColor && (
+                                <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Border</span>
+                                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                                        <div style={{
+                                            width: 24, height: 24, borderRadius: 5,
+                                            background: markerBorderColor,
+                                            border: '1.5px solid var(--theme-border-btn)',
+                                            cursor: 'pointer',
+                                        }} />
+                                        <input
+                                            type="color"
+                                            value={markerBorderColor}
+                                            onChange={(e) => onChangeMarkerBorderColor(e.target.value)}
+                                            style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                        />
+                                    </div>
+                                </label>
+                            )}
+                            {onChangeMarkerTextColor && (
+                                <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
+                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Text</span>
+                                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                                        <div style={{
+                                            width: 24, height: 24, borderRadius: 5,
+                                            background: markerTextColor,
+                                            border: '1.5px solid var(--theme-border-btn)',
+                                            cursor: 'pointer',
+                                        }} />
+                                        <input
+                                            type="color"
+                                            value={markerTextColor}
+                                            onChange={(e) => onChangeMarkerTextColor(e.target.value)}
+                                            style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                        />
+                                    </div>
+                                </label>
+                            )}
                         </div>
                     )}
-                    {/* Marker border color */}
-                    {onChangeMarkerBorderColor && (
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Border</span>
-                            <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                                <div style={{
-                                    width: 30, height: 30, borderRadius: 6,
-                                    background: markerBorderColor,
-                                    border: '1.5px solid var(--theme-border-btn)',
-                                    cursor: 'pointer',
-                                }} />
-                                <input
-                                    type="color"
-                                    value={markerBorderColor}
-                                    onChange={(e) => onChangeMarkerBorderColor(e.target.value)}
-                                    style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-                                />
-                            </label>
-                        </div>
+                    {/* Divider between colors and buttons */}
+                    {(onChangeMarkerDesign || onChangeMarkerBgColor || onChangeMarkerBorderColor || onChangeMarkerTextColor) &&
+                     (onToggleWaypoints || onToggleMarkerType || onTogglePlayerLabels) && (
+                        <div className="self-stretch w-px bg-[var(--theme-border)] mx-1" />
                     )}
                     {onToggleWaypoints && (
                         <Button

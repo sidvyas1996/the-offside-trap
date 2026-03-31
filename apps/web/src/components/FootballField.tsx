@@ -7,6 +7,8 @@ import {
   CHARCOAL_GRAY,
 } from "../utils/colors.ts";
 
+import type { Player } from "../../../../packages/shared";
+
 interface FootballFieldProps {
   editable?: boolean;
   size?: "default" | "fullscreen";
@@ -15,6 +17,7 @@ interface FootballFieldProps {
   verticalSpacesMode?: boolean;
   isFullScreen?: boolean;
   fieldOfViewMode?: boolean;
+  onPlayerSelect?: (player: Player) => void;
 }
 
 const FootballField: React.FC<FootballFieldProps> = ({
@@ -25,6 +28,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
   verticalSpacesMode = false,
   isFullScreen = false,
   fieldOfViewMode = false,
+  onPlayerSelect,
 }) => {
   const { players, draggedPlayer, options, actions, fieldRef } =
     useFootballField();
@@ -627,6 +631,10 @@ const FootballField: React.FC<FootballFieldProps> = ({
           onMouseLeave={fieldOfViewMode ? () => setHoveredPlayerId(null) : undefined}
           markerBgColor={options.markerBgColor}
           markerBorderColor={options.markerBorderColor}
+          markerTextColor={options.markerTextColor}
+          markerSecondaryColor={options.markerSecondaryColor}
+          markerDesign={options.markerDesign}
+          onPlayerSelect={onPlayerSelect}
         />
       ))}
 

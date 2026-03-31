@@ -12,8 +12,14 @@ interface TacticalFieldProps {
   onChangePlayerColor: (color: string) => void;
   markerBgColor?: string;
   markerBorderColor?: string;
+  markerTextColor?: string;
+  markerSecondaryColor?: string;
+  markerDesign?: import('../../contexts/FootballFieldContext').MarkerDesign;
   onChangeMarkerBgColor?: (color: string) => void;
   onChangeMarkerBorderColor?: (color: string) => void;
+  onChangeMarkerTextColor?: (color: string) => void;
+  onChangeMarkerSecondaryColor?: (color: string) => void;
+  onChangeMarkerDesign?: (design: import('../../contexts/FootballFieldContext').MarkerDesign) => void;
   onTogglePlayerLabels: () => void;
   showPlayerLabels: boolean;
   onToggleMarkerType: () => void;
@@ -25,6 +31,7 @@ interface TacticalFieldProps {
   onToggleFieldOfView?: () => void;
   studioMode?: boolean;
   showSingleMarkerHint?: boolean;
+  onPlayerSelect?: (player: import('../../../../../packages/shared').Player) => void;
 }
 
 const TacticalField: React.FC<TacticalFieldProps> = ({
@@ -37,8 +44,14 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
   onChangePlayerColor,
   markerBgColor,
   markerBorderColor,
+  markerTextColor,
+  markerSecondaryColor,
+  markerDesign,
   onChangeMarkerBgColor,
   onChangeMarkerBorderColor,
+  onChangeMarkerTextColor,
+  onChangeMarkerSecondaryColor,
+  onChangeMarkerDesign,
   onTogglePlayerLabels,
   showPlayerLabels,
   onToggleMarkerType,
@@ -50,6 +63,7 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
   onToggleFieldOfView,
   studioMode = false,
   showSingleMarkerHint = false,
+  onPlayerSelect,
 }) => {
   if (studioMode) {
     return (
@@ -60,6 +74,7 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
           verticalSpacesMode={verticalSpacesMode}
           isFullScreen={isFullScreen}
           fieldOfViewMode={fieldOfViewMode}
+          onPlayerSelect={onPlayerSelect}
         />
       </div>
     );
@@ -75,6 +90,7 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
           verticalSpacesMode={verticalSpacesMode}
           isFullScreen={isFullScreen}
           fieldOfViewMode={fieldOfViewMode}
+          onPlayerSelect={onPlayerSelect}
         />
       </div>
       <div className="mt-4">
@@ -83,8 +99,14 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
           onChangePlayerColor={onChangePlayerColor}
           markerBgColor={markerBgColor}
           markerBorderColor={markerBorderColor}
+          markerTextColor={markerTextColor}
+          markerSecondaryColor={markerSecondaryColor}
+          markerDesign={markerDesign}
           onChangeMarkerBgColor={onChangeMarkerBgColor}
           onChangeMarkerBorderColor={onChangeMarkerBorderColor}
+          onChangeMarkerTextColor={onChangeMarkerTextColor}
+          onChangeMarkerSecondaryColor={onChangeMarkerSecondaryColor}
+          onChangeMarkerDesign={onChangeMarkerDesign}
           onTogglePlayerLabels={onTogglePlayerLabels}
           showPlayerLabels={showPlayerLabels}
           onToggleMarkerType={onToggleMarkerType}

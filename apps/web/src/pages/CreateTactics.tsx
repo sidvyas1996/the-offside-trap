@@ -14,8 +14,9 @@ import TacticDetails from "../components/tactics/TacticDetails";
 import Preview from "../components/tactics/Preview";
 import AnimationTimeline from "../components/tactics/AnimationTimeline";
 import CreatorsMenu from "../components/ui/creators-menu";
+import PlayerEditorPanel from "../components/ui/PlayerEditorPanel";
 import { TacticEntity } from "../entities/TacticEntity";
-import type { TacticFormData, FieldSettings } from "../../../../packages/shared/src";
+import type { TacticFormData, FieldSettings, Player } from "../../../../packages/shared/src";
 
 const CreateTacticsContent: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const CreateTacticsContent: React.FC = () => {
   const form = useTacticsForm();
   const state = useTacticsState();
   const [fieldOfViewMode, setFieldOfViewMode] = React.useState(false);
+  const [selectedPlayer, setSelectedPlayer] = React.useState<Player | null>(null);
   const actions = useTacticsActions(
     state.players,
     state.setPlayers,
@@ -126,6 +128,7 @@ const CreateTacticsContent: React.FC = () => {
           onToggleHorizontalZones={state.handleToggleHorizontalZones}
           onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
           onToggleFullScreen={state.handleToggleFullScreen}
+          onPlayerSelect={setSelectedPlayer}
         />
       ) : (
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 56px)' }}>
@@ -147,6 +150,9 @@ const CreateTacticsContent: React.FC = () => {
                 onChangePlayerColor={state.handlePlayerColorChange}
                 onChangeMarkerBgColor={state.handleMarkerBgColorChange}
                 onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
+                onChangeMarkerTextColor={state.handleMarkerTextColorChange}
+                onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
+                onChangeMarkerDesign={state.handleMarkerDesignChange}
                 onTogglePlayerLabels={state.handleTogglePlayerLabels}
                 showPlayerLabels={state.showPlayerLabels}
                 onToggleMarkerType={state.handleToggleMarkerType}
@@ -157,6 +163,7 @@ const CreateTacticsContent: React.FC = () => {
                 onToggleFullScreen={state.handleToggleFullScreen}
                 fieldOfViewMode={fieldOfViewMode}
                 onToggleFieldOfView={() => setFieldOfViewMode(prev => !prev)}
+                onPlayerSelect={setSelectedPlayer}
               />
 
               {/* Toolbar: 3-category CreatorsMenu rendered separately under the field */}
@@ -166,8 +173,14 @@ const CreateTacticsContent: React.FC = () => {
                   onChangePlayerColor={state.handlePlayerColorChange}
                   markerBgColor={options.markerBgColor}
                   markerBorderColor={options.markerBorderColor}
+                  markerTextColor={options.markerTextColor}
+                  markerSecondaryColor={options.markerSecondaryColor}
+                  markerDesign={options.markerDesign}
                   onChangeMarkerBgColor={state.handleMarkerBgColorChange}
                   onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
+                  onChangeMarkerTextColor={state.handleMarkerTextColorChange}
+                  onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
+                  onChangeMarkerDesign={state.handleMarkerDesignChange}
                   onTogglePlayerLabels={state.handleTogglePlayerLabels}
                   showPlayerLabels={state.showPlayerLabels}
                   onToggleMarkerType={state.handleToggleMarkerType}
@@ -232,6 +245,14 @@ const CreateTacticsContent: React.FC = () => {
           </div>
         </div>
       )}
+
+      <PlayerEditorPanel
+        player={selectedPlayer}
+        allPlayers={players}
+        onClose={() => setSelectedPlayer(null)}
+        onApply={state.handleUpdatePlayer}
+        onNameChange={state.handlePlayerNameChange}
+      />
     </div>
   );
 };

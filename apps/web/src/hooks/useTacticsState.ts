@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useFootballField } from "../contexts/FootballFieldContext";
+import type { MarkerDesign } from "../contexts/FootballFieldContext";
 import { useCreateTactics } from "../contexts/CreateTacticsContext";
 import { defaultLineupSingle } from "../utils/default-lineup-single";
 import { DEFAULT_FOOTBALL_FIELD_COLOUR } from "../utils/colors";
@@ -76,6 +77,15 @@ export const useTacticsState = () => {
   const handleMarkerBorderColorChange = (color: string) =>
     setOptions((prev) => ({ ...prev, markerBorderColor: color }));
 
+  const handleMarkerTextColorChange = (color: string) =>
+    setOptions((prev) => ({ ...prev, markerTextColor: color }));
+
+  const handleMarkerSecondaryColorChange = (color: string) =>
+    setOptions((prev) => ({ ...prev, markerSecondaryColor: color }));
+
+  const handleMarkerDesignChange = (design: MarkerDesign) =>
+    setOptions((prev) => ({ ...prev, markerDesign: design }));
+
   const handleTogglePlayerLabels = () => {
     setShowPlayerLabels((prev) => !prev);
     setOptions((prev) => ({ ...prev, showPlayerLabels: !showPlayerLabels }));
@@ -142,6 +152,9 @@ export const useTacticsState = () => {
     handlePlayerColorChange,
     handleMarkerBgColorChange,
     handleMarkerBorderColorChange,
+    handleMarkerTextColorChange,
+    handleMarkerSecondaryColorChange,
+    handleMarkerDesignChange,
     handleTogglePlayerLabels,
     handleToggleMarkerType,
     handleToggleWaypoints,

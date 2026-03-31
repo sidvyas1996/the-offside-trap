@@ -10,12 +10,14 @@ import TacticDetails from "../components/tactics/TacticDetails";
 import LineupOptions from "../components/tactics/LineupOptions";
 import Preview from "../components/tactics/Preview";
 import CreatorsMenu from "../components/ui/creators-menu";
+import PlayerEditorPanel from "../components/ui/PlayerEditorPanel";
 import { TacticEntity } from "../entities/TacticEntity";
-import type { TacticFormData } from "../../../../packages/shared/src";
+import type { TacticFormData, Player } from "../../../../packages/shared/src";
 
 const CreateLineupsContent: React.FC = () => {
   const navigate = useNavigate();
   const { players, options } = useFootballField();
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   // Custom hooks
   const form = useTacticsForm();
@@ -133,6 +135,7 @@ const CreateLineupsContent: React.FC = () => {
           onTiltDown={handleTiltDown}
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
+          onPlayerSelect={setSelectedPlayer}
         />
 
         {/* CreatorsMenu - Horizontal toolbar below field */}
@@ -160,8 +163,14 @@ const CreateLineupsContent: React.FC = () => {
           onZoomOut={handleZoomOut}
           markerBgColor={options.markerBgColor}
           markerBorderColor={options.markerBorderColor}
+          markerTextColor={options.markerTextColor}
+          markerSecondaryColor={options.markerSecondaryColor}
+          markerDesign={options.markerDesign}
           onChangeMarkerBgColor={state.handleMarkerBgColorChange}
           onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
+          onChangeMarkerTextColor={state.handleMarkerTextColorChange}
+          onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
+          onChangeMarkerDesign={state.handleMarkerDesignChange}
         />
       </div>
       
@@ -196,6 +205,13 @@ const CreateLineupsContent: React.FC = () => {
   return (
     <div className="min-h-screen py-8 px-4 lg:px-8">
       {renderCreateLineupsPage()}
+      <PlayerEditorPanel
+        player={selectedPlayer}
+        allPlayers={players}
+        onClose={() => setSelectedPlayer(null)}
+        onApply={state.handleUpdatePlayer}
+        onNameChange={state.handlePlayerNameChange}
+      />
     </div>
   );
 };

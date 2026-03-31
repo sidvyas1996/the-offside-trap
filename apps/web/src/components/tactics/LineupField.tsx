@@ -14,8 +14,14 @@ interface LineupFieldProps {
   onChangePlayerColor: (color: string) => void;
   markerBgColor?: string;
   markerBorderColor?: string;
+  markerTextColor?: string;
+  markerSecondaryColor?: string;
+  markerDesign?: import('../../contexts/FootballFieldContext').MarkerDesign;
   onChangeMarkerBgColor?: (color: string) => void;
   onChangeMarkerBorderColor?: (color: string) => void;
+  onChangeMarkerTextColor?: (color: string) => void;
+  onChangeMarkerSecondaryColor?: (color: string) => void;
+  onChangeMarkerDesign?: (design: import('../../contexts/FootballFieldContext').MarkerDesign) => void;
   onTogglePlayerLabels: () => void;
   showPlayerLabels: boolean;
   onToggleMarkerType: () => void;
@@ -35,6 +41,7 @@ interface LineupFieldProps {
   onTiltDown?: () => void;
   onZoomIn?: () => void;
   onZoomOut?: () => void;
+  onPlayerSelect?: (player: import('../../../../../packages/shared').Player) => void;
 }
 
 const LineupField: React.FC<LineupFieldProps> = ({
@@ -45,8 +52,14 @@ const LineupField: React.FC<LineupFieldProps> = ({
   onChangePlayerColor,
   markerBgColor,
   markerBorderColor,
+  markerTextColor,
+  markerSecondaryColor,
+  markerDesign,
   onChangeMarkerBgColor,
   onChangeMarkerBorderColor,
+  onChangeMarkerTextColor,
+  onChangeMarkerSecondaryColor,
+  onChangeMarkerDesign,
   onTogglePlayerLabels,
   showPlayerLabels,
   onToggleMarkerType,
@@ -66,6 +79,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
   onTiltDown: propOnTiltDown,
   onZoomIn: propOnZoomIn,
   onZoomOut: propOnZoomOut,
+  onPlayerSelect,
 }) => {
   const { players, draggedPlayer, options, actions, fieldRef } =
     useFootballField();
@@ -611,6 +625,10 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   rotationAngle={rotationAngle}
                   markerBgColor={options.markerBgColor}
                   markerBorderColor={options.markerBorderColor}
+                  markerTextColor={options.markerTextColor}
+                  markerSecondaryColor={options.markerSecondaryColor}
+                  markerDesign={options.markerDesign}
+                  onPlayerSelect={onPlayerSelect}
                 />
               </div>
             ))}

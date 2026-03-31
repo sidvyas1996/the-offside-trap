@@ -11,8 +11,15 @@ interface FullscreenLayoutProps {
   onChangePlayerColor: (color: string) => void;
   markerBgColor?: string;
   markerBorderColor?: string;
+  markerTextColor?: string;
+  markerSecondaryColor?: string;
+  markerDesign?: import('../../contexts/FootballFieldContext').MarkerDesign;
   onChangeMarkerBgColor?: (color: string) => void;
   onChangeMarkerBorderColor?: (color: string) => void;
+  onChangeMarkerTextColor?: (color: string) => void;
+  onChangeMarkerSecondaryColor?: (color: string) => void;
+  onChangeMarkerDesign?: (design: import('../../contexts/FootballFieldContext').MarkerDesign) => void;
+  onPlayerSelect?: (player: import('../../../../../packages/shared').Player) => void;
   onTogglePlayerLabels: () => void;
   showPlayerLabels: boolean;
   onToggleMarkerType: () => void;
@@ -36,8 +43,14 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
   onChangePlayerColor,
   markerBgColor,
   markerBorderColor,
+  markerTextColor,
+  markerSecondaryColor,
+  markerDesign,
   onChangeMarkerBgColor,
   onChangeMarkerBorderColor,
+  onChangeMarkerTextColor,
+  onChangeMarkerSecondaryColor,
+  onChangeMarkerDesign,
   onTogglePlayerLabels,
   showPlayerLabels,
   onToggleMarkerType,
@@ -50,6 +63,7 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
   tiltAngle,
   onRotationChange,
   onTiltChange,
+  onPlayerSelect,
 }) => {
   return (
     <div className="min-h-screen bg-[var(--background)] transition-all duration-300 ease-in-out">
@@ -69,8 +83,14 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
           onChangePlayerColor={onChangePlayerColor}
           markerBgColor={markerBgColor}
           markerBorderColor={markerBorderColor}
+          markerTextColor={markerTextColor}
+          markerSecondaryColor={markerSecondaryColor}
+          markerDesign={markerDesign}
           onChangeMarkerBgColor={onChangeMarkerBgColor}
           onChangeMarkerBorderColor={onChangeMarkerBorderColor}
+          onChangeMarkerTextColor={onChangeMarkerTextColor}
+          onChangeMarkerSecondaryColor={onChangeMarkerSecondaryColor}
+          onChangeMarkerDesign={onChangeMarkerDesign}
           onTogglePlayerLabels={onTogglePlayerLabels}
           showPlayerLabels={showPlayerLabels}
           onToggleMarkerType={onToggleMarkerType}
@@ -83,6 +103,7 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
           tiltAngle={tiltAngle}
           onRotationChange={onRotationChange}
           onTiltChange={onTiltChange}
+          onPlayerSelect={onPlayerSelect}
         />
       </div>
     </div>

@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useRef } from "react";
 import type { Player } from "../../../../packages/shared";
 import { CHARCOAL_GRAY, DEFAULT_FOOTBALL_FIELD_COLOUR, DEFAULT_PLAYER_COLOUR } from "../utils/colors.ts";
 
+export type MarkerDesign = 'solid' | 'stripes' | 'diagonal-left' | 'diagonal-right' | 'horizontal-split' | 'vertical-split';
+
 interface FieldOptions {
     size?: "default" | "fullscreen";
     editable?: boolean;
@@ -9,6 +11,9 @@ interface FieldOptions {
     playerColor?: string;
     markerBgColor?: string;
     markerBorderColor?: string;
+    markerTextColor?: string;
+    markerSecondaryColor?: string;
+    markerDesign?: MarkerDesign;
     enableContextMenu?: boolean;
     showPlayerLabels?: boolean;
     markerType?: 'circle' | 'shirt';
@@ -46,6 +51,9 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
         playerColor: DEFAULT_PLAYER_COLOUR,
         markerBgColor: '#111827',
         markerBorderColor: '#ffffff',
+        markerTextColor: '#ffffff',
+        markerSecondaryColor: '#ffffff',
+        markerDesign: 'solid',
         enableContextMenu: true,
         showPlayerLabels: true,
         markerType: 'circle',

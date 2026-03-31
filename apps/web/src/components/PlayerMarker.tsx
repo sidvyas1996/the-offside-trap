@@ -1,6 +1,24 @@
 import React, { useState } from "react";
 import type { Player } from "../../../../packages/shared";
+import type { MarkerDesign } from "../contexts/FootballFieldContext";
 import { Star } from "lucide-react";
+
+function getCircleBackground(design: MarkerDesign, primary: string, secondary: string): string {
+  switch (design) {
+    case 'stripes':
+      return `repeating-linear-gradient(90deg, ${primary} 0px, ${primary} 6px, ${secondary} 6px, ${secondary} 12px)`;
+    case 'diagonal-left':
+      return `linear-gradient(135deg, ${primary} 50%, ${secondary} 50%)`;
+    case 'diagonal-right':
+      return `linear-gradient(45deg, ${primary} 50%, ${secondary} 50%)`;
+    case 'horizontal-split':
+      return `linear-gradient(180deg, ${primary} 50%, ${secondary} 50%)`;
+    case 'vertical-split':
+      return `linear-gradient(90deg, ${primary} 50%, ${secondary} 50%)`;
+    default:
+      return primary;
+  }
+}
 
 interface PlayerMarkerProps {
   player: Player;
@@ -23,6 +41,10 @@ interface PlayerMarkerProps {
   onMouseLeave?: () => void;
   markerBgColor?: string;
   markerBorderColor?: string;
+  markerTextColor?: string;
+  markerSecondaryColor?: string;
+  markerDesign?: MarkerDesign;
+  onPlayerSelect?: (player: Player) => void;
 }
 
 const PlayerMarker: React.FC<PlayerMarkerProps> = ({
@@ -46,6 +68,10 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   onMouseLeave,
   markerBgColor = '#111827',
   markerBorderColor = '#ffffff',
+  markerTextColor = '#ffffff',
+  markerSecondaryColor = '#ffffff',
+  markerDesign = 'solid',
+  onPlayerSelect,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingPosition, setIsEditingPosition] = useState(false);
@@ -79,7 +105,19 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
       onMouseLeave={onMouseLeave}
       onMouseDown={(e) => {
         e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
         onMouseDown(player);
+        if (onPlayerSelect) {
+          const handleUp = (upE: MouseEvent) => {
+            const dx = upE.clientX - startX;
+            const dy = upE.clientY - startY;
+            if (Math.sqrt(dx * dx + dy * dy) < 6) {
+              onPlayerSelect(player);
+            }
+          };
+          window.addEventListener('mouseup', handleUp, { once: true });
+        }
       }}
       onDoubleClick={() => editable && setIsEditing(true)}
       onClick={() => waypointsMode && onWaypointsClick && onWaypointsClick()}
@@ -125,8 +163,8 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
                   <div
           className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm cursor-pointer transition-all duration-200 ease-in-out ${showPlayerLabels ? 'scale-100' : 'scale-110'} ${player.isStarPlayer ? 'ring-2 ring-yellow-400 animate-ring-pulse' : ''} ${isDragged ? 'scale-110' : ''} ${isSelected ? 'ring-4 ring-green-400' : ''}`}
           style={{
-            backgroundColor: markerBgColor,
-            color: markerBorderColor,
+            background: getCircleBackground(markerDesign, markerBgColor, markerSecondaryColor),
+            color: markerTextColor,
             boxShadow: isDragged
               ? '0 8px 24px rgba(0,0,0,0.5)'
               : '0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)',
@@ -291,7 +329,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
               className="bg-[#1a1a1a] text-white font-semibold mt-1 px-2 py-1 rounded border border-gray-900 max-w-[120px] text-center whitespace-nowrap overflow-hidden text-ellipsis"
             />
           ) : (
-            <div style={{ background: markerBgColor, backdropFilter: 'blur(4px)', border: `4px solid ${markerBorderColor}`, color: markerBorderColor }} className="font-semibold mt-1 px-2 py-0.5 rounded-md text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
+            <div style={{ background: markerBgColor, backdropFilter: 'blur(4px)', border: `4px solid ${markerBorderColor}`, color: markerTextColor }} className="font-semibold mt-1 px-2 py-0.5 rounded-md text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
               {name}
             </div>
           )}
