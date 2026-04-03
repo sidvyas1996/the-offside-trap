@@ -3,6 +3,7 @@ import { TacticFormData } from '@the-offside-trap/shared';
 import { tacticsService } from '../services/tactics.service';
 import { commentsService } from '../services/comments.service';
 import { AuthedRequest } from '../middlewares/auth.middleware';
+import { prisma } from '../services/db.service';
 
 export class TacticsController {
   async getTacticsSummary(req: Request, res: Response) {
@@ -19,14 +20,40 @@ export class TacticsController {
   async createTactic(req: AuthedRequest, res: Response) {
     try {
       const tacticData: TacticFormData = req.body;
-      const userId = req.user?.id;
+      let userId = req.user?.id;
 
-      const tactic = await tacticsService.createTactic(tacticData, userId!);
+      if (!userId) {
+        const firstUser = await prisma.user.findFirst();
+        userId = firstUser?.id;
+      }
+
+      if (!userId) {
+        res.status(400).json({ success: false, error: 'No user available' });
+        return;
+      }
+
+      const tactic = await tacticsService.createTactic(tacticData, userId);
       res.status(201).json({ success: true, data: tactic });
     } catch (error) {
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       res.status(500).json({ success: false, error: errorMessage });
+    }
+  }
+
+  async updateTactic(req: AuthedRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const tacticData = req.body;
+      const userId = req.user?.id;
+
+      const tactic = await tacticsService.updateTactic(id, tacticData, userId!);
+      res.json({ success: true, data: tactic });
+    } catch (error) {
+      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      const status = errorMessage === 'Tactic not found' ? 404 : errorMessage.includes('only update') ? 403 : 500;
+      res.status(status).json({ success: false, error: errorMessage });
     }
   }
 

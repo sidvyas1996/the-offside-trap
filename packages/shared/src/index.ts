@@ -24,12 +24,22 @@ export interface TacticSummary {
   updatedAt: Date;
 }
 
+export type MarkerDesign = 'solid' | 'stripes' | 'diagonal-left' | 'diagonal-right' | 'horizontal-split' | 'vertical-split';
+
 // Field visual settings (CreateTactics / 2D field only)
 export interface FieldSettings {
   fieldColor: string;
   playerColor: string;
   showPlayerLabels: boolean;
   markerType: 'circle' | 'shirt';
+  // Marker color/design customization
+  markerBgColor?: string;
+  markerBorderColor?: string;
+  markerTextColor?: string;
+  markerSecondaryColor?: string;
+  markerDesign?: MarkerDesign;
+  // View settings
+  fieldOfViewMode?: boolean;
 }
 
 // Single keyframe snapshot
@@ -56,7 +66,7 @@ export interface TacticFormData {
   description: string;
   players: Player[];
   fieldSettings?: FieldSettings;  // saved with both tactics and lineups
-  animation?: AnimationData;      // tactics only
+  animation?: AnimationData;      // tactics only (includes fps, durationMs)
 }
 
 // User Types
@@ -99,6 +109,8 @@ export interface Tactic {
   tags: string[];
   description: string;
   players: Player[];
+  fieldSettings?: FieldSettings | null;
+  animation?: AnimationData | null;
   author: Author;
   createdAt: Date;
   updatedAt: Date;

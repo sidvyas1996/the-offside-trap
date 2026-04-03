@@ -190,9 +190,9 @@ export class TacticsService {
         formation: data.formation,
         tags,
         description: data.description,
-        players: JSON.stringify(data.players),
-        fieldSettings: data.fieldSettings ? JSON.stringify(data.fieldSettings) : undefined,
-        animation: data.animation ? JSON.stringify(data.animation) : undefined,
+        players: data.players as any,
+        fieldSettings: data.fieldSettings ?? undefined,
+        animation: data.animation ?? undefined,
         author: {
           connect: { id: userId },
         },
@@ -247,7 +247,7 @@ export class TacticsService {
       if (data.players.length !== 11) {
         throw createError('Exactly 11 players are required', 400);
       }
-      updateData.players = data.players;
+      updateData.players = data.players as any;
     }
 
     // Validate formation if provided
@@ -262,6 +262,15 @@ export class TacticsService {
     if (data.tags !== undefined) {
       updateData.tags = data.tags.slice(0, 5);
     }
+
+    if (data.fieldSettings !== undefined) {
+      updateData.fieldSettings = data.fieldSettings as any;
+    }
+
+    if (data.animation !== undefined) {
+      updateData.animation = data.animation as any;
+    }
+
 
     const updatedTactic = await prisma.tactic.update({
       where: { id },
@@ -539,9 +548,9 @@ export class TacticsService {
       formation: tactic.formation,
       tags: tactic.tags,
       description: tactic.description,
-      players: tactic.players as Player[],
-      fieldSettings: tactic.fieldSettings ?? null,
-      animation: tactic.animation ?? null,
+      players: (typeof tactic.players === 'string' ? JSON.parse(tactic.players) : tactic.players) as Player[],
+      fieldSettings: tactic.fieldSettings ? (typeof tactic.fieldSettings === 'string' ? JSON.parse(tactic.fieldSettings) : tactic.fieldSettings) : null,
+      animation: tactic.animation ? (typeof tactic.animation === 'string' ? JSON.parse(tactic.animation) : tactic.animation) : null,
       author: {
         id: tactic.author.id,
         username: tactic.author.username,

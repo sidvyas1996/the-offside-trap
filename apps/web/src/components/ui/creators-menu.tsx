@@ -2,6 +2,12 @@ import React from "react";
 import type { MarkerDesign } from "../../contexts/FootballFieldContext";
 
 import { Users, Circle, Shirt, CaseSensitive, Waypoints, Eye, Sun, Moon, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2, RotateCw, RotateCcw, ChevronUp, ChevronDown, ZoomIn, ZoomOut, Info } from "lucide-react";
+
+const HangerIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 -960 960 960" fill="currentColor">
+    <path d="M480-800q33 0 56.5 23.5T560-720q0 24-13 44t-35 29v56l282 243q19 16 19 40t-19 40q-10 8-22 8H108q-12 0-22-8-19-16-19-40t19-40l282-243v-56q-22-9-35-29t-13-44q0-33 23.5-56.5T480-800Z"/>
+  </svg>
+);
 import {Button} from "./button.tsx";
 import {DEFAULT_FOOTBALL_FIELD_COLOUR} from "../../utils/colors.ts";
 
@@ -376,7 +382,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             style={btnStyle(false)}
                             variant="outline" type="button" title={markerType === 'circle' ? "Switch to Shirt Markers" : "Switch to Circle Markers"}
                         >
-                            {markerType === 'circle' ? <Shirt size={18} /> : <Circle size={18} />}
+                            {markerType === 'circle' ? <HangerIcon size={18} /> : <Circle size={18} />}
                         </Button>
                     )}
                     {onTogglePlayerLabels && (

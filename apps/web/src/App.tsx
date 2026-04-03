@@ -52,6 +52,22 @@ function AppRoutes() {
           </CreateTacticsProvider>
         }
       />
+      <Route
+        path="/edit-tactics/:id"
+        element={
+          <CreateTacticsProvider>
+            <CreateTactics />
+          </CreateTacticsProvider>
+        }
+      />
+      <Route
+        path="/edit-lineups/:id"
+        element={
+          <CreateTacticsProvider>
+            <CreateLineups />
+          </CreateTacticsProvider>
+        }
+      />
 
       {/* Main app — sidebar layout */}
       <Route

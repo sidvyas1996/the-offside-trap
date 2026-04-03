@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { renderBackButton } from "../components/ui/back-button";
 import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
 import { useTacticsForm } from "../hooks/useTacticsForm";
@@ -16,7 +16,8 @@ import type { TacticFormData, Player } from "../../../../packages/shared/src";
 
 const CreateLineupsContent: React.FC = () => {
   const navigate = useNavigate();
-  const { players, options } = useFootballField();
+  const { id: editId } = useParams<{ id?: string }>();
+  const { players, options, setPlayers, setOptions } = useFootballField();
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
 
   // Custom hooks
@@ -71,6 +72,35 @@ const CreateLineupsContent: React.FC = () => {
     }
   };
 
+  // Load existing lineup when editing
+  useEffect(() => {
+    if (!editId) return;
+    TacticEntity.getById(editId).then(tactic => {
+      if (tactic.players) setPlayers(tactic.players);
+      if (tactic.title) form.setTitle(tactic.title);
+      if (tactic.formation) form.setFormation(tactic.formation);
+      if (tactic.description) form.setDescription(tactic.description);
+      if (tactic.fieldSettings) {
+        const fs = tactic.fieldSettings;
+        setOptions(prev => ({
+          ...prev,
+          fieldColor: fs.fieldColor || prev.fieldColor,
+          playerColor: fs.playerColor || prev.playerColor,
+          showPlayerLabels: fs.showPlayerLabels ?? prev.showPlayerLabels,
+          markerType: fs.markerType || prev.markerType,
+          ...(fs.markerBgColor && { markerBgColor: fs.markerBgColor }),
+          ...(fs.markerBorderColor && { markerBorderColor: fs.markerBorderColor }),
+          ...(fs.markerTextColor && { markerTextColor: fs.markerTextColor }),
+          ...(fs.markerSecondaryColor && { markerSecondaryColor: fs.markerSecondaryColor }),
+          ...(fs.markerDesign && { markerDesign: fs.markerDesign }),
+        }));
+        state.setShowPlayerLabels(fs.showPlayerLabels ?? true);
+        if (fs.markerType) state.setMarkerType(fs.markerType);
+      }
+    }).catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
+
   const handleSubmit = async () => {
     if (!form.isFormValid()) {
       alert("Please fill in title (3+ chars), description (10+ chars), and a valid formation (e.g. 4-3-3).");
@@ -89,9 +119,19 @@ const CreateLineupsContent: React.FC = () => {
           playerColor: options.playerColor || '#1a1a1a',
           showPlayerLabels: state.showPlayerLabels,
           markerType: state.markerType,
+          markerBgColor: options.markerBgColor,
+          markerBorderColor: options.markerBorderColor,
+          markerTextColor: options.markerTextColor,
+          markerSecondaryColor: options.markerSecondaryColor,
+          markerDesign: options.markerDesign,
         },
       };
-      await new TacticEntity().create(payload);
+      const entity = new TacticEntity();
+      if (editId) {
+        await entity.update(editId, payload);
+      } else {
+        await entity.create(payload);
+      }
       navigate('/');
     } catch (err) {
       console.error("Failed to create lineup:", err);

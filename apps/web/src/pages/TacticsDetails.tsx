@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Heart, MessageCircle, Share2, Loader2 } from "lucide-react";
+import { MessageCircle, Loader2, Play, Pause, Film } from "lucide-react";
 import { TacticEntity } from "../entities/TacticEntity";
-import type { Tactic, Player, Comment } from "../../../../packages/shared";
+import type { Tactic, Comment, AnimationData } from "../../../../packages/shared";
 import FootballField from "../components/FootballField.tsx";
 import { renderBackButton } from "../components/ui/back-button.tsx";
 import { Textarea } from "../components/ui/textarea.tsx";
@@ -10,6 +10,125 @@ import {
   FootballFieldProvider,
   useFootballField,
 } from "../contexts/FootballFieldContext.tsx";
+import { useAnimation } from "../hooks/useAnimation.ts";
+
+function formatTime(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const dec = Math.floor((ms % 1000) / 100);
+  return `${s}.${dec}s`;
+}
+
+interface AnimationPlayerProps {
+  currentTimeMs: number;
+  durationMs: number;
+  isPlaying: boolean;
+  onPlay: () => void;
+  onPause: () => void;
+  onSeek: (timeMs: number) => void;
+}
+
+const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
+  currentTimeMs,
+  durationMs,
+  isPlaying,
+  onPlay,
+  onPause,
+  onSeek,
+}) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const posToTime = (clientX: number): number => {
+    if (!trackRef.current) return 0;
+    const rect = trackRef.current.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return Math.round(ratio * durationMs);
+  };
+
+  const cursorPct = (currentTimeMs / durationMs) * 100;
+
+  return (
+    <div style={{
+      margin: "12px 0 0",
+      background: "var(--surface-high)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderRadius: 12,
+      padding: "14px 16px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 10,
+    }}>
+      {/* Header + controls row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Film size={14} style={{ color: "var(--primary)", flexShrink: 0 }} />
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--on-surface-variant)" }}>
+          Animation
+        </span>
+
+        {/* Play / Pause */}
+        <button
+          onClick={isPlaying ? onPause : onPlay}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            background: "var(--primary)", color: "var(--on-primary)",
+            border: "none", borderRadius: 6, padding: "5px 12px",
+            fontSize: 12, fontWeight: 700, cursor: "pointer",
+          }}
+        >
+          {isPlaying ? <Pause size={12} /> : <Play size={12} />}
+          {isPlaying ? "Pause" : "Play"}
+        </button>
+
+        {/* Time display */}
+        <span style={{ fontSize: 11, fontFamily: "monospace", color: "var(--on-surface-variant)", marginLeft: 2 }}>
+          {formatTime(currentTimeMs)} / {formatTime(durationMs)}
+        </span>
+
+      </div>
+
+      {/* Scrubber */}
+      <div
+        ref={trackRef}
+        onClick={e => onSeek(posToTime(e.clientX))}
+        style={{
+          position: "relative",
+          height: 28,
+          background: "rgba(255,255,255,0.05)",
+          borderRadius: 6,
+          cursor: "pointer",
+          userSelect: "none",
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        {/* Progress fill */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, height: "100%",
+          width: `${cursorPct}%`,
+          background: "var(--primary)",
+          opacity: 0.2,
+          borderRadius: 6,
+          pointerEvents: "none",
+        }} />
+
+
+        {/* Playhead */}
+        <div style={{
+          position: "absolute", top: 0, left: `${cursorPct}%`,
+          width: 2, height: "100%",
+          background: "var(--primary)",
+          pointerEvents: "none",
+          zIndex: 10,
+        }}>
+          <div style={{
+            position: "absolute", top: -3, left: "50%",
+            transform: "translateX(-50%) rotate(45deg)",
+            width: 8, height: 8,
+            background: "var(--primary)",
+          }} />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 
 const TacticsDetailsContent: React.FC = () => {
@@ -28,20 +147,30 @@ const TacticsDetailsContent: React.FC = () => {
 
   // FootballField context
   const {
-    players,
     setPlayers,
     setOptions,
     setActions,
     setDraggedPlayer,
-    fieldRef,
   } = useFootballField();
+  const animation = useAnimation({
+    onFrame: (framePlayers, frameFieldSettings) => {
+      setPlayers(framePlayers);
+      setOptions(prev => ({
+        ...prev,
+        fieldColor: frameFieldSettings.fieldColor,
+        playerColor: frameFieldSettings.playerColor,
+        showPlayerLabels: frameFieldSettings.showPlayerLabels,
+        markerType: frameFieldSettings.markerType,
+      }));
+    },
+  });
 
   // Disable movement completely for details page
   useEffect(() => {
     setActions({
-      onMouseDown: () => {}, // No-op function
-      onMouseMove: () => {}, // No-op function
-      onMouseUp: () => {}, // No-op function
+      onMouseDown: () => {},
+      onMouseMove: () => {},
+      onMouseUp: () => {},
     });
     setOptions((prev) => ({
       ...prev,
@@ -51,6 +180,23 @@ const TacticsDetailsContent: React.FC = () => {
     }));
     setDraggedPlayer(null);
   }, [setActions, setOptions, setDraggedPlayer]);
+
+  // Seek without playing — update display frame when scrubbing
+  const handleSeek = useCallback((timeMs: number) => {
+    animation.pause();
+    animation.seekTo(timeMs);
+    const frame = animation.getInterpolatedFrame(timeMs);
+    if (frame) {
+      setPlayers(frame.players);
+      setOptions(prev => ({
+        ...prev,
+        fieldColor: frame.fieldSettings.fieldColor,
+        playerColor: frame.fieldSettings.playerColor,
+        showPlayerLabels: frame.fieldSettings.showPlayerLabels,
+        markerType: frame.fieldSettings.markerType,
+      }));
+    }
+  }, [animation, setPlayers, setOptions]);
 
   // Fetch tactic data on mount
   useEffect(() => {
@@ -68,6 +214,18 @@ const TacticsDetailsContent: React.FC = () => {
       const data = await TacticEntity.getById(id!);
       setTactic(data);
       setPlayers(data.players || []);
+      if (data.animation && (data.animation as AnimationData).keyframes?.length > 0) {
+        animation.loadAnimation(data.animation as AnimationData);
+      }
+      if (data.fieldSettings) {
+        setOptions(prev => ({
+          ...prev,
+          fieldColor: (data.fieldSettings as any)?.fieldColor || prev.fieldColor,
+          playerColor: (data.fieldSettings as any)?.playerColor || prev.playerColor,
+          showPlayerLabels: (data.fieldSettings as any)?.showPlayerLabels ?? prev.showPlayerLabels,
+          markerType: (data.fieldSettings as any)?.markerType || prev.markerType,
+        }));
+      }
     } catch (err) {
       console.error("Error fetching tactic:", err);
       setError(err instanceof Error ? err.message : "Failed to load tactic");
@@ -144,6 +302,19 @@ const TacticsDetailsContent: React.FC = () => {
               <h1 className="text-5xl font-bold ">{tactic.title}</h1>
             </div>
             <FootballField />
+
+            {/* Animation Player — only shown if tactic has animation */}
+            {animation.keyframes.length > 0 && (
+              <AnimationPlayer
+                currentTimeMs={animation.currentTimeMs}
+                durationMs={animation.durationMs}
+                isPlaying={animation.isPlaying}
+                onPlay={animation.play}
+                onPause={animation.pause}
+                onSeek={handleSeek}
+              />
+            )}
+
             {/* Formation & Tags */}
             <div className="flex flex-wrap px-10 gap-3 mb-6 mt-6">
               <span className="bg-[#1a1a1a] border border-[rgb(49,54,63)] px-4 py-2 rounded-full text-sm font-medium">

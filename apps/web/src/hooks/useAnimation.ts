@@ -171,6 +171,13 @@ export function useAnimation(options: UseAnimationOptions = {}) {
     keyframes,
   }), [durationMs, fps, keyframes]);
 
+  const loadAnimation = useCallback((data: AnimationData) => {
+    setKeyframes(data.keyframes || []);
+    if (data.durationMs) setDuration(data.durationMs);
+    if (data.fps) setFps(data.fps);
+    setCurrentTimeMs(0);
+  }, []);
+
   return {
     keyframes,
     currentTimeMs,
@@ -186,6 +193,7 @@ export function useAnimation(options: UseAnimationOptions = {}) {
     setDuration,
     setFps,
     getAnimation,
+    loadAnimation,
     getInterpolatedFrame: (t: number) => getInterpolatedFrame(t, keyframes),
   };
 }

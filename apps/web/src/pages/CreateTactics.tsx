@@ -1,5 +1,5 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Save, Loader2 } from "lucide-react";
 import { renderBackButton } from "../components/ui/back-button";
 import { Button } from "../components/ui/button";
@@ -16,10 +16,11 @@ import AnimationTimeline from "../components/tactics/AnimationTimeline";
 import CreatorsMenu from "../components/ui/creators-menu";
 import PlayerEditorPanel from "../components/ui/PlayerEditorPanel";
 import { TacticEntity } from "../entities/TacticEntity";
-import type { TacticFormData, FieldSettings, Player } from "../../../../packages/shared/src";
+import type { TacticFormData, FieldSettings, Player, AnimationData } from "../../../../packages/shared/src";
 
 const CreateTacticsContent: React.FC = () => {
   const navigate = useNavigate();
+  const { id: editId } = useParams<{ id?: string }>();
   const { players, setPlayers, options, setOptions } = useFootballField();
 
   // Custom hooks
@@ -42,6 +43,12 @@ const CreateTacticsContent: React.FC = () => {
     playerColor: options.playerColor || '#1a1a1a',
     showPlayerLabels: state.showPlayerLabels,
     markerType: state.markerType,
+    markerBgColor: options.markerBgColor,
+    markerBorderColor: options.markerBorderColor,
+    markerTextColor: options.markerTextColor,
+    markerSecondaryColor: options.markerSecondaryColor,
+    markerDesign: options.markerDesign,
+    fieldOfViewMode,
   });
 
   // Animation hook — when playing back, override players + field settings
@@ -54,9 +61,45 @@ const CreateTacticsContent: React.FC = () => {
         playerColor: frameFieldSettings.playerColor,
         showPlayerLabels: frameFieldSettings.showPlayerLabels,
         markerType: frameFieldSettings.markerType,
+        ...(frameFieldSettings.markerBgColor && { markerBgColor: frameFieldSettings.markerBgColor }),
+        ...(frameFieldSettings.markerBorderColor && { markerBorderColor: frameFieldSettings.markerBorderColor }),
+        ...(frameFieldSettings.markerTextColor && { markerTextColor: frameFieldSettings.markerTextColor }),
+        ...(frameFieldSettings.markerSecondaryColor && { markerSecondaryColor: frameFieldSettings.markerSecondaryColor }),
+        ...(frameFieldSettings.markerDesign && { markerDesign: frameFieldSettings.markerDesign }),
       }));
     },
   });
+
+  // Load existing tactic when editing
+  useEffect(() => {
+    if (!editId) return;
+    TacticEntity.getById(editId).then(tactic => {
+      if (tactic.players) setPlayers(tactic.players);
+      if (tactic.title) form.setTitle(tactic.title);
+      if (tactic.formation) form.setFormation(tactic.formation);
+      if (tactic.description) form.setDescription(tactic.description);
+      if (tactic.fieldSettings) {
+        const fs = tactic.fieldSettings;
+        setOptions(prev => ({
+          ...prev,
+          fieldColor: fs.fieldColor || prev.fieldColor,
+          playerColor: fs.playerColor || prev.playerColor,
+          showPlayerLabels: fs.showPlayerLabels ?? prev.showPlayerLabels,
+          markerType: fs.markerType || prev.markerType,
+          ...(fs.markerBgColor && { markerBgColor: fs.markerBgColor }),
+          ...(fs.markerBorderColor && { markerBorderColor: fs.markerBorderColor }),
+          ...(fs.markerTextColor && { markerTextColor: fs.markerTextColor }),
+          ...(fs.markerSecondaryColor && { markerSecondaryColor: fs.markerSecondaryColor }),
+          ...(fs.markerDesign && { markerDesign: fs.markerDesign }),
+        }));
+        state.setShowPlayerLabels(fs.showPlayerLabels ?? true);
+        if (fs.markerType) state.setMarkerType(fs.markerType);
+        if (fs.fieldOfViewMode !== undefined) setFieldOfViewMode(fs.fieldOfViewMode);
+      }
+      if (tactic.animation) animation.loadAnimation(tactic.animation as AnimationData);
+    }).catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId]);
 
   const handleAddKeyframe = () => {
     animation.addKeyframe(players, getCurrentFieldSettings());
@@ -78,10 +121,15 @@ const CreateTacticsContent: React.FC = () => {
         fieldSettings: getCurrentFieldSettings(),
         animation: animation.keyframes.length > 0 ? animation.getAnimation() : undefined,
       };
-      await new TacticEntity().create(payload);
+      const entity = new TacticEntity();
+      if (editId) {
+        await entity.update(editId, payload);
+      } else {
+        await entity.create(payload);
+      }
       navigate('/');
     } catch (err) {
-      console.error("Failed to create tactic:", err);
+      console.error("Failed to save tactic:", err);
       alert("Failed to save tactic. Please try again.");
     } finally {
       form.setLoading(false);
@@ -97,14 +145,23 @@ const CreateTacticsContent: React.FC = () => {
           {renderBackButton(() => navigate(-1))}
           <div>
             <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--theme-muted)' }}>Tactics Studio</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--theme-bright-text)' }}>{form.title || 'Untitled Tactic'}</div>
+            <input
+              value={form.title}
+              onChange={e => form.setTitle(e.target.value)}
+              placeholder="Untitled Tactic"
+              style={{
+                fontSize: 14, fontWeight: 600, color: 'var(--theme-bright-text)',
+                background: 'transparent', border: 'none', outline: 'none',
+                padding: 0, width: 220, cursor: 'text',
+              }}
+            />
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {/* formation badge */}
           {form.formation && <span style={{ fontSize: 12, background: 'var(--theme-badge-bg)', border: '1px solid var(--theme-border-btn)', borderRadius: 6, padding: '3px 10px', color: 'var(--theme-secondary-text)', fontFamily: 'monospace' }}>{form.formation}</span>}
           <Button onClick={handleSubmit} disabled={form.loading} className="btn-primary">
-            {form.loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Tactic</>}
+            {form.loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{editId ? 'Update Tactic' : 'Save Tactic'}</>}
           </Button>
         </div>
       </div>
