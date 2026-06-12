@@ -6,6 +6,9 @@ import {
   CHARCOAL_GRAY,
 } from "../../utils/colors.ts";
 
+// Field aspect (height / width)
+const FIELD_RATIO = 7 / 11;
+
 interface LineupFieldProps {
   waypointsMode: boolean;
   horizontalZonesMode: boolean;
@@ -191,19 +194,42 @@ const LineupField: React.FC<LineupFieldProps> = ({
     return () => window.removeEventListener("click", closeMenu);
   }, [contextMenu.visible]);
 
-  // Observe field size
+  // Observe field size (marker scaling + fit math)
+  const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
     if (!fieldRef.current) return;
+    const stageEl = fieldRef.current.parentElement;
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const fieldWidth = entry.contentRect.width;
         const newScale = Math.max(0.8, Math.min(1.5, fieldWidth / 1000));
         setScale(newScale);
       }
+      if (stageEl) {
+        const r = stageEl.getBoundingClientRect();
+        setStageSize({ w: r.width, h: r.height });
+      }
     });
     observer.observe(fieldRef.current);
+    if (stageEl) observer.observe(stageEl);
     return () => observer.disconnect();
   }, [fieldRef]);
+
+  // Camera-viewport scaling. The fit scale is the largest size at which the
+  // rotated, tilted field still fits entirely inside the fixed stage. Zoom
+  // multiplies ON TOP of that fit: 100% always shows the whole field as big
+  // as the frame allows; >100% leans in and lets the edges crop at the frame
+  // like a camera viewport, so zoom keeps working at every rotation.
+  const rad = (rotationAngle * Math.PI) / 180;
+  const sinA = Math.abs(Math.sin(rad));
+  const cosA = Math.abs(Math.cos(rad));
+  const bbW = cosA + FIELD_RATIO * sinA;                                  // × field width
+  const bbH = (sinA + FIELD_RATIO * cosA) * Math.cos((tiltAngle * Math.PI) / 180); // × field width
+  // 0.86 leaves comfortable breathing room around the field at 100% zoom
+  const FIT_MARGIN = 0.86;
+  const fitByW = FIT_MARGIN / bbW;
+  const fitByH = stageSize.w > 0 && stageSize.h > 0 ? (FIT_MARGIN * stageSize.h) / (stageSize.w * bbH) : fitByW;
+  const fittedScale = Math.min(fitByW, fitByH) * zoomLevel;
 
   const handlePlayerAction = (action: string) => {
     if (!contextMenu.playerId || !onUpdatePlayer) return;
@@ -253,8 +279,10 @@ const LineupField: React.FC<LineupFieldProps> = ({
   };
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6 ">
-      <h2 className="text-2xl font-bold mb-4 ">Lineup Field</h2>
+    <div
+      className="rounded-2xl p-6"
+      style={{ background: "var(--surface-container)", border: "1px solid var(--hairline)", boxShadow: "var(--card-shadow)" }}
+    >
       <div className="w-full flex justify-center relative">
         {/* 3D Perspective Container */}
         <div
@@ -263,16 +291,15 @@ const LineupField: React.FC<LineupFieldProps> = ({
             perspective: "1500px",
             perspectiveOrigin: "center center",
             width: "100%",
-            maxWidth: "90%",
+            maxWidth: "100%",
             // Center field so it doesn't clip on rotation.
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            // Size the container for the worst-case rotation (45°) at the current zoom.
-            // At 45°: bounding_h = containerW * 0.675 * zoom * (sin45 + 7/11*sin45) = containerW * 0.675 * zoom * 1.157
-            // Using zoom only (not rotationAngle) means the container never resizes during rotation,
-            // preventing layout jumps when clicking rotate.
-            aspectRatio: 1 / (0.45 * zoomLevel * 1.157 * 1.3),
+            // Fixed stage: the box never resizes — the field auto-fits
+            // inside it at any rotation/tilt/zoom (see fittedScale).
+            height: "clamp(420px, 62vh, 680px)",
+            margin: "32px 0",
           }}
         >
           <div
@@ -281,8 +308,10 @@ const LineupField: React.FC<LineupFieldProps> = ({
             style={{
               ...fieldStyle,
               transformStyle: "preserve-3d",
-              transform: `rotateX(${tiltAngle}deg) rotateZ(${rotationAngle}deg) scale(${0.45 * zoomLevel})`,
+              transform: `rotateX(${tiltAngle}deg) rotateZ(${rotationAngle}deg) scale(${fittedScale})`,
               transformOrigin: "center center",
+              transition: "transform 0.45s cubic-bezier(0.22, 0.8, 0.25, 1)",
+              willChange: "transform",
             }}
             onMouseMove={actions.onMouseMove}
             onMouseUp={actions.onMouseUp}
@@ -628,6 +657,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   markerTextColor={options.markerTextColor}
                   markerSecondaryColor={options.markerSecondaryColor}
                   markerDesign={options.markerDesign}
+                  shirtTextureUrl={options.shirtTextureUrl}
                   onPlayerSelect={onPlayerSelect}
                 />
               </div>

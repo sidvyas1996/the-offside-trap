@@ -1,7 +1,8 @@
 import React from "react";
 import type { MarkerDesign } from "../../contexts/FootballFieldContext";
+import type { ArrowType } from "../../../../../packages/shared/src";
 
-import { Users, Circle, Shirt, CaseSensitive, Waypoints, Eye, Sun, Moon, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2, RotateCw, RotateCcw, ChevronUp, ChevronDown, ZoomIn, ZoomOut, Info } from "lucide-react";
+import { Users, Circle, CaseSensitive, Waypoints, Eye, Sun, Moon, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2, RotateCw, RotateCcw, ChevronUp, ChevronDown, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
 
 const HangerIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 -960 960 960" fill="currentColor">
@@ -49,17 +50,98 @@ interface CreatorsMenuProps {
     onZoomIn?: () => void;
     onZoomOut?: () => void;
     showSingleMarkerHint?: boolean;
+
+    // Arrow tools
+    arrowTool?: ArrowType | null;
+    onSetArrowTool?: (tool: ArrowType | null) => void;
+    arrowBallColor?: string;
+    onChangeArrowBallColor?: (color: string) => void;
+    arrowRunColor?: string;
+    onChangeArrowRunColor?: (color: string) => void;
+    onClearArrows?: () => void;
+
+    // Opposition team
+    showOpposition?: boolean;
+    activeTeam?: 'home' | 'away';
+    onSetActiveTeam?: (team: 'home' | 'away') => void;
+    // Away team marker props (shown when activeTeam === 'away')
+    oppMarkerBgColor?: string;
+    oppMarkerBorderColor?: string;
+    oppMarkerTextColor?: string;
+    oppMarkerSecondaryColor?: string;
+    oppMarkerDesign?: MarkerDesign;
+    onChangeOppMarkerBgColor?: (color: string) => void;
+    onChangeOppMarkerBorderColor?: (color: string) => void;
+    onChangeOppMarkerTextColor?: (color: string) => void;
+    onChangeOppMarkerSecondaryColor?: (color: string) => void;
+    onChangeOppMarkerDesign?: (design: MarkerDesign) => void;
+    onOppTogglePlayerLabels?: () => void;
+    oppShowPlayerLabels?: boolean;
+    onOppToggleMarkerType?: () => void;
+    oppMarkerType?: 'circle' | 'shirt';
 }
 
 const COLORS = {
     field: [DEFAULT_FOOTBALL_FIELD_COLOUR, "#222"],
 };
 
+// Tiny 28×16 SVG icons representing each arrow type
+const iconProps = { width: 28, height: 16, viewBox: "0 0 28 16", fill: "none" };
+const PassIcon = () => (
+    <svg {...iconProps}>
+        <line x1="2" y1="8" x2="22" y2="8" stroke="#fbbf24" strokeWidth="1.8" strokeDasharray="4,3" />
+        <polyline points="17,4 23,8 17,12" fill="none" stroke="#fbbf24" strokeWidth="1.8" />
+    </svg>
+);
+const DribbleIcon = () => (
+    <svg {...iconProps}>
+        <polyline points="2,8 7,3 12,13 17,3 22,8" fill="none" stroke="#fbbf24" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+);
+const LongBallIcon = () => (
+    <svg {...iconProps}>
+        <path d="M 2 12 Q 13 1 24 8" stroke="#fbbf24" strokeWidth="1.8" fill="none" />
+        <polyline points="19,4 24,8 20,12" fill="none" stroke="#fbbf24" strokeWidth="1.8" />
+    </svg>
+);
+const TargetIcon = () => (
+    <svg {...iconProps}>
+        <circle cx="14" cy="8" r="5" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="2,2" />
+        <line x1="10" y1="4" x2="18" y2="12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+        <line x1="18" y1="4" x2="10" y2="12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+const DirectRunIcon = () => (
+    <svg {...iconProps}>
+        <line x1="2" y1="8" x2="22" y2="8" stroke="#60a5fa" strokeWidth="2.5" />
+        <polygon points="18,4 26,8 18,12" fill="#60a5fa" />
+    </svg>
+);
+const SecondaryRunIcon = () => (
+    <svg {...iconProps}>
+        <line x1="2" y1="8" x2="22" y2="8" stroke="#60a5fa" strokeWidth="2" strokeDasharray="4,3" />
+        <polygon points="18,4 26,8 18,12" fill="#60a5fa" />
+    </svg>
+);
+const CurvedRunIcon = () => (
+    <svg {...iconProps}>
+        <path d="M 2 13 Q 13 1 24 8" stroke="#60a5fa" strokeWidth="2.5" fill="none" />
+        <polygon points="20,5 26,8 21,12" fill="#60a5fa" />
+    </svg>
+);
+const PressRunIcon = () => (
+    <svg {...iconProps}>
+        <polyline points="2,8 7,3 12,13 17,3 22,8" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinejoin="round" />
+        <polygon points="18,4 26,8 18,12" fill="#60a5fa" />
+    </svg>
+);
+
 const btnStyle = (active: boolean) => ({
-    borderColor: active ? '#16A34A' : 'var(--theme-border-btn)',
-    borderRadius: 6,
-    backgroundColor: active ? 'rgba(22,163,74,0.12)' : 'transparent',
-    color: 'var(--theme-secondary-text)',
+    borderColor: active ? 'rgba(15,164,95,0.5)' : 'var(--theme-border-btn)',
+    borderRadius: 10,
+    backgroundColor: active ? 'rgba(94,233,160,0.20)' : 'transparent',
+    color: active ? 'var(--accent-mint)' : 'var(--theme-secondary-text)',
+    boxShadow: active ? '0 0 12px rgba(94,233,160,0.25)' : 'none',
 });
 
 const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
@@ -98,6 +180,30 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
     onZoomIn,
     onZoomOut,
     showSingleMarkerHint = false,
+    arrowTool = null,
+    onSetArrowTool,
+    arrowBallColor = '#fbbf24',
+    onChangeArrowBallColor,
+    arrowRunColor = '#60a5fa',
+    onChangeArrowRunColor,
+    onClearArrows,
+    showOpposition = false,
+    activeTeam = 'home',
+    onSetActiveTeam,
+    oppMarkerBgColor = '#7f1d1d',
+    oppMarkerBorderColor = '#ef4444',
+    oppMarkerTextColor = '#ffffff',
+    oppMarkerSecondaryColor = '#ef4444',
+    oppMarkerDesign = 'solid',
+    onChangeOppMarkerBgColor,
+    onChangeOppMarkerBorderColor,
+    onChangeOppMarkerTextColor,
+    onChangeOppMarkerSecondaryColor,
+    onChangeOppMarkerDesign,
+    onOppTogglePlayerLabels,
+    oppShowPlayerLabels = true,
+    onOppToggleMarkerType,
+    oppMarkerType = 'circle',
 }) => {
     const [isDark, setIsDark] = React.useState(false);
     const handleToggleFieldColor = (e: React.MouseEvent) => {
@@ -107,8 +213,28 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
         onChangeFieldColor(COLORS.field[newIsDark ? 1 : 0]);
     };
 
+    // Resolve which team's props to show in the Player Properties section
+    const isAway = showOpposition && activeTeam === 'away';
+    const activeBgColor = isAway ? oppMarkerBgColor : markerBgColor;
+    const activeBorderColor = isAway ? oppMarkerBorderColor : markerBorderColor;
+    const activeTextColor = isAway ? oppMarkerTextColor : markerTextColor;
+    const activeSecondaryColor = isAway ? oppMarkerSecondaryColor : markerSecondaryColor;
+    const activeDesign = isAway ? oppMarkerDesign : markerDesign;
+    const activeShowLabels = isAway ? oppShowPlayerLabels : showPlayerLabels;
+    const activeMarkerType = isAway ? oppMarkerType : markerType;
+    const activeOnChangeBg = isAway ? onChangeOppMarkerBgColor : onChangeMarkerBgColor;
+    const activeOnChangeBorder = isAway ? onChangeOppMarkerBorderColor : onChangeMarkerBorderColor;
+    const activeOnChangeText = isAway ? onChangeOppMarkerTextColor : onChangeMarkerTextColor;
+    const activeOnChangeSecondary = isAway ? onChangeOppMarkerSecondaryColor : onChangeMarkerSecondaryColor;
+    const activeOnChangeDesign = isAway ? onChangeOppMarkerDesign : onChangeMarkerDesign;
+    const activeOnToggleLabels = isAway ? onOppTogglePlayerLabels : onTogglePlayerLabels;
+    const activeOnToggleMarkerType = isAway ? onOppToggleMarkerType : onToggleMarkerType;
+
     return (
-        <div className="w-full bg-[var(--theme-card)] border border-[var(--theme-border)] rounded-xl px-4 py-3 flex flex-row items-stretch gap-0">
+        <div
+            className="w-full rounded-2xl px-5 py-4 flex flex-row items-stretch gap-0"
+            style={{ background: 'var(--surface-container)', border: '1px solid var(--hairline)', boxShadow: 'var(--card-shadow)' }}
+        >
 
             {/* Section 1 — Pitch Properties */}
             <div className="flex flex-col flex-1 min-w-0">
@@ -229,7 +355,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                 <span className="text-xs font-mono w-8 text-center text-[var(--theme-secondary-text)]">{Math.round(zoomLevel * 100)}%</span>
                                 <Button
                                     onClick={(e) => { e.preventDefault(); onZoomIn!(); }}
-                                    disabled={zoomLevel === 1.2}
+                                    disabled={zoomLevel >= 1.5}
                                     className="!p-2"
                                     style={btnStyle(false)}
                                     variant="outline" type="button" title="Zoom In"
@@ -247,17 +373,49 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
 
             {/* Section 2 — Player Properties */}
             <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)] mb-2">Player Properties</span>
+                <div className="flex flex-row items-center justify-between mb-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Player Properties</span>
+                    {/* Team tabs — only visible when opposition mode is on */}
+                    {showOpposition && onSetActiveTeam && (
+                        <div className="flex flex-row items-center gap-0 rounded-md overflow-hidden border border-[var(--theme-border-btn)]">
+                            <button
+                                type="button"
+                                onClick={() => onSetActiveTeam('home')}
+                                style={{
+                                    fontSize: 10, fontWeight: 700, padding: '2px 8px',
+                                    background: activeTeam === 'home' ? 'rgba(94,233,160,0.22)' : 'transparent',
+                                    color: activeTeam === 'home' ? 'var(--accent-mint)' : 'var(--theme-muted)',
+                                    borderRight: '1px solid var(--theme-border-btn)',
+                                    cursor: 'pointer',
+                                    letterSpacing: '0.08em',
+                                    textTransform: 'uppercase',
+                                }}
+                            >Home</button>
+                            <button
+                                type="button"
+                                onClick={() => onSetActiveTeam('away')}
+                                style={{
+                                    fontSize: 10, fontWeight: 700, padding: '2px 8px',
+                                    background: activeTeam === 'away' ? 'rgba(239,68,68,0.18)' : 'transparent',
+                                    color: activeTeam === 'away' ? '#ef4444' : 'var(--theme-muted)',
+                                    cursor: 'pointer',
+                                    letterSpacing: '0.08em',
+                                    textTransform: 'uppercase',
+                                }}
+                            >Away</button>
+                        </div>
+                    )}
+                </div>
                 <div className="flex flex-row items-center gap-1.5 flex-wrap">
                     {/* Design dropdown + color pickers group */}
-                    {(onChangeMarkerDesign || onChangeMarkerBgColor || onChangeMarkerBorderColor || onChangeMarkerTextColor) && (
+                    {(activeOnChangeDesign || activeOnChangeBg || activeOnChangeBorder || activeOnChangeText) && (
                         <div className="flex flex-row items-center gap-2">
-                            {onChangeMarkerDesign && (
+                            {activeOnChangeDesign && (
                                 <label className="flex flex-row items-center gap-1">
                                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Style</span>
                                     <select
-                                        value={markerDesign}
-                                        onChange={(e) => onChangeMarkerDesign(e.target.value as MarkerDesign)}
+                                        value={activeDesign}
+                                        onChange={(e) => activeOnChangeDesign(e.target.value as MarkerDesign)}
                                         style={{
                                             background: 'var(--theme-panel)',
                                             color: 'var(--theme-secondary-text)',
@@ -280,79 +438,79 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                     </select>
                                 </label>
                             )}
-                            {onChangeMarkerBgColor && (
+                            {activeOnChangeBg && (
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
                                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">
-                                        {markerDesign !== 'solid' ? 'Primary' : 'BG'}
+                                        {activeDesign !== 'solid' ? 'Primary' : 'BG'}
                                     </span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                         <div style={{
                                             width: 24, height: 24, borderRadius: 5,
-                                            background: markerBgColor,
+                                            background: activeBgColor,
                                             border: '1.5px solid var(--theme-border-btn)',
                                             cursor: 'pointer',
                                         }} />
                                         <input
                                             type="color"
-                                            value={markerBgColor}
-                                            onChange={(e) => onChangeMarkerBgColor(e.target.value)}
+                                            value={activeBgColor}
+                                            onChange={(e) => activeOnChangeBg(e.target.value)}
                                             style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
                                         />
                                     </div>
                                 </label>
                             )}
-                            {onChangeMarkerSecondaryColor && markerDesign !== 'solid' && (
+                            {activeOnChangeSecondary && activeDesign !== 'solid' && (
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
                                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">2nd</span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                         <div style={{
                                             width: 24, height: 24, borderRadius: 5,
-                                            background: markerSecondaryColor,
+                                            background: activeSecondaryColor,
                                             border: '1.5px solid var(--theme-border-btn)',
                                             cursor: 'pointer',
                                         }} />
                                         <input
                                             type="color"
-                                            value={markerSecondaryColor}
-                                            onChange={(e) => onChangeMarkerSecondaryColor(e.target.value)}
+                                            value={activeSecondaryColor}
+                                            onChange={(e) => activeOnChangeSecondary(e.target.value)}
                                             style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
                                         />
                                     </div>
                                 </label>
                             )}
-                            {onChangeMarkerBorderColor && (
+                            {activeOnChangeBorder && (
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
                                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Border</span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                         <div style={{
                                             width: 24, height: 24, borderRadius: 5,
-                                            background: markerBorderColor,
+                                            background: activeBorderColor,
                                             border: '1.5px solid var(--theme-border-btn)',
                                             cursor: 'pointer',
                                         }} />
                                         <input
                                             type="color"
-                                            value={markerBorderColor}
-                                            onChange={(e) => onChangeMarkerBorderColor(e.target.value)}
+                                            value={activeBorderColor}
+                                            onChange={(e) => activeOnChangeBorder(e.target.value)}
                                             style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
                                         />
                                     </div>
                                 </label>
                             )}
-                            {onChangeMarkerTextColor && (
+                            {activeOnChangeText && (
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
                                     <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Text</span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                         <div style={{
                                             width: 24, height: 24, borderRadius: 5,
-                                            background: markerTextColor,
+                                            background: activeTextColor,
                                             border: '1.5px solid var(--theme-border-btn)',
                                             cursor: 'pointer',
                                         }} />
                                         <input
                                             type="color"
-                                            value={markerTextColor}
-                                            onChange={(e) => onChangeMarkerTextColor(e.target.value)}
+                                            value={activeTextColor}
+                                            onChange={(e) => activeOnChangeText(e.target.value)}
                                             style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
                                         />
                                     </div>
@@ -361,11 +519,12 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                         </div>
                     )}
                     {/* Divider between colors and buttons */}
-                    {(onChangeMarkerDesign || onChangeMarkerBgColor || onChangeMarkerBorderColor || onChangeMarkerTextColor) &&
-                     (onToggleWaypoints || onToggleMarkerType || onTogglePlayerLabels) && (
+                    {(activeOnChangeDesign || activeOnChangeBg || activeOnChangeBorder || activeOnChangeText) &&
+                     (onToggleWaypoints || activeOnToggleMarkerType || activeOnToggleLabels) && (
                         <div className="self-stretch w-px bg-[var(--theme-border)] mx-1" />
                     )}
-                    {onToggleWaypoints && (
+                    {/* Waypoints only for home team */}
+                    {!isAway && onToggleWaypoints && (
                         <Button
                             onClick={(e) => { e.preventDefault(); onToggleWaypoints(); }}
                             className="!p-2"
@@ -375,28 +534,29 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             <Waypoints size={18} />
                         </Button>
                     )}
-                    {onToggleMarkerType && (
+                    {activeOnToggleMarkerType && (
                         <Button
-                            onClick={(e) => { e.preventDefault(); onToggleMarkerType(); }}
+                            onClick={(e) => { e.preventDefault(); activeOnToggleMarkerType(); }}
                             className="!p-2"
                             style={btnStyle(false)}
-                            variant="outline" type="button" title={markerType === 'circle' ? "Switch to Shirt Markers" : "Switch to Circle Markers"}
+                            variant="outline" type="button" title={activeMarkerType === 'circle' ? "Switch to Shirt Markers" : "Switch to Circle Markers"}
                         >
-                            {markerType === 'circle' ? <HangerIcon size={18} /> : <Circle size={18} />}
+                            {activeMarkerType === 'circle' ? <HangerIcon size={18} /> : <Circle size={18} />}
                         </Button>
                     )}
-                    {onTogglePlayerLabels && (
+                    {activeOnToggleLabels && (
                         <Button
-                            onClick={(e) => { e.preventDefault(); onTogglePlayerLabels(); }}
+                            onClick={(e) => { e.preventDefault(); activeOnToggleLabels(); }}
                             className="!p-2"
-                            style={btnStyle(showPlayerLabels)}
-                            variant="outline" type="button" title={showPlayerLabels ? "Hide Player Labels" : "Show Player Labels"}
+                            style={btnStyle(activeShowLabels)}
+                            variant="outline" type="button" title={activeShowLabels ? "Hide Player Labels" : "Show Player Labels"}
                         >
                             <Users size={18} />
-                            {showPlayerLabels && <CaseSensitive size={18} className="ml-1" />}
+                            {activeShowLabels && <CaseSensitive size={18} className="ml-1" />}
                         </Button>
                     )}
-                    {onToggleFieldOfView && (
+                    {/* FOV only for home team */}
+                    {!isAway && onToggleFieldOfView && (
                         <Button
                             onClick={(e) => { e.preventDefault(); onToggleFieldOfView(); }}
                             className="!p-2"
@@ -409,16 +569,91 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                 </div>
             </div>
 
-            {/* Vertical divider + Section 3 — only if showSingleMarkerHint */}
-            {showSingleMarkerHint && (
+            {/* Section 3 — Arrows */}
+            {onSetArrowTool && (
                 <>
                     <div className="self-stretch w-px bg-[var(--theme-border)] mx-4" />
                     <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)] mb-2">Single Marker</span>
-                        <div className="flex flex-row items-center gap-1.5 flex-wrap">
-                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--theme-border-btn)] bg-transparent">
-                                <Info size={14} style={{ color: '#555568', flexShrink: 0 }} />
-                                <span className="text-xs text-[var(--theme-muted)] leading-tight">Right-click any player to assign captain, cards or star status</span>
+                        <div className="flex flex-row items-center justify-between mb-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Arrows</span>
+                            <div className="flex items-center gap-2">
+                                {/* Ball color */}
+                                <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }} title="Ball arrow color">
+                                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#fbbf24' }}>Ball</span>
+                                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                                        <div style={{ width: 18, height: 18, borderRadius: 4, background: arrowBallColor, border: `2px solid #fbbf2466`, cursor: 'pointer' }} />
+                                        {onChangeArrowBallColor && (
+                                            <input type="color" value={arrowBallColor} onChange={e => onChangeArrowBallColor(e.target.value)}
+                                                style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
+                                        )}
+                                    </div>
+                                </label>
+                                {/* Run color */}
+                                <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }} title="Player run arrow color">
+                                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#60a5fa' }}>Run</span>
+                                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                                        <div style={{ width: 18, height: 18, borderRadius: 4, background: arrowRunColor, border: `2px solid #60a5fa66`, cursor: 'pointer' }} />
+                                        {onChangeArrowRunColor && (
+                                            <input type="color" value={arrowRunColor} onChange={e => onChangeArrowRunColor(e.target.value)}
+                                                style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
+                                        )}
+                                    </div>
+                                </label>
+                                {/* Clear all */}
+                                {onClearArrows && (
+                                    <button type="button" onClick={onClearArrows} title="Clear all arrows"
+                                        style={{ padding: '2px 4px', borderRadius: 4, border: '1.5px solid var(--theme-border-btn)', background: 'transparent', color: 'var(--theme-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                                        <Trash2 size={12} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            {/* Ball movement row */}
+                            <div className="flex flex-row items-center gap-1">
+                                <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--theme-muted)] w-8 shrink-0">Ball</span>
+                                {([
+                                    { type: 'pass' as ArrowType, label: 'Pass', icon: PassIcon },
+                                    { type: 'dribble' as ArrowType, label: 'Carry', icon: DribbleIcon },
+                                    { type: 'long-ball' as ArrowType, label: 'Long', icon: LongBallIcon },
+                                    { type: 'target-zone' as ArrowType, label: 'Target', icon: TargetIcon },
+                                ] as { type: ArrowType; label: string; icon: React.FC }[]).map(({ type, label, icon: Icon }) => (
+                                    <button key={type} type="button" title={label}
+                                        onClick={() => onSetArrowTool(arrowTool === type ? null : type)}
+                                        style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                                            padding: '3px 6px', borderRadius: 5, border: '1.5px solid',
+                                            borderColor: arrowTool === type ? '#fbbf24' : 'var(--theme-border-btn)',
+                                            background: arrowTool === type ? 'rgba(251,191,36,0.12)' : 'transparent',
+                                            cursor: 'pointer', minWidth: 36,
+                                        }}>
+                                        <Icon />
+                                        <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.06em', color: arrowTool === type ? '#fbbf24' : 'var(--theme-muted)', textTransform: 'uppercase' }}>{label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            {/* Player movement row */}
+                            <div className="flex flex-row items-center gap-1">
+                                <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--theme-muted)] w-8 shrink-0">Run</span>
+                                {([
+                                    { type: 'direct-run' as ArrowType, label: 'Direct', icon: DirectRunIcon },
+                                    { type: 'secondary-run' as ArrowType, label: '2nd Run', icon: SecondaryRunIcon },
+                                    { type: 'curved-run' as ArrowType, label: 'Curved', icon: CurvedRunIcon },
+                                    { type: 'press-run' as ArrowType, label: 'Press', icon: PressRunIcon },
+                                ] as { type: ArrowType; label: string; icon: React.FC }[]).map(({ type, label, icon: Icon }) => (
+                                    <button key={type} type="button" title={label}
+                                        onClick={() => onSetArrowTool(arrowTool === type ? null : type)}
+                                        style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                                            padding: '3px 6px', borderRadius: 5, border: '1.5px solid',
+                                            borderColor: arrowTool === type ? '#60a5fa' : 'var(--theme-border-btn)',
+                                            background: arrowTool === type ? 'rgba(96,165,250,0.12)' : 'transparent',
+                                            cursor: 'pointer', minWidth: 36,
+                                        }}>
+                                        <Icon />
+                                        <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.06em', color: arrowTool === type ? '#60a5fa' : 'var(--theme-muted)', textTransform: 'uppercase' }}>{label}</span>
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>

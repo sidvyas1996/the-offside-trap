@@ -11,12 +11,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <button
                 ref={ref}
                 className={cn(
-                    "inline-flex items-center justify-center rounded-md text-sm font-medium px-4 py-2 transition-colors",
+                    "inline-flex items-center justify-center rounded-lg text-sm font-medium px-4 py-2 transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
                     variant === "default"
-                        ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white"
+                        ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)] font-semibold"
                         : variant === "outline"
-                        ? "border border-white text-white hover:bg-white/10"
-                        : "bg-transparent text-white hover:bg-white/10",
+                        ? "border border-[var(--theme-border-btn)] text-[var(--theme-secondary-text)] hover:bg-white/5 hover:text-[var(--on-surface)] hover:border-[var(--hairline-strong)]"
+                        : "bg-transparent text-[var(--on-surface-variant)] hover:bg-white/5 hover:text-[var(--on-surface)]",
                     className
                 )}
                 {...props}

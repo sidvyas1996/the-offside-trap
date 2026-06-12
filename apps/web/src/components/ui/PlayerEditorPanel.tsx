@@ -208,9 +208,9 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
                     onChange={e => setDraft(prev => ({ ...prev, position: e.target.value }))}
                     style={{ ...inputBase, appearance: 'none' as any, cursor: 'pointer' }}
                   >
-                    <option value="" style={{ background: '#0f1930' }}>—</option>
+                    <option value="" style={{ background: 'var(--theme-panel)' }}>—</option>
                     {POSITIONS.map(pos => (
-                      <option key={pos} value={pos} style={{ background: '#0f1930' }}>{pos}</option>
+                      <option key={pos} value={pos} style={{ background: 'var(--theme-panel)' }}>{pos}</option>
                     ))}
                   </select>
                 </div>

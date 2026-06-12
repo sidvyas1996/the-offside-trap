@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import { usePlayerDrag } from "./usePlayerDrag";
 import type { Player } from "../../../../packages/shared/src";
 
+const noop = () => {};
+const noopUpdate: React.Dispatch<React.SetStateAction<Player[]>> = () => {};
+
 export const useTacticsActions = (
   players: Player[],
   setPlayers: React.Dispatch<React.SetStateAction<Player[]>>,
@@ -9,9 +12,16 @@ export const useTacticsActions = (
   setDraggedPlayer: (player: Player | null) => void,
   fieldRef: React.RefObject<HTMLDivElement | null>,
   handlePlayerNameChange: (id: number, name: string) => void,
-  handleUpdatePlayer: (id: number, updates: Partial<Player>) => void
+  handleUpdatePlayer: (id: number, updates: Partial<Player>) => void,
+  // Opposition (optional)
+  oppositionPlayers: Player[] = [],
+  setOppositionPlayers: React.Dispatch<React.SetStateAction<Player[]>> = noopUpdate,
+  setOppositionActions: (actions: any) => void = noop,
+  setDraggedOppositionPlayer: (player: Player | null) => void = noop,
+  handleOppPlayerNameChange: (id: number, name: string) => void = noop,
+  handleUpdateOppositionPlayer: (id: number, updates: Partial<Player>) => void = noop,
 ) => {
-  // Drag-and-drop logic
+  // Home team drag
   const drag = usePlayerDrag(
     players,
     setPlayers,
@@ -19,7 +29,15 @@ export const useTacticsActions = (
     fieldRef as React.RefObject<HTMLDivElement>,
   );
 
-  // Initialize actions
+  // Opposition team drag
+  const oppDrag = usePlayerDrag(
+    oppositionPlayers,
+    setOppositionPlayers,
+    { sticky: false },
+    fieldRef as React.RefObject<HTMLDivElement>,
+  );
+
+  // Set up home actions
   useEffect(() => {
     setActions({
       onMouseDown: (player: Player) => {
@@ -44,41 +62,30 @@ export const useTacticsActions = (
     handleUpdatePlayer,
   ]);
 
-  // Action handlers
-  const handleSave = () => {
-    console.log("Saving tactic...");
-    // TODO: Implement save functionality
-  };
+  // Set up opposition actions
+  useEffect(() => {
+    setOppositionActions({
+      onMouseDown: (player: Player) => {
+        oppDrag.handleMouseDown(player);
+        setDraggedOppositionPlayer(player);
+      },
+      onMouseMove: oppDrag.handleMouseMove,
+      onMouseUp: () => {
+        oppDrag.handleMouseUp();
+        setDraggedOppositionPlayer(null);
+      },
+      onPlayerNameChange: handleOppPlayerNameChange,
+      onUpdatePlayer: handleUpdateOppositionPlayer,
+    });
+  }, [
+    oppDrag.handleMouseDown,
+    oppDrag.handleMouseMove,
+    oppDrag.handleMouseUp,
+    setOppositionActions,
+    setDraggedOppositionPlayer,
+    handleOppPlayerNameChange,
+    handleUpdateOppositionPlayer,
+  ]);
 
-  const handleLoad = () => {
-    console.log("Loading tactic...");
-    // TODO: Implement load functionality
-  };
-
-  const handleReset = () => {
-    console.log("Resetting tactic...");
-    // This will be handled by the state hook
-  };
-
-  const handleHomeColorChange = (color: string) => {
-    // This will be handled by the state hook
-    console.log("Home color changed to:", color);
-  };
-
-  const handleAwayColorChange = (color: string) => {
-    // TODO: Implement away team color change
-    console.log("Away color changed to:", color);
-  };
-
-  return {
-    // Drag functionality
-    drag,
-    
-    // Action handlers
-    handleSave,
-    handleLoad,
-    handleReset,
-    handleHomeColorChange,
-    handleAwayColorChange,
-  };
-}; 
+  return { drag, oppDrag };
+};

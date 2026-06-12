@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Swords } from "lucide-react";
 import { renderBackButton } from "../components/ui/back-button";
 import { Button } from "../components/ui/button";
 import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
@@ -21,13 +21,21 @@ import type { TacticFormData, FieldSettings, Player, AnimationData } from "../..
 const CreateTacticsContent: React.FC = () => {
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id?: string }>();
-  const { players, setPlayers, options, setOptions } = useFootballField();
+  const {
+    players, setPlayers, options, setOptions,
+    oppositionPlayers, setOppositionPlayers,
+    oppositionOptions, setOppositionOptions,
+    showOpposition,
+    arrows, setArrows, arrowTool, setArrowTool, arrowBallColor, setArrowBallColor, arrowRunColor, setArrowRunColor,
+  } = useFootballField();
 
   // Custom hooks
   const form = useTacticsForm();
   const state = useTacticsState();
   const [fieldOfViewMode, setFieldOfViewMode] = React.useState(false);
   const [selectedPlayer, setSelectedPlayer] = React.useState<Player | null>(null);
+  const [activeTeam, setActiveTeam] = React.useState<'home' | 'away'>('home');
+
   const actions = useTacticsActions(
     state.players,
     state.setPlayers,
@@ -35,7 +43,14 @@ const CreateTacticsContent: React.FC = () => {
     state.setDraggedPlayer,
     state.fieldRef,
     state.handlePlayerNameChange,
-    state.handleUpdatePlayer
+    state.handleUpdatePlayer,
+    // Opposition
+    oppositionPlayers,
+    state.setOppositionPlayers,
+    state.setOppositionActions,
+    state.setDraggedOppositionPlayer,
+    state.handleOppPlayerNameChange,
+    state.handleUpdateOppositionPlayer,
   );
 
   const getCurrentFieldSettings = (): FieldSettings => ({
@@ -51,10 +66,23 @@ const CreateTacticsContent: React.FC = () => {
     fieldOfViewMode,
   });
 
+  const getOppositionFieldSettings = (): FieldSettings => ({
+    fieldColor: options.fieldColor || '#0d4b3e',
+    playerColor: '#ef4444',
+    showPlayerLabels: state.oppShowPlayerLabels,
+    markerType: state.oppMarkerType,
+    markerBgColor: oppositionOptions.markerBgColor,
+    markerBorderColor: oppositionOptions.markerBorderColor,
+    markerTextColor: oppositionOptions.markerTextColor,
+    markerSecondaryColor: oppositionOptions.markerSecondaryColor,
+    markerDesign: oppositionOptions.markerDesign,
+  });
+
   // Animation hook — when playing back, override players + field settings
   const animation = useAnimation({
-    onFrame: (framePlayers, frameFieldSettings) => {
+    onFrame: (framePlayers, frameFieldSettings, frameOppositionPlayers) => {
       setPlayers(framePlayers);
+      if (frameOppositionPlayers) setOppositionPlayers(frameOppositionPlayers);
       setOptions(prev => ({
         ...prev,
         fieldColor: frameFieldSettings.fieldColor,
@@ -96,13 +124,37 @@ const CreateTacticsContent: React.FC = () => {
         if (fs.markerType) state.setMarkerType(fs.markerType);
         if (fs.fieldOfViewMode !== undefined) setFieldOfViewMode(fs.fieldOfViewMode);
       }
+      if (tactic.oppositionPlayers && tactic.oppositionPlayers.length > 0) {
+        setOppositionPlayers(tactic.oppositionPlayers);
+        state.setShowOpposition(true);
+      }
+      if (tactic.oppositionFieldSettings) {
+        const fs = tactic.oppositionFieldSettings;
+        setOppositionOptions(prev => ({
+          ...prev,
+          showPlayerLabels: fs.showPlayerLabels ?? prev.showPlayerLabels,
+          markerType: fs.markerType || prev.markerType,
+          ...(fs.markerBgColor && { markerBgColor: fs.markerBgColor }),
+          ...(fs.markerBorderColor && { markerBorderColor: fs.markerBorderColor }),
+          ...(fs.markerTextColor && { markerTextColor: fs.markerTextColor }),
+          ...(fs.markerSecondaryColor && { markerSecondaryColor: fs.markerSecondaryColor }),
+          ...(fs.markerDesign && { markerDesign: fs.markerDesign }),
+        }));
+        state.setOppShowPlayerLabels(fs.showPlayerLabels ?? true);
+        if (fs.markerType) state.setOppMarkerType(fs.markerType);
+      }
+      if (tactic.arrows && tactic.arrows.length > 0) setArrows(tactic.arrows);
       if (tactic.animation) animation.loadAnimation(tactic.animation as AnimationData);
     }).catch(console.error);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
 
   const handleAddKeyframe = () => {
-    animation.addKeyframe(players, getCurrentFieldSettings());
+    animation.addKeyframe(
+      players,
+      getCurrentFieldSettings(),
+      showOpposition ? oppositionPlayers : undefined,
+    );
   };
 
   const handleSubmit = async () => {
@@ -120,6 +172,11 @@ const CreateTacticsContent: React.FC = () => {
         players,
         fieldSettings: getCurrentFieldSettings(),
         animation: animation.keyframes.length > 0 ? animation.getAnimation() : undefined,
+        ...(showOpposition && {
+          oppositionPlayers,
+          oppositionFieldSettings: getOppositionFieldSettings(),
+        }),
+        ...(arrows.length > 0 && { arrows }),
       };
       const entity = new TacticEntity();
       if (editId) {
@@ -136,31 +193,53 @@ const CreateTacticsContent: React.FC = () => {
     }
   };
 
+  // Switch active team tab to 'away' automatically when opposition is turned on
+  useEffect(() => {
+    if (!showOpposition) setActiveTeam('home');
+  }, [showOpposition]);
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--theme-bg)', display: 'flex', flexDirection: 'column' }}>
 
       {/* Studio top bar */}
-      <div style={{ background: 'var(--theme-card)', borderBottom: '1px solid var(--theme-border)', padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div className="glass-bar" style={{ padding: '0 20px', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {renderBackButton(() => navigate(-1))}
+          <div style={{ width: 1, height: 26, background: 'var(--hairline-strong)' }} />
           <div>
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--theme-muted)' }}>Tactics Studio</div>
+            <div className="kicker" style={{ marginBottom: 1 }}>Tactics Studio</div>
             <input
+              className="studio-title-input"
               value={form.title}
               onChange={e => form.setTitle(e.target.value)}
               placeholder="Untitled Tactic"
-              style={{
-                fontSize: 14, fontWeight: 600, color: 'var(--theme-bright-text)',
-                background: 'transparent', border: 'none', outline: 'none',
-                padding: 0, width: 220, cursor: 'text',
-              }}
             />
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* formation badge */}
-          {form.formation && <span style={{ fontSize: 12, background: 'var(--theme-badge-bg)', border: '1px solid var(--theme-border-btn)', borderRadius: 6, padding: '3px 10px', color: 'var(--theme-secondary-text)', fontFamily: 'monospace' }}>{form.formation}</span>}
-          <Button onClick={handleSubmit} disabled={form.loading} className="btn-primary">
+          {form.formation && <span className="chip-mono">{form.formation}</span>}
+
+          {/* Opposition toggle */}
+          <Button
+            onClick={state.handleToggleOpposition}
+            variant="outline"
+            type="button"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 12, fontWeight: 600, padding: '7px 14px',
+              borderColor: showOpposition ? 'rgba(239,68,68,0.5)' : undefined,
+              background: showOpposition ? 'rgba(239,68,68,0.10)' : undefined,
+              color: showOpposition ? '#f87171' : undefined,
+              borderRadius: 9,
+            }}
+            title={showOpposition ? "Remove opposition team" : "Add opposition team"}
+          >
+            <Swords size={14} />
+            {showOpposition ? 'vs Opposition' : 'Add Opposition'}
+          </Button>
+
+          <Button onClick={handleSubmit} disabled={form.loading} className="btn-primary" style={{ padding: '8px 18px', borderRadius: 9 }}>
             {form.loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{editId ? 'Update Tactic' : 'Save Tactic'}</>}
           </Button>
         </div>
@@ -188,17 +267,15 @@ const CreateTacticsContent: React.FC = () => {
           onPlayerSelect={setSelectedPlayer}
         />
       ) : (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 56px)' }}>
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 58px)' }}>
 
           {/* Left — field stage */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
             {/* Stage: field + toolbar */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 0', background: 'var(--theme-stage)' }}>
-              {/* TacticalField in studioMode */}
               <TacticalField
                 studioMode
-                showSingleMarkerHint
                 waypointsMode={state.waypointsMode}
                 horizontalZonesMode={state.horizontalZonesMode}
                 verticalSpacesMode={state.verticalSpacesMode}
@@ -223,11 +300,12 @@ const CreateTacticsContent: React.FC = () => {
                 onPlayerSelect={setSelectedPlayer}
               />
 
-              {/* Toolbar: 3-category CreatorsMenu rendered separately under the field */}
+              {/* Toolbar */}
               <div style={{ marginTop: 16 }}>
                 <CreatorsMenu
                   onChangeFieldColor={state.handleFieldColorChange}
                   onChangePlayerColor={state.handlePlayerColorChange}
+                  // Home team marker props
                   markerBgColor={options.markerBgColor}
                   markerBorderColor={options.markerBorderColor}
                   markerTextColor={options.markerTextColor}
@@ -252,13 +330,39 @@ const CreateTacticsContent: React.FC = () => {
                   isFullScreen={state.isFullScreen}
                   onToggleFieldOfView={() => setFieldOfViewMode(prev => !prev)}
                   fieldOfViewMode={fieldOfViewMode}
-                  showSingleMarkerHint
+                    // Arrow tools
+                  arrowTool={arrowTool}
+                  onSetArrowTool={setArrowTool}
+                  arrowBallColor={arrowBallColor}
+                  onChangeArrowBallColor={setArrowBallColor}
+                  arrowRunColor={arrowRunColor}
+                  onChangeArrowRunColor={setArrowRunColor}
+                  onClearArrows={() => setArrows([])}
+                  // Team tabs
+                  showOpposition={showOpposition}
+                  activeTeam={activeTeam}
+                  onSetActiveTeam={setActiveTeam}
+                  // Away team marker props
+                  oppMarkerBgColor={oppositionOptions.markerBgColor}
+                  oppMarkerBorderColor={oppositionOptions.markerBorderColor}
+                  oppMarkerTextColor={oppositionOptions.markerTextColor}
+                  oppMarkerSecondaryColor={oppositionOptions.markerSecondaryColor}
+                  oppMarkerDesign={oppositionOptions.markerDesign}
+                  onChangeOppMarkerBgColor={state.handleOppMarkerBgColorChange}
+                  onChangeOppMarkerBorderColor={state.handleOppMarkerBorderColorChange}
+                  onChangeOppMarkerTextColor={state.handleOppMarkerTextColorChange}
+                  onChangeOppMarkerSecondaryColor={state.handleOppMarkerSecondaryColorChange}
+                  onChangeOppMarkerDesign={state.handleOppMarkerDesignChange}
+                  onOppTogglePlayerLabels={state.handleOppTogglePlayerLabels}
+                  oppShowPlayerLabels={state.oppShowPlayerLabels}
+                  onOppToggleMarkerType={state.handleOppToggleMarkerType}
+                  oppMarkerType={state.oppMarkerType}
                 />
               </div>
             </div>
 
             {/* Animation timeline bar */}
-            <div style={{ flexShrink: 0, borderTop: '1px solid var(--theme-border)', background: 'var(--theme-panel)', padding: '12px 24px' }}>
+            <div style={{ flexShrink: 0, borderTop: '1px solid var(--hairline)', background: 'var(--surface-low)', padding: '12px 24px' }}>
               <AnimationTimeline
                 keyframes={animation.keyframes}
                 currentTimeMs={animation.currentTimeMs}
@@ -278,9 +382,8 @@ const CreateTacticsContent: React.FC = () => {
           </div>
 
           {/* Right panel — details */}
-          <div style={{ width: 420, borderLeft: '1px solid var(--theme-border)', background: 'var(--theme-panel)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
-            {/* Tactic Details — styled for dark studio */}
-            <div style={{ padding: 20 }}>
+          <div style={{ width: 400, borderLeft: '1px solid var(--hairline)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+            <div style={{ padding: 16 }}>
               <TacticDetails
                 title={form.title}
                 setTitle={form.setTitle}
@@ -293,10 +396,7 @@ const CreateTacticsContent: React.FC = () => {
                 onSubmit={handleSubmit}
               />
             </div>
-            {/* Divider */}
-            <div style={{ height: 1, background: 'var(--theme-border)' }} />
-            {/* Preview / Export */}
-            <div style={{ padding: 20 }}>
+            <div style={{ padding: '0 16px 16px' }}>
               <Preview animation={animation.getAnimation()} />
             </div>
           </div>

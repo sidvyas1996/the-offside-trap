@@ -117,36 +117,37 @@ const Preview: React.FC<PreviewProps> = ({
   };
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <Target className="h-5 w-5 text-[var(--primary)]" />
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: "var(--surface-container)", border: "1px solid var(--hairline)", boxShadow: "var(--card-shadow)" }}
+    >
+      <h2 className="panel-title mb-4">
+        <span className="icon-chip"><Target size={14} /></span>
         Preview
       </h2>
-      <MiniTacticCard />
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--hairline)" }}>
+        <MiniTacticCard />
+      </div>
 
-      <div className="mt-4 space-y-2">
-        <div className="text-sm font-semibold text-[var(--text-secondary)] mb-2">
-          Export Field
-        </div>
+      <div className="mt-5 space-y-2">
+        <span className="field-label">Export</span>
         <div className="flex gap-2">
           <Button
             onClick={() => handleExport('png')}
             variant="outline"
-            className="flex-1"
+            className="flex-1 !rounded-lg text-xs font-semibold"
             disabled={isExporting}
-            style={{ borderColor: 'var(--border)', borderRadius: 6 }}
           >
-            <ImageIcon size={16} className="mr-2" />
+            <ImageIcon size={14} className="mr-2" />
             {isExporting ? 'Exporting...' : 'PNG'}
           </Button>
           <Button
             onClick={() => handleExport('jpg')}
             variant="outline"
-            className="flex-1"
+            className="flex-1 !rounded-lg text-xs font-semibold"
             disabled={isExporting}
-            style={{ borderColor: 'var(--border)', borderRadius: 6 }}
           >
-            <ImageIcon size={16} className="mr-2" />
+            <ImageIcon size={14} className="mr-2" />
             {isExporting ? 'Exporting...' : 'JPG'}
           </Button>
         </div>
@@ -155,11 +156,10 @@ const Preview: React.FC<PreviewProps> = ({
           <Button
             onClick={handleExportVideo}
             variant="outline"
-            className="w-full"
+            className="w-full !rounded-lg text-xs font-semibold"
             disabled={isExportingVideo || (animation?.keyframes.length ?? 0) < 2}
-            style={{ borderColor: 'var(--border)', borderRadius: 6 }}
           >
-            <Film size={16} className="mr-2" />
+            <Film size={14} className="mr-2" />
             {isExportingVideo ? 'Rendering MP4...' : 'Export MP4'}
           </Button>
         )}

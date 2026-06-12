@@ -1,10 +1,13 @@
 import {ChevronLeft} from "lucide-react";
 
 export const renderBackButton = (onClick: () => void, label: string = "Back") => (
-    <ChevronLeft
-        className="h-6 w-6 text-gray-400 cursor-pointer hover:text-white"
+    <button
+        type="button"
+        className="icon-btn"
         onClick={onClick}
+        title={label}
+        aria-label={label}
     >
-        {label}
-    </ChevronLeft>
+        <ChevronLeft size={18} />
+    </button>
 );

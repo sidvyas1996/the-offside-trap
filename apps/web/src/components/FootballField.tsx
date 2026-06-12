@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { RotateCw } from "lucide-react";
 import { useFootballField } from "../contexts/FootballFieldContext.tsx";
 import PlayerMarker from "./PlayerMarker.tsx";
+import ArrowOverlay, { BALL_ARROW_TYPES } from "./ArrowOverlay.tsx";
 import {
   DEFAULT_FOOTBALL_FIELD_COLOUR,
   CHARCOAL_GRAY,
 } from "../utils/colors.ts";
 
-import type { Player } from "../../../../packages/shared";
+import type { Player, TacticArrow } from "../../../../packages/shared";
 
 interface FootballFieldProps {
   editable?: boolean;
@@ -30,8 +31,11 @@ const FootballField: React.FC<FootballFieldProps> = ({
   fieldOfViewMode = false,
   onPlayerSelect,
 }) => {
-  const { players, draggedPlayer, options, actions, fieldRef } =
-    useFootballField();
+  const {
+    players, draggedPlayer, options, actions, fieldRef,
+    oppositionPlayers, draggedOppositionPlayer, oppositionOptions, oppositionActions, showOpposition,
+    arrows, setArrows, arrowTool, arrowBallColor, arrowRunColor,
+  } = useFootballField();
 
   const { onUpdatePlayer, onPlayerNameChange } = actions;
 
@@ -54,6 +58,106 @@ const FootballField: React.FC<FootballFieldProps> = ({
   const rotatingPlayerIdRef = useRef<number | null>(null);
   const playersRef = useRef<any[]>(players);
   useEffect(() => { playersRef.current = players; });
+
+  // Arrow drawing state
+  const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
+  const [drawingCurrent, setDrawingCurrent] = useState<{ x: number; y: number } | null>(null);
+  // ID of the player the cursor is snapping to (for visual feedback)
+  const [arrowSnapId, setArrowSnapId] = useState<number | null>(null);
+
+  const toFieldPct = useCallback((clientX: number, clientY: number) => {
+    if (!fieldRef.current) return { x: 50, y: 50 };
+    const rect = fieldRef.current.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)),
+      y: Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)),
+    };
+  }, [fieldRef]);
+
+  // Find the nearest player within a snap threshold (8 percentage units, aspect-ratio corrected)
+  const findNearestPlayer = useCallback((pt: { x: number; y: number }) => {
+    const all = showOpposition ? [...players, ...oppositionPlayers] : [...players];
+    const THRESHOLD = 8;
+    let nearest: Player | null = null;
+    let minDist = THRESHOLD;
+    for (const p of all) {
+      // Scale x by 7/11 to account for 11:7 field aspect ratio
+      const dx = (p.x - pt.x) * (7 / 11);
+      const dy = p.y - pt.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist) { minDist = dist; nearest = p; }
+    }
+    return nearest;
+  }, [players, oppositionPlayers, showOpposition]);
+
+  const handleArrowMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!arrowTool) return;
+    e.preventDefault();
+    const pt = toFieldPct(e.clientX, e.clientY);
+    const nearest = findNearestPlayer(pt);
+    if (!nearest) return; // must originate from a player
+    const snapPt = { x: nearest.x, y: nearest.y };
+    const color = BALL_ARROW_TYPES.includes(arrowTool) ? arrowBallColor : arrowRunColor;
+    if (arrowTool === 'target-zone') {
+      setArrows(prev => [...prev, { id: crypto.randomUUID(), type: arrowTool, points: [snapPt], color }]);
+    } else {
+      setDrawingStart(snapPt);
+      setDrawingCurrent(snapPt);
+    }
+  }, [arrowTool, arrowBallColor, arrowRunColor, toFieldPct, findNearestPlayer, setArrows]);
+
+  const handleArrowMouseMove = useCallback((e: React.MouseEvent) => {
+    const pt = toFieldPct(e.clientX, e.clientY);
+    if (drawingStart) {
+      setDrawingCurrent(pt);
+    } else {
+      // Track which player the cursor is nearest to for snap indicator
+      const nearest = findNearestPlayer(pt);
+      setArrowSnapId(nearest ? nearest.id : null);
+    }
+  }, [drawingStart, toFieldPct, findNearestPlayer]);
+
+  const handleArrowMouseUp = useCallback((e: React.MouseEvent) => {
+    if (!arrowTool || !drawingStart) return;
+    const end = toFieldPct(e.clientX, e.clientY);
+    const dx = end.x - drawingStart.x;
+    const dy = end.y - drawingStart.y;
+    if (Math.sqrt(dx * dx + dy * dy) > 2) {
+      const isBall = BALL_ARROW_TYPES.includes(arrowTool);
+      const color = isBall ? arrowBallColor : arrowRunColor;
+      const endPlayer = isBall ? findNearestPlayer(end) : null;
+      setArrows(prev => [...prev, {
+        id: crypto.randomUUID(),
+        type: arrowTool,
+        points: [drawingStart, end],
+        color,
+        ...(isBall && endPlayer ? { endsAtPlayer: true } : {}),
+      }]);
+    }
+    setDrawingStart(null);
+    setDrawingCurrent(null);
+  }, [arrowTool, drawingStart, arrowBallColor, arrowRunColor, toFieldPct, findNearestPlayer, setArrows]);
+
+  const handleArrowOverlayLeave = useCallback(() => {
+    setDrawingStart(null);
+    setDrawingCurrent(null);
+    setArrowSnapId(null);
+  }, []);
+
+  const handleDeleteArrow = useCallback((id: string) => {
+    setArrows(prev => prev.filter(a => a.id !== id));
+  }, [setArrows]);
+
+  const previewArrow: TacticArrow | null =
+    arrowTool && arrowTool !== 'target-zone' && drawingStart && drawingCurrent
+      ? { id: 'preview', type: arrowTool, points: [drawingStart, drawingCurrent],
+          color: BALL_ARROW_TYPES.includes(arrowTool) ? arrowBallColor : arrowRunColor }
+      : null;
+
+  // Snap indicator: position of the player being snapped to
+  const snapPlayer = arrowTool && !drawingStart
+    ? (players.find(p => p.id === arrowSnapId) || (showOpposition ? oppositionPlayers.find(p => p.id === arrowSnapId) : null))
+    : null;
 
   // Drag-to-rotate: angle = atan2(mouse - playerCenter)
   useEffect(() => {
@@ -191,9 +295,9 @@ const FootballField: React.FC<FootballFieldProps> = ({
       ref={fieldRef}
       className={`relative rounded-xl overflow-hidden cursor-move ${isFullScreen ? '' : 'mb-6'}`}
       style={fieldStyle}
-      onMouseMove={actions.onMouseMove}
-      onMouseUp={actions.onMouseUp}
-      onMouseLeave={actions.onMouseUp}
+      onMouseMove={(e) => { actions.onMouseMove?.(e); oppositionActions.onMouseMove?.(e); }}
+      onMouseUp={() => { actions.onMouseUp?.(); oppositionActions.onMouseUp?.(); }}
+      onMouseLeave={() => { actions.onMouseUp?.(); oppositionActions.onMouseUp?.(); }}
     >
       {/* Field Markings */}
       <svg
@@ -601,7 +705,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
         </>
       )}
 
-      {/* Players */}
+      {/* Home team players */}
       {players.map((player: any) => (
         <PlayerMarker
           key={player.id}
@@ -634,9 +738,82 @@ const FootballField: React.FC<FootballFieldProps> = ({
           markerTextColor={options.markerTextColor}
           markerSecondaryColor={options.markerSecondaryColor}
           markerDesign={options.markerDesign}
+          shirtTextureUrl={options.shirtTextureUrl}
           onPlayerSelect={onPlayerSelect}
         />
       ))}
+
+      {/* Opposition team players */}
+      {showOpposition && oppositionPlayers.map((player: any) => (
+        <PlayerMarker
+          key={`opp-${player.id}`}
+          player={player}
+          scale={scale}
+          isDragged={draggedOppositionPlayer?.id === player.id}
+          onMouseDown={() => oppositionActions.onMouseDown && oppositionActions.onMouseDown(player)}
+          editable={typeof editable === "boolean" ? editable : oppositionOptions.editable}
+          onNameChange={oppositionActions.onPlayerNameChange}
+          onPositionChange={
+            oppositionActions.onUpdatePlayer
+              ? (id, position) => oppositionActions.onUpdatePlayer!(id, { position })
+              : undefined
+          }
+          onContextMenu={(e) => {
+            e.preventDefault();
+            onShowContextMenu(player.id, e.clientX, e.clientY);
+          }}
+          enableContextMenu={oppositionOptions.enableContextMenu}
+          showPlayerLabels={oppositionOptions.showPlayerLabels}
+          markerType={oppositionOptions.markerType}
+          waypointsMode={false}
+          isSelected={false}
+          markerBgColor={oppositionOptions.markerBgColor}
+          markerBorderColor={oppositionOptions.markerBorderColor}
+          markerTextColor={oppositionOptions.markerTextColor}
+          markerSecondaryColor={oppositionOptions.markerSecondaryColor}
+          markerDesign={oppositionOptions.markerDesign}
+          shirtTextureUrl={oppositionOptions.shirtTextureUrl}
+        />
+      ))}
+
+      {/* Arrow annotations */}
+      <ArrowOverlay
+        arrows={arrows}
+        onDeleteArrow={handleDeleteArrow}
+        previewArrow={previewArrow}
+      />
+
+      {/* Arrow drawing overlay — transparent full-field capture layer */}
+      {arrowTool && (
+        <div
+          className="absolute inset-0"
+          style={{ zIndex: 45, cursor: 'crosshair' }}
+          onMouseDown={handleArrowMouseDown}
+          onMouseMove={handleArrowMouseMove}
+          onMouseUp={handleArrowMouseUp}
+          onMouseLeave={handleArrowOverlayLeave}
+        />
+      )}
+
+      {/* Snap indicator ring — shown above overlay, pointer-events none */}
+      {snapPlayer && (
+        <div
+          style={{
+            position: 'absolute',
+            left: `${snapPlayer.x}%`,
+            top: `${snapPlayer.y}%`,
+            transform: 'translate(-50%, -50%)',
+            zIndex: 46,
+            pointerEvents: 'none',
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            border: `2px solid ${BALL_ARROW_TYPES.includes(arrowTool!) ? '#fbbf24' : '#60a5fa'}`,
+            boxShadow: `0 0 8px ${BALL_ARROW_TYPES.includes(arrowTool!) ? '#fbbf2488' : '#60a5fa88'}`,
+            animation: 'pulse 1s ease-in-out infinite',
+          }}
+        />
+      )}
 
       {/* Context Menu */}
       {contextMenu.visible && (

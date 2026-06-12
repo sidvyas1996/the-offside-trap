@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import type { Player } from "../../../../packages/shared";
 import type { MarkerDesign } from "../contexts/FootballFieldContext";
 import { Star } from "lucide-react";
+import { getShirtSprite, getTexturedShirtSprite } from "../utils/shirtSprite";
 
 function getCircleBackground(design: MarkerDesign, primary: string, secondary: string): string {
   switch (design) {
@@ -44,6 +45,8 @@ interface PlayerMarkerProps {
   markerTextColor?: string;
   markerSecondaryColor?: string;
   markerDesign?: MarkerDesign;
+  /** Kit atlas texture for shirt markers; plain grey shirt when unset */
+  shirtTextureUrl?: string;
   onPlayerSelect?: (player: Player) => void;
 }
 
@@ -71,6 +74,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   markerTextColor = '#ffffff',
   markerSecondaryColor = '#ffffff',
   markerDesign = 'solid',
+  shirtTextureUrl,
   onPlayerSelect,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -78,6 +82,33 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   const [name, setName] = useState(player.name || `Player ${player.number}`);
   const [position, setPosition] = useState(player.position || player.number.toString());
   const [isStarSpinning, setIsStarSpinning] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // 3D-rendered grey half-sleeve shirt sprite (falls back to the flat png
+  // when WebGL isn't available, e.g. some headless environments)
+  const shirtSrc = useMemo(() => {
+    if (markerType !== 'shirt') return null;
+    try {
+      return getShirtSprite();
+    } catch {
+      return "/football-shirt.png";
+    }
+  }, [markerType]);
+
+  // Kit-textured variant — async; grey shirt shows until the texture render
+  // resolves, and stays if the texture fails to load
+  const [texturedSrc, setTexturedSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (markerType !== 'shirt' || !shirtTextureUrl) {
+      setTexturedSrc(null);
+      return;
+    }
+    let alive = true;
+    getTexturedShirtSprite(shirtTextureUrl)
+      .then((src) => { if (alive) setTexturedSrc(src); })
+      .catch(() => { if (alive) setTexturedSrc(null); });
+    return () => { alive = false; };
+  }, [markerType, shirtTextureUrl]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -97,12 +128,12 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
         left: `${player.x}%`,
         top: `${player.y}%`,
         zIndex: isDragged ? 50 : 10,
-        transform: `translate(-50%, -50%) scale(${scale})`,
+        transform: `translate(-50%, -50%) scale(${scale * 0.88 * (isHovered ? 1.1 : 1)})`,
         transformOrigin: "center",
-        transition: isDragged ? "none" : "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: isDragged ? "none" : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      onMouseEnter={() => { setIsHovered(true); if (onMouseEnter) onMouseEnter(); }}
+      onMouseLeave={() => { setIsHovered(false); if (onMouseLeave) onMouseLeave(); }}
       onMouseDown={(e) => {
         e.preventDefault();
         const startX = e.clientX;
@@ -206,9 +237,11 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
             onDoubleClick={() => editable && setIsEditingPosition(true)}
           >
             <img
-              src="/football-shirt.png"
+              src={texturedSrc ?? shirtSrc ?? "/football-shirt.png"}
               alt="Player"
               className="w-full h-full object-contain"
+              style={{ filter: "drop-shadow(0 3px 5px rgba(0,0,0,0.35))" }}
+              draggable={false}
             />
             {isEditingPosition ? (
               <input
@@ -242,10 +275,11 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
                   left: '50%',
                   top: '50%',
                   transform: `
-                    translate(-50%, -50%) 
+                    translate(-50%, -50%)
                     rotate(${-rotationAngle}deg)
                   `,
                   transformOrigin: 'center',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.6)',
                 }}
               >
                 {position}
@@ -329,7 +363,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
               className="bg-[#1a1a1a] text-white font-semibold mt-1 px-2 py-1 rounded border border-gray-900 max-w-[120px] text-center whitespace-nowrap overflow-hidden text-ellipsis"
             />
           ) : (
-            <div style={{ background: markerBgColor, backdropFilter: 'blur(4px)', border: `4px solid ${markerBorderColor}`, color: markerTextColor }} className="font-semibold mt-1 px-2 py-0.5 rounded-md text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
+            <div style={{ background: markerBgColor, backdropFilter: 'blur(4px)', border: `4px solid ${markerBorderColor}`, color: markerTextColor }} className="font-semibold mt-1 px-2 py-0.5 rounded-md text-xs whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
               {name}
             </div>
           )}

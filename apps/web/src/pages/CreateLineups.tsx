@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Save, Loader2 } from "lucide-react";
 import { renderBackButton } from "../components/ui/back-button";
+import { Button } from "../components/ui/button";
 import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
 import { useTacticsForm } from "../hooks/useTacticsForm";
 import { useTacticsState } from "../hooks/useTacticsState";
 import { useTacticsActions } from "../hooks/useTacticsActions";
 import LineupField from "../components/tactics/LineupField";
-import TacticDetails from "../components/tactics/TacticDetails";
 import LineupOptions from "../components/tactics/LineupOptions";
 import Preview from "../components/tactics/Preview";
 import CreatorsMenu from "../components/ui/creators-menu";
@@ -55,21 +56,17 @@ const CreateLineupsContent: React.FC = () => {
     setTiltAngle((prev) => Math.max(0, prev - 5));
   };
 
-  // Zoom handlers
+  // Zoom handlers — 100% = field fills the stage; above that the view
+  // crops at the stage edges like a camera, so zoom works at any rotation
+  const ZOOM_STEPS = [0.75, 1.0, 1.2, 1.5];
   const handleZoomOut = () => {
-    if (zoomLevel === 1.2) {
-      setZoomLevel(1.0);
-    } else if (zoomLevel === 1.0) {
-      setZoomLevel(0.75);
-    }
+    const i = ZOOM_STEPS.indexOf(zoomLevel);
+    if (i > 0) setZoomLevel(ZOOM_STEPS[i - 1]);
   };
 
   const handleZoomIn = () => {
-    if (zoomLevel === 0.75) {
-      setZoomLevel(1.0);
-    } else if (zoomLevel === 1.0) {
-      setZoomLevel(1.2);
-    }
+    const i = ZOOM_STEPS.indexOf(zoomLevel);
+    if (i >= 0 && i < ZOOM_STEPS.length - 1) setZoomLevel(ZOOM_STEPS[i + 1]);
   };
 
   // Load existing lineup when editing
@@ -141,15 +138,63 @@ const CreateLineupsContent: React.FC = () => {
     }
   };
 
-  const renderCreateLineupsPage = () => (
-    <div className="max-w-[1152px] mx-auto py-8 px-4">
-      <div className="flex items-center gap-4 mb-8">
-        {renderBackButton(() => navigate(-1))}
-        <h1 className="text-4xl font-bold">Create Lineups</h1>
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--theme-bg)', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Studio top bar — title, description, formation, save */}
+      <div className="glass-bar" style={{ padding: '0 20px', height: 58, display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0, position: 'sticky', top: 0, zIndex: 50 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+          {renderBackButton(() => navigate(-1))}
+          <div style={{ width: 1, height: 26, background: 'var(--hairline-strong)' }} />
+          <div>
+            <div className="kicker" style={{ marginBottom: 1 }}>Lineup Creator</div>
+            <input
+              className="studio-title-input"
+              value={form.title}
+              onChange={e => form.setTitle(e.target.value)}
+              placeholder="Untitled Lineup"
+            />
+          </div>
+        </div>
+
+        {/* Description — inline, top bar */}
+        <input
+          value={form.description}
+          onChange={e => form.setDescription(e.target.value)}
+          placeholder="Add a short description…"
+          style={{
+            flex: 1,
+            maxWidth: 520,
+            background: 'var(--surface-high)',
+            border: '1px solid var(--hairline)',
+            borderRadius: 99,
+            padding: '8px 16px',
+            fontSize: 13,
+            color: 'var(--on-surface)',
+            outline: 'none',
+          }}
+        />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, marginLeft: 'auto' }}>
+          {/* Formation — editable mono chip */}
+          <input
+            className="chip-mono"
+            value={form.formation}
+            onChange={e => form.setFormation(e.target.value)}
+            style={{ width: 76, textAlign: 'center', outline: 'none' }}
+            title="Formation"
+          />
+          <Button onClick={handleSubmit} disabled={form.loading} className="btn-primary" style={{ padding: '8px 18px', borderRadius: 9 }}>
+            {form.loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{editId ? 'Update Lineup' : 'Save Lineup'}</>}
+          </Button>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-4 transition-all duration-300 ease-in-out">
-        {/* Lineup Field */}
+      {/* Main area: stage left, options + preview right */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 58px)' }}>
+
+        {/* Left — field stage */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 24px', background: 'var(--theme-stage)' }}>
         <LineupField
           waypointsMode={state.waypointsMode}
           horizontalZonesMode={state.horizontalZonesMode}
@@ -179,6 +224,7 @@ const CreateLineupsContent: React.FC = () => {
         />
 
         {/* CreatorsMenu - Horizontal toolbar below field */}
+        <div style={{ marginTop: 16 }}>
         <CreatorsMenu
           onChangeFieldColor={state.handleFieldColorChange}
           onChangePlayerColor={state.handlePlayerColorChange}
@@ -212,39 +258,24 @@ const CreateLineupsContent: React.FC = () => {
           onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
           onChangeMarkerDesign={state.handleMarkerDesignChange}
         />
-      </div>
-      
-      <div className="space-y-6 transition-all duration-300 ease-in-out">
+        </div>
+        </div>
 
-          {/* Tactic Details */}
-          <TacticDetails
-            title={form.title}
-            setTitle={form.setTitle}
-            description={form.description}
-            setDescription={form.setDescription}
-            formation={form.formation}
-            setFormation={form.setFormation}
-            selectedOptions={form.selectedOptions}
-            loading={form.loading}
-            onSubmit={handleSubmit}
-          />
-
-        {/* Options and Preview - Below Field */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          <LineupOptions />
-          <Preview 
-            rotationAngle={rotationAngle}
-            tiltAngle={tiltAngle}
-            zoomLevel={zoomLevel}
-          />
+        {/* Right panel — options + preview */}
+        <div style={{ width: 380, borderLeft: '1px solid var(--hairline)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+          <div style={{ padding: 16 }}>
+            <LineupOptions />
+          </div>
+          <div style={{ padding: '0 16px 16px' }}>
+            <Preview
+              rotationAngle={rotationAngle}
+              tiltAngle={tiltAngle}
+              zoomLevel={zoomLevel}
+            />
+          </div>
         </div>
       </div>
-    </div>
-  );
 
-  return (
-    <div className="min-h-screen py-8 px-4 lg:px-8">
-      {renderCreateLineupsPage()}
       <PlayerEditorPanel
         player={selectedPlayer}
         allPlayers={players}

@@ -20,16 +20,16 @@ function lerpHex(hexA: string, hexB: string, t: number): string {
 export function getInterpolatedFrame(
   timeMs: number,
   keyframes: Keyframe[]
-): { players: Player[]; fieldSettings: FieldSettings } | null {
+): { players: Player[]; fieldSettings: FieldSettings; oppositionPlayers?: Player[] } | null {
   if (keyframes.length === 0) return null;
   const sorted = [...keyframes].sort((a, b) => a.timeMs - b.timeMs);
 
   if (timeMs <= sorted[0].timeMs) {
-    return { players: sorted[0].players, fieldSettings: sorted[0].fieldSettings };
+    return { players: sorted[0].players, fieldSettings: sorted[0].fieldSettings, oppositionPlayers: sorted[0].oppositionPlayers };
   }
   if (timeMs >= sorted[sorted.length - 1].timeMs) {
     const last = sorted[sorted.length - 1];
-    return { players: last.players, fieldSettings: last.fieldSettings };
+    return { players: last.players, fieldSettings: last.fieldSettings, oppositionPlayers: last.oppositionPlayers };
   }
 
   let before = sorted[0];
@@ -45,16 +45,21 @@ export function getInterpolatedFrame(
   const span = after.timeMs - before.timeMs;
   const t = span === 0 ? 0 : (timeMs - before.timeMs) / span;
 
-  const playerMap = new Map(after.players.map(p => [p.id, p]));
-  const players: Player[] = before.players.map(p => {
-    const target = playerMap.get(p.id);
-    if (!target) return p;
-    return {
-      ...p,
-      x: lerp(p.x, target.x, t),
-      y: lerp(p.y, target.y, t),
-    };
-  });
+  const lerpPlayers = (fromPlayers: Player[], toPlayers: Player[]): Player[] => {
+    const playerMap = new Map(toPlayers.map(p => [p.id, p]));
+    return fromPlayers.map(p => {
+      const target = playerMap.get(p.id);
+      if (!target) return p;
+      return { ...p, x: lerp(p.x, target.x, t), y: lerp(p.y, target.y, t) };
+    });
+  };
+
+  const players = lerpPlayers(before.players, after.players);
+
+  const oppositionPlayers =
+    before.oppositionPlayers && after.oppositionPlayers
+      ? lerpPlayers(before.oppositionPlayers, after.oppositionPlayers)
+      : (before.oppositionPlayers || after.oppositionPlayers);
 
   const fs = before.fieldSettings;
   const fs2 = after.fieldSettings;
@@ -65,11 +70,11 @@ export function getInterpolatedFrame(
     markerType: t < 0.5 ? fs.markerType : fs2.markerType,
   };
 
-  return { players, fieldSettings };
+  return { players, fieldSettings, oppositionPlayers };
 }
 
 interface UseAnimationOptions {
-  onFrame?: (players: Player[], fieldSettings: FieldSettings) => void;
+  onFrame?: (players: Player[], fieldSettings: FieldSettings, oppositionPlayers?: Player[]) => void;
 }
 
 export function useAnimation(options: UseAnimationOptions = {}) {
@@ -125,17 +130,16 @@ export function useAnimation(options: UseAnimationOptions = {}) {
     if (!isPlaying || !onFrameRef.current) return;
     const frame = getInterpolatedFrame(currentTimeMs, keyframes);
     if (frame) {
-      onFrameRef.current(frame.players, frame.fieldSettings);
+      onFrameRef.current(frame.players, frame.fieldSettings, frame.oppositionPlayers);
     }
   }, [currentTimeMs, isPlaying, keyframes]);
 
   const addKeyframe = useCallback(
-    (players: Player[], fieldSettings: FieldSettings, label?: string) => {
+    (players: Player[], fieldSettings: FieldSettings, oppositionPlayers?: Player[], label?: string) => {
       const id = crypto.randomUUID();
       setKeyframes(prev => {
-        // Replace if a keyframe already exists at this exact time
         const filtered = prev.filter(k => Math.abs(k.timeMs - currentTimeMs) > 50);
-        return [...filtered, { id, timeMs: currentTimeMs, players, fieldSettings, label }]
+        return [...filtered, { id, timeMs: currentTimeMs, players, fieldSettings, oppositionPlayers, label }]
           .sort((a, b) => a.timeMs - b.timeMs);
       });
     },

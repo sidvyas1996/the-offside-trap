@@ -1,10 +1,8 @@
 import React from "react";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, ClipboardList } from "lucide-react";
 import { Button } from "../ui/button";
-import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
-import { Badge } from "../ui/badge";
 
 interface TacticDetailsProps {
   title: string;
@@ -35,59 +33,64 @@ const TacticDetails: React.FC<TacticDetailsProps> = ({
   };
 
   return (
-    <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl p-6">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <Save className="h-5 w-5 text-[var(--primary)]" />
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: "var(--surface-container)", border: "1px solid var(--hairline)", boxShadow: "var(--card-shadow)" }}
+    >
+      <h2 className="panel-title mb-5">
+        <span className="icon-chip"><ClipboardList size={14} /></span>
         Tactic Details
       </h2>
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
-          <Label htmlFor="title" className="text-sm">Tactic Title</Label>
-          <Textarea
+          <label htmlFor="title" className="field-label">Tactic Title</label>
+          <Input
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. High Press Counter Attack"
-            className="mt-1"
           />
         </div>
 
         <div>
-          <Label htmlFor="description" className="text-sm">Description</Label>
+          <label htmlFor="description" className="field-label">Description</label>
           <Textarea
             id="description"
+            rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe your tactical approach..."
-            className="mt-1"
+            className="!rounded-lg !p-3 text-sm"
           />
         </div>
 
         {setFormation !== undefined && (
           <div>
-            <Label htmlFor="formation" className="text-sm">Formation</Label>
+            <label htmlFor="formation" className="field-label">Formation</label>
             <Input
               id="formation"
               value={formation}
               onChange={(e) => setFormation(e.target.value)}
               placeholder="e.g. 4-3-3"
-              className="mt-1"
+              style={{ fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", letterSpacing: "0.04em" }}
             />
           </div>
         )}
 
-        <div>
-          <Label className="text-sm">Selected Options</Label>
-          <div className="flex flex-wrap gap-2 mt-2">
-            {selectedOptions.map((opt, idx) => (
-              <Badge key={idx} className="bg-purple-600 text-white text-xs">
-                {opt}
-              </Badge>
-            ))}
+        {selectedOptions.length > 0 && (
+          <div>
+            <span className="field-label">Selected Options</span>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedOptions.map((opt, idx) => (
+                <span key={idx} className="chip-lime">
+                  {opt}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        <Button type="submit" className="btn-primary w-full" disabled={loading}>
+        <Button type="submit" className="btn-primary w-full !rounded-xl" disabled={loading}>
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -105,4 +108,4 @@ const TacticDetails: React.FC<TacticDetailsProps> = ({
   );
 };
 
-export default TacticDetails; 
+export default TacticDetails;

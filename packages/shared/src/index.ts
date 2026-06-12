@@ -26,6 +26,25 @@ export interface TacticSummary {
 
 export type MarkerDesign = 'solid' | 'stripes' | 'diagonal-left' | 'diagonal-right' | 'horizontal-split' | 'vertical-split';
 
+// Arrow annotation types
+export type ArrowType =
+  | 'pass'           // dashed line + open arrowhead (ball)
+  | 'dribble'        // zigzag solid line (ball carry)
+  | 'long-ball'      // curved line + arrowhead (lofted pass / cross)
+  | 'target-zone'    // X marker at a location
+  | 'direct-run'     // straight solid arrow (player run)
+  | 'secondary-run'  // dashed solid arrow (conditional run)
+  | 'curved-run'     // curved solid arrow (overlap / arc run)
+  | 'press-run';     // zigzag arrow (pressing run)
+
+export interface TacticArrow {
+  id: string;
+  type: ArrowType;
+  points: { x: number; y: number }[]; // 0-100 percentage coords; target-zone has 1 pt, all others have 2
+  color?: string;
+  endsAtPlayer?: boolean; // ball arrows: skip end-clipping so arrowhead points to player centre
+}
+
 // Field visual settings (CreateTactics / 2D field only)
 export interface FieldSettings {
   fieldColor: string;
@@ -48,6 +67,7 @@ export interface Keyframe {
   timeMs: number;       // position on timeline in ms
   players: Player[];    // full 11-player snapshot
   fieldSettings: FieldSettings;
+  oppositionPlayers?: Player[];
   label?: string;
 }
 
@@ -65,8 +85,11 @@ export interface TacticFormData {
   tags: string[];
   description: string;
   players: Player[];
-  fieldSettings?: FieldSettings;  // saved with both tactics and lineups
-  animation?: AnimationData;      // tactics only (includes fps, durationMs)
+  fieldSettings?: FieldSettings;
+  animation?: AnimationData;
+  oppositionPlayers?: Player[];
+  oppositionFieldSettings?: FieldSettings;
+  arrows?: TacticArrow[];
 }
 
 // User Types
@@ -111,6 +134,9 @@ export interface Tactic {
   players: Player[];
   fieldSettings?: FieldSettings | null;
   animation?: AnimationData | null;
+  oppositionPlayers?: Player[] | null;
+  oppositionFieldSettings?: FieldSettings | null;
+  arrows?: TacticArrow[] | null;
   author: Author;
   createdAt: Date;
   updatedAt: Date;

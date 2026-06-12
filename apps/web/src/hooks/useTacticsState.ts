@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useFootballField } from "../contexts/FootballFieldContext";
 import type { MarkerDesign } from "../contexts/FootballFieldContext";
 import { useCreateTactics } from "../contexts/CreateTacticsContext";
 import { defaultLineupSingle } from "../utils/default-lineup-single";
+import { defaultLineupOpposition } from "../utils/default-lineup-opposition";
 import { DEFAULT_FOOTBALL_FIELD_COLOUR } from "../utils/colors";
 import type { Player } from "../../../../packages/shared/src";
 
@@ -22,6 +23,12 @@ export const useTacticsState = () => {
     setActions,
     setDraggedPlayer,
     fieldRef,
+    setOppositionPlayers,
+    setOppositionOptions,
+    setOppositionActions,
+    setDraggedOppositionPlayer,
+    showOpposition,
+    setShowOpposition,
   } = useFootballField();
 
   // UI State
@@ -29,7 +36,11 @@ export const useTacticsState = () => {
   const [homeColor, setHomeColor] = useState("#16A34A");
   const [showPlayerLabels, setShowPlayerLabels] = useState(true);
   const [markerType, setMarkerType] = useState<'circle' | 'shirt'>('circle');
-  
+
+  // Opposition-specific UI state
+  const [oppShowPlayerLabels, setOppShowPlayerLabels] = useState(true);
+  const [oppMarkerType, setOppMarkerType] = useState<'circle' | 'shirt'>('circle');
+
   // Mode States
   const [waypointsMode, setWaypointsMode] = useState(false);
   const [horizontalZonesMode, setHorizontalZonesMode] = useState(false);
@@ -40,7 +51,7 @@ export const useTacticsState = () => {
     setContextStep(WORKFLOW_STEPS.FINAL);
   }, [setContextStep]);
 
-  // Initialize players and actions
+  // Initialize home players and options
   useEffect(() => {
     setPlayers(defaultLineupSingle);
     setOptions((prev) => ({
@@ -49,21 +60,27 @@ export const useTacticsState = () => {
       editable: true,
       fieldColor: DEFAULT_FOOTBALL_FIELD_COLOUR,
       playerColor: homeColor,
-      enableContextMenu: true
+      enableContextMenu: true,
     }));
   }, [setPlayers, setOptions, homeColor]);
 
-  const handlePlayerNameChange = (id: number, newName: string) => {
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, name: newName } : p)),
-    );
-  };
+  // Initialize opposition players when toggled on
+  useEffect(() => {
+    if (showOpposition) {
+      setOppositionPlayers((prev) => prev.length > 0 ? prev : (defaultLineupOpposition as () => Player[])());
+    }
+  }, [showOpposition, setOppositionPlayers]);
 
-  const handleUpdatePlayer = (id: number, updates: Partial<Player>) => {
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p)),
-    );
-  };
+  // — Home team handlers —
+  // Stable identities: these feed useTacticsActions' effect deps, so an
+  // unmemoized version re-fires setActions every render (infinite loop).
+  const handlePlayerNameChange = useCallback((id: number, newName: string) => {
+    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, name: newName } : p)));
+  }, [setPlayers]);
+
+  const handleUpdatePlayer = useCallback((id: number, updates: Partial<Player>) => {
+    setPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  }, [setPlayers]);
 
   const handleFieldColorChange = (color: string) =>
     setOptions((prev) => ({ ...prev, fieldColor: color }));
@@ -97,21 +114,47 @@ export const useTacticsState = () => {
     setOptions((prev) => ({ ...prev, markerType: newMarkerType }));
   };
 
-  const handleToggleWaypoints = () => {
-    setWaypointsMode((prev) => !prev);
+  // — Opposition team handlers —
+  const handleOppPlayerNameChange = useCallback((id: number, newName: string) => {
+    setOppositionPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, name: newName } : p)));
+  }, [setOppositionPlayers]);
+
+  const handleUpdateOppositionPlayer = useCallback((id: number, updates: Partial<Player>) => {
+    setOppositionPlayers((prev) => prev.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+  }, [setOppositionPlayers]);
+
+  const handleOppMarkerBgColorChange = (color: string) =>
+    setOppositionOptions((prev) => ({ ...prev, markerBgColor: color }));
+
+  const handleOppMarkerBorderColorChange = (color: string) =>
+    setOppositionOptions((prev) => ({ ...prev, markerBorderColor: color }));
+
+  const handleOppMarkerTextColorChange = (color: string) =>
+    setOppositionOptions((prev) => ({ ...prev, markerTextColor: color }));
+
+  const handleOppMarkerSecondaryColorChange = (color: string) =>
+    setOppositionOptions((prev) => ({ ...prev, markerSecondaryColor: color }));
+
+  const handleOppMarkerDesignChange = (design: MarkerDesign) =>
+    setOppositionOptions((prev) => ({ ...prev, markerDesign: design }));
+
+  const handleOppTogglePlayerLabels = () => {
+    setOppShowPlayerLabels((prev) => !prev);
+    setOppositionOptions((prev) => ({ ...prev, showPlayerLabels: !oppShowPlayerLabels }));
   };
 
-  const handleToggleHorizontalZones = () => {
-    setHorizontalZonesMode((prev) => !prev);
+  const handleOppToggleMarkerType = () => {
+    const newMarkerType = oppMarkerType === 'circle' ? 'shirt' : 'circle';
+    setOppMarkerType(newMarkerType);
+    setOppositionOptions((prev) => ({ ...prev, markerType: newMarkerType }));
   };
 
-  const handleToggleVerticalSpaces = () => {
-    setVerticalSpacesMode((prev) => !prev);
-  };
-
-  const handleToggleFullScreen = () => {
-    setIsFullScreen((prev) => !prev);
-  };
+  // — Mode toggles —
+  const handleToggleWaypoints = () => setWaypointsMode((prev) => !prev);
+  const handleToggleHorizontalZones = () => setHorizontalZonesMode((prev) => !prev);
+  const handleToggleVerticalSpaces = () => setVerticalSpacesMode((prev) => !prev);
+  const handleToggleFullScreen = () => setIsFullScreen((prev) => !prev);
+  const handleToggleOpposition = () => setShowOpposition((prev) => !prev);
 
   const resetTactics = () => {
     setPlayers(defaultLineupSingle);
@@ -129,10 +172,13 @@ export const useTacticsState = () => {
     waypointsMode,
     horizontalZonesMode,
     verticalSpacesMode,
+    showOpposition,
+    oppShowPlayerLabels,
+    oppMarkerType,
     players,
     fieldRef,
 
-    // Actions
+    // Setters
     setIsFullScreen,
     setHomeColor,
     setShowPlayerLabels,
@@ -144,8 +190,15 @@ export const useTacticsState = () => {
     setOptions,
     setActions,
     setDraggedPlayer,
+    setOppositionPlayers,
+    setOppositionOptions,
+    setOppositionActions,
+    setDraggedOppositionPlayer,
+    setShowOpposition,
+    setOppShowPlayerLabels,
+    setOppMarkerType,
 
-    // Handlers
+    // Home handlers
     handlePlayerNameChange,
     handleUpdatePlayer,
     handleFieldColorChange,
@@ -157,10 +210,24 @@ export const useTacticsState = () => {
     handleMarkerDesignChange,
     handleTogglePlayerLabels,
     handleToggleMarkerType,
+
+    // Opposition handlers
+    handleOppPlayerNameChange,
+    handleUpdateOppositionPlayer,
+    handleOppMarkerBgColorChange,
+    handleOppMarkerBorderColorChange,
+    handleOppMarkerTextColorChange,
+    handleOppMarkerSecondaryColorChange,
+    handleOppMarkerDesignChange,
+    handleOppTogglePlayerLabels,
+    handleOppToggleMarkerType,
+
+    // Mode toggles
     handleToggleWaypoints,
     handleToggleHorizontalZones,
     handleToggleVerticalSpaces,
     handleToggleFullScreen,
+    handleToggleOpposition,
     resetTactics,
   };
-}; 
+};

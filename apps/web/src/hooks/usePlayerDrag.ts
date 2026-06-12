@@ -47,9 +47,12 @@ export const usePlayerDrag = (
             const inv = matrix.inverse();
             const pt = inv.transformPoint(new DOMPoint(localX, localY, 0, 1));
 
-            // Map centered local coords back to 0–100%
-            const newX = ((pt.x + parentRect.width / 2) / parentRect.width) * 100;
-            const newY = ((pt.y + parentRect.height / 2) / parentRect.height) * 100;
+            // Map centered local coords back to 0–100% of the field itself.
+            // The field is flex-centered in its container, so container-center
+            // and field-center coincide — but the field's own layout size is
+            // the correct divisor (container height can differ from field height).
+            const newX = ((pt.x + el.offsetWidth / 2) / el.offsetWidth) * 100;
+            const newY = ((pt.y + el.offsetHeight / 2) / el.offsetHeight) * 100;
 
             const clampedX = Math.max(0, Math.min(100, newX));
             const clampedY = Math.max(0, Math.min(100, newY));

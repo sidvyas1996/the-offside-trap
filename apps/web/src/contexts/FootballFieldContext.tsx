@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useRef } from "react";
-import type { Player } from "../../../../packages/shared";
-import { CHARCOAL_GRAY, DEFAULT_FOOTBALL_FIELD_COLOUR, DEFAULT_PLAYER_COLOUR } from "../utils/colors.ts";
+import type { Player, TacticArrow, ArrowType } from "../../../../packages/shared";
+import { DEFAULT_FOOTBALL_FIELD_COLOUR, DEFAULT_PLAYER_COLOUR } from "../utils/colors.ts";
 
 export type MarkerDesign = 'solid' | 'stripes' | 'diagonal-left' | 'diagonal-right' | 'horizontal-split' | 'vertical-split';
 
@@ -17,6 +17,8 @@ interface FieldOptions {
     enableContextMenu?: boolean;
     showPlayerLabels?: boolean;
     markerType?: 'circle' | 'shirt';
+    /** Kit atlas applied to 3D shirt markers (octa layout); plain grey when unset */
+    shirtTextureUrl?: string;
 }
 
 interface FieldActions {
@@ -37,6 +39,26 @@ interface FootballFieldContextProps {
     actions: FieldActions;
     setActions: React.Dispatch<React.SetStateAction<FieldActions>>;
     fieldRef: React.RefObject<HTMLDivElement|null>;
+    // Opposition team
+    oppositionPlayers: Player[];
+    setOppositionPlayers: React.Dispatch<React.SetStateAction<Player[]>>;
+    draggedOppositionPlayer: Player | null;
+    setDraggedOppositionPlayer: React.Dispatch<React.SetStateAction<Player | null>>;
+    oppositionOptions: FieldOptions;
+    setOppositionOptions: React.Dispatch<React.SetStateAction<FieldOptions>>;
+    oppositionActions: FieldActions;
+    setOppositionActions: React.Dispatch<React.SetStateAction<FieldActions>>;
+    showOpposition: boolean;
+    setShowOpposition: React.Dispatch<React.SetStateAction<boolean>>;
+    // Arrow annotations
+    arrows: TacticArrow[];
+    setArrows: React.Dispatch<React.SetStateAction<TacticArrow[]>>;
+    arrowTool: ArrowType | null;
+    setArrowTool: React.Dispatch<React.SetStateAction<ArrowType | null>>;
+    arrowBallColor: string;
+    setArrowBallColor: React.Dispatch<React.SetStateAction<string>>;
+    arrowRunColor: string;
+    setArrowRunColor: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const FootballFieldContext = createContext<FootballFieldContextProps | null>(null);
@@ -61,6 +83,29 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
     const [actions, setActions] = useState<FieldActions>({});
     const fieldRef = useRef<HTMLDivElement>(null);
 
+    // Opposition team state
+    const [oppositionPlayers, setOppositionPlayers] = useState<Player[]>([]);
+    const [draggedOppositionPlayer, setDraggedOppositionPlayer] = useState<Player | null>(null);
+    const [oppositionOptions, setOppositionOptions] = useState<FieldOptions>({
+        editable: true,
+        markerBgColor: '#7f1d1d',
+        markerBorderColor: '#ef4444',
+        markerTextColor: '#ffffff',
+        markerSecondaryColor: '#ef4444',
+        markerDesign: 'solid',
+        enableContextMenu: true,
+        showPlayerLabels: true,
+        markerType: 'circle',
+    });
+    const [oppositionActions, setOppositionActions] = useState<FieldActions>({});
+    const [showOpposition, setShowOpposition] = useState(false);
+
+    // Arrow annotations
+    const [arrows, setArrows] = useState<TacticArrow[]>([]);
+    const [arrowTool, setArrowTool] = useState<ArrowType | null>(null);
+    const [arrowBallColor, setArrowBallColor] = useState('#fbbf24');
+    const [arrowRunColor, setArrowRunColor] = useState('#60a5fa');
+
     return (
         <FootballFieldContext.Provider
             value={{
@@ -73,6 +118,24 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
                 actions,
                 setActions,
                 fieldRef,
+                oppositionPlayers,
+                setOppositionPlayers,
+                draggedOppositionPlayer,
+                setDraggedOppositionPlayer,
+                oppositionOptions,
+                setOppositionOptions,
+                oppositionActions,
+                setOppositionActions,
+                showOpposition,
+                setShowOpposition,
+                arrows,
+                setArrows,
+                arrowTool,
+                setArrowTool,
+                arrowBallColor,
+                setArrowBallColor,
+                arrowRunColor,
+                setArrowRunColor,
             }}
         >
             {children}
