@@ -78,7 +78,7 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
         markerDesign: 'solid',
         enableContextMenu: true,
         showPlayerLabels: true,
-        markerType: 'circle',
+        markerType: 'circle', //marker
     });
     const [actions, setActions] = useState<FieldActions>({});
     const fieldRef = useRef<HTMLDivElement>(null);
