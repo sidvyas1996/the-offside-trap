@@ -3,28 +3,19 @@ import { useFootballField } from "../../contexts/FootballFieldContext.tsx";
 import PlayerMarker from "../PlayerMarker.tsx";
 import {
   DEFAULT_FOOTBALL_FIELD_COLOUR,
-  CHARCOAL_GRAY,
+  normalizeFieldColor,
 } from "../../utils/colors.ts";
 
 // Field aspect (height / width)
 const FIELD_RATIO = 7 / 11;
 
 interface LineupFieldProps {
-  /**
-   * Quarter-turn the lineup board for phones.
-   *
-   * This board keeps its own 550x350 space rather than the shared 622x350 one,
-   * so it is transposed to 350x550 here instead of going through
-   * packages/shared's projection. That is deliberate: switching it to the shared
-   * pitch would change its proportions, and every saved lineup was authored
-   * against these.
-   */
   portrait?: boolean;
   waypointsMode: boolean;
   horizontalZonesMode: boolean;
   verticalSpacesMode: boolean;
-  onChangeFieldColor: (color: string) => void;
-  onChangePlayerColor: (color: string) => void;
+  onChangeFieldColor?: (color: string) => void;
+  onChangePlayerColor?: (color: string) => void;
   markerBgColor?: string;
   markerBorderColor?: string;
   markerTextColor?: string;
@@ -35,13 +26,13 @@ interface LineupFieldProps {
   onChangeMarkerTextColor?: (color: string) => void;
   onChangeMarkerSecondaryColor?: (color: string) => void;
   onChangeMarkerDesign?: (design: import('../../contexts/FootballFieldContext').MarkerDesign) => void;
-  onTogglePlayerLabels: () => void;
-  showPlayerLabels: boolean;
-  onToggleMarkerType: () => void;
-  markerType: 'circle' | 'shirt';
-  onToggleWaypoints: () => void;
-  onToggleHorizontalZones: () => void;
-  onToggleVerticalSpaces: () => void;
+  onTogglePlayerLabels?: () => void;
+  showPlayerLabels?: boolean;
+  onToggleMarkerType?: () => void;
+  markerType?: 'circle' | 'shirt';
+  onToggleWaypoints?: () => void;
+  onToggleHorizontalZones?: () => void;
+  onToggleVerticalSpaces?: () => void;
   rotationAngle?: number;
   tiltAngle?: number;
   onRotationChange?: (angle: number) => void;
@@ -62,37 +53,11 @@ const LineupField: React.FC<LineupFieldProps> = ({
   waypointsMode,
   horizontalZonesMode,
   verticalSpacesMode,
-  onChangeFieldColor,
-  onChangePlayerColor,
-  markerBgColor,
-  markerBorderColor,
-  markerTextColor,
-  markerSecondaryColor,
-  markerDesign,
-  onChangeMarkerBgColor,
-  onChangeMarkerBorderColor,
-  onChangeMarkerTextColor,
-  onChangeMarkerSecondaryColor,
-  onChangeMarkerDesign,
-  onTogglePlayerLabels,
-  showPlayerLabels,
-  onToggleMarkerType,
-  markerType,
-  onToggleWaypoints,
-  onToggleHorizontalZones,
-  onToggleVerticalSpaces,
+  showPlayerLabels = true,
+  markerType = 'circle',
   rotationAngle: propRotationAngle,
   tiltAngle: propTiltAngle,
-  onRotationChange,
-  onTiltChange,
   zoomLevel: propZoomLevel,
-  onZoomChange,
-  onRotateLeft: propOnRotateLeft,
-  onRotateRight: propOnRotateRight,
-  onTiltUp: propOnTiltUp,
-  onTiltDown: propOnTiltDown,
-  onZoomIn: propOnZoomIn,
-  onZoomOut: propOnZoomOut,
   onPlayerSelect,
 }) => {
   const { players, draggedPlayer, options, actions, fieldRef } =
@@ -281,8 +246,21 @@ const LineupField: React.FC<LineupFieldProps> = ({
     setWaypoints((prev) => prev.filter((_, index) => index !== lineIndex));
   };
 
+  const fieldColor = normalizeFieldColor(options.fieldColor);
+  const lightStripe = 'rgba(255,255,255,0.05)';
+  const darkStripe = 'rgba(0,0,0,0.05)';
+  const stripePct = 9.09;
+  const stripeAngle = portrait ? '0deg' : '90deg';
+  const pitchBackground = `repeating-linear-gradient(
+    ${stripeAngle},
+    ${lightStripe} 0%,
+    ${lightStripe} ${stripePct}%,
+    ${darkStripe} ${stripePct}%,
+    ${darkStripe} ${stripePct * 2}%
+  ), ${fieldColor}`;
+
   const fieldStyle = {
-    backgroundColor: options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR,
+    background: pitchBackground,
     aspectRatio: portrait ? "7/11" : "11/7",
     width: "100%",
     maxWidth: "100%",
@@ -337,9 +315,10 @@ const LineupField: React.FC<LineupFieldProps> = ({
           >
             {/* 3D Field Markings */}
             <svg
-              className="absolute inset-0 w-full h-full opacity-30"
+              className="absolute inset-0 w-full h-full"
               viewBox={portrait ? "0 0 350 550" : "0 0 550 350"}
               style={{
+                opacity: 0.32,
                 transform: "translateZ(0)",
                 transformStyle: "preserve-3d",
               }}
