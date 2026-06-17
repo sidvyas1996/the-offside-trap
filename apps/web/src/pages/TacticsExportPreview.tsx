@@ -91,7 +91,7 @@ const TacticsExportPreviewContent: React.FC = () => {
       if (!update) return;
 
       applyState({
-        fieldColor: update.fieldSettings?.fieldColor || '#0d4b3e',
+        fieldColor: update.fieldSettings?.fieldColor || '#19a974',
         players: update.players,
         showPlayerLabels: update.fieldSettings?.showPlayerLabels ?? true,
         markerType: update.fieldSettings?.markerType || 'circle',

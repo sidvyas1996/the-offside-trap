@@ -196,10 +196,13 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           style={{
             background: getCircleBackground(markerDesign, markerBgColor, markerSecondaryColor),
             color: markerTextColor,
+            // Brutalist shell: thick colour ring + hard black outline + hard offset shadow
             boxShadow: isDragged
-              ? '0 8px 24px rgba(0,0,0,0.5)'
-              : '0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)',
+              ? '0 0 0 2.5px #15140f, 5px 5px 0 #15140f'
+              : '0 0 0 2.5px #15140f, 3px 3px 0 #15140f',
             border: `4px solid ${markerBorderColor}`,
+            fontFamily: "var(--font-display)",
+            fontWeight: 800,
           }}
           onDoubleClick={() => editable && setIsEditingPosition(true)}
         >
@@ -363,7 +366,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
               className="bg-[#1a1a1a] text-white font-semibold mt-1 px-2 py-1 rounded border border-gray-900 max-w-[120px] text-center whitespace-nowrap overflow-hidden text-ellipsis"
             />
           ) : (
-            <div style={{ background: markerBgColor, backdropFilter: 'blur(4px)', border: `4px solid ${markerBorderColor}`, color: markerTextColor }} className="font-semibold mt-1 px-2 py-0.5 rounded-md text-xs whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px]">
+            <div style={{ background: '#fbf5e9', border: '2px solid #15140f', color: '#15140f', boxShadow: '2px 2px 0 #15140f', fontFamily: 'var(--font-display)' }} className="font-extrabold mt-1.5 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap overflow-hidden text-ellipsis max-w-[110px]">
               {name}
             </div>
           )}

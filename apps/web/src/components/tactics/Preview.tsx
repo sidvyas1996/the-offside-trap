@@ -31,7 +31,7 @@ const Preview: React.FC<PreviewProps> = ({
         rotationAngle,
         tiltAngle,
         zoomLevel,
-        fieldColor: options.fieldColor || '#0d4b3e',
+        fieldColor: options.fieldColor || '#19a974',
         players: players.map(player => ({
           id: player.id,
           x: player.x,
@@ -81,7 +81,7 @@ const Preview: React.FC<PreviewProps> = ({
     setIsExportingVideo(true);
     try {
       const baseFieldState = {
-        fieldColor: options.fieldColor || '#0d4b3e',
+        fieldColor: options.fieldColor || '#19a974',
         players: players.map(player => ({
           id: player.id,
           x: player.x,
@@ -119,13 +119,13 @@ const Preview: React.FC<PreviewProps> = ({
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: "var(--surface-container)", border: "1px solid var(--hairline)", boxShadow: "var(--card-shadow)" }}
+      style={{ background: "var(--surface-container)", border: "2px solid var(--ink)", boxShadow: "var(--card-shadow)" }}
     >
       <h2 className="panel-title mb-4">
         <span className="icon-chip"><Target size={14} /></span>
         Preview
       </h2>
-      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--hairline)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ border: "2px solid var(--ink)" }}>
         <MiniTacticCard />
       </div>
 

@@ -233,7 +233,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
     return (
         <div
             className="w-full rounded-2xl px-5 py-4 flex flex-row items-stretch gap-0"
-            style={{ background: 'var(--surface-container)', border: '1px solid var(--hairline)', boxShadow: 'var(--card-shadow)' }}
+            style={{ background: 'var(--surface-container)', border: '2px solid var(--ink)', boxShadow: 'var(--card-shadow)' }}
         >
 
             {/* Section 1 — Pitch Properties */}

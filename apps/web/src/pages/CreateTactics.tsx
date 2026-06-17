@@ -1,8 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, Loader2, Swords } from "lucide-react";
-import { renderBackButton } from "../components/ui/back-button";
-import { Button } from "../components/ui/button";
+import { Save, Loader2, UserPlus } from "lucide-react";
+import EditorBar from "../components/EditorBar";
 import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
 import { useTacticsForm } from "../hooks/useTacticsForm";
 import { useTacticsState } from "../hooks/useTacticsState";
@@ -54,7 +53,7 @@ const CreateTacticsContent: React.FC = () => {
   );
 
   const getCurrentFieldSettings = (): FieldSettings => ({
-    fieldColor: options.fieldColor || '#0d4b3e',
+    fieldColor: options.fieldColor || '#19a974',
     playerColor: options.playerColor || '#1a1a1a',
     showPlayerLabels: state.showPlayerLabels,
     markerType: state.markerType,
@@ -67,7 +66,7 @@ const CreateTacticsContent: React.FC = () => {
   });
 
   const getOppositionFieldSettings = (): FieldSettings => ({
-    fieldColor: options.fieldColor || '#0d4b3e',
+    fieldColor: options.fieldColor || '#19a974',
     playerColor: '#ef4444',
     showPlayerLabels: state.oppShowPlayerLabels,
     markerType: state.oppMarkerType,
@@ -198,51 +197,55 @@ const CreateTacticsContent: React.FC = () => {
     if (!showOpposition) setActiveTeam('home');
   }, [showOpposition]);
 
+  const studioActions = (
+    <>
+      {form.formation && (
+        <span style={{
+          fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 13, fontWeight: 700,
+          color: "#fff", background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.18)",
+          borderRadius: 10, padding: "7px 13px",
+        }}>
+          {form.formation}
+        </span>
+      )}
+      <button
+        onClick={state.handleToggleOpposition}
+        type="button"
+        className="editorbar-btn"
+        style={{
+          background: showOpposition ? 'var(--whistle-orange)' : 'rgba(255,255,255,0.06)',
+          color: showOpposition ? 'var(--ink)' : '#fff',
+          border: `1.5px solid ${showOpposition ? 'var(--whistle-orange)' : 'rgba(255,255,255,0.22)'}`,
+        }}
+        title={showOpposition ? "Remove opposition team" : "Add opposition team"}
+      >
+        <UserPlus size={15} />
+        {showOpposition ? 'vs Opposition' : 'Add Opposition'}
+      </button>
+      <button
+        onClick={handleSubmit}
+        disabled={form.loading}
+        className="editorbar-btn"
+        style={{ background: 'var(--primary)', color: 'var(--ink)', border: 'none', opacity: form.loading ? 0.7 : 1 }}
+      >
+        {form.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={15} />}
+        {form.loading ? 'Saving…' : (editId ? 'Update Tactic' : 'Save Tactic')}
+      </button>
+    </>
+  );
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--theme-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div className="dot-bg" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {/* Studio top bar */}
-      <div className="glass-bar" style={{ padding: '0 20px', height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          {renderBackButton(() => navigate(-1))}
-          <div style={{ width: 1, height: 26, background: 'var(--hairline-strong)' }} />
-          <div>
-            <div className="kicker" style={{ marginBottom: 1 }}>Tactics Studio</div>
-            <input
-              className="studio-title-input"
-              value={form.title}
-              onChange={e => form.setTitle(e.target.value)}
-              placeholder="Untitled Tactic"
-            />
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* formation badge */}
-          {form.formation && <span className="chip-mono">{form.formation}</span>}
-
-          {/* Opposition toggle */}
-          <Button
-            onClick={state.handleToggleOpposition}
-            variant="outline"
-            type="button"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: 12, fontWeight: 600, padding: '7px 14px',
-              borderColor: showOpposition ? 'rgba(239,68,68,0.5)' : undefined,
-              background: showOpposition ? 'rgba(239,68,68,0.10)' : undefined,
-              color: showOpposition ? '#f87171' : undefined,
-              borderRadius: 9,
-            }}
-            title={showOpposition ? "Remove opposition team" : "Add opposition team"}
-          >
-            <Swords size={14} />
-            {showOpposition ? 'vs Opposition' : 'Add Opposition'}
-          </Button>
-
-          <Button onClick={handleSubmit} disabled={form.loading} className="btn-primary" style={{ padding: '8px 18px', borderRadius: 9 }}>
-            {form.loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{editId ? 'Update Tactic' : 'Save Tactic'}</>}
-          </Button>
-        </div>
+      {/* Contextual editor bar */}
+      <div style={{ padding: '14px 16px 0', flexShrink: 0 }}>
+        <EditorBar
+          kicker="Tactics Studio"
+          title={form.title}
+          onTitleChange={form.setTitle}
+          placeholder="Untitled Tactic"
+          actions={studioActions}
+        />
       </div>
 
       {/* Main studio area */}
@@ -267,7 +270,7 @@ const CreateTacticsContent: React.FC = () => {
           onPlayerSelect={setSelectedPlayer}
         />
       ) : (
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 58px)' }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
 
           {/* Left — field stage */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -362,7 +365,7 @@ const CreateTacticsContent: React.FC = () => {
             </div>
 
             {/* Animation timeline bar */}
-            <div style={{ flexShrink: 0, borderTop: '1px solid var(--hairline)', background: 'var(--surface-low)', padding: '12px 24px' }}>
+            <div style={{ flexShrink: 0, borderTop: '2px solid var(--ink)', background: 'var(--surface-low)', padding: '12px 24px' }}>
               <AnimationTimeline
                 keyframes={animation.keyframes}
                 currentTimeMs={animation.currentTimeMs}
@@ -382,7 +385,7 @@ const CreateTacticsContent: React.FC = () => {
           </div>
 
           {/* Right panel — details */}
-          <div style={{ width: 400, borderLeft: '1px solid var(--hairline)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+          <div style={{ width: 400, borderLeft: '2px solid var(--ink)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
             <div style={{ padding: 16 }}>
               <TacticDetails
                 title={form.title}

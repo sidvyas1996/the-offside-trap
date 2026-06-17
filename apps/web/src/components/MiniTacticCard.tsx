@@ -13,7 +13,7 @@ const MiniTacticCard: React.FC<FootballFieldProps> = ({ className = '' }) => {
                 preserveAspectRatio="xMidYMid meet"
             >
                 {/* Field background */}
-                <rect width="400" height="250" fill="#0d4b3e" />
+                <rect width="400" height="250" fill="#19a974" />
 
                 {/* Outer boundary */}
                 <rect

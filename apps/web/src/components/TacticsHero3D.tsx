@@ -171,7 +171,7 @@ const Pitch: React.FC = () => {
       {stripes.map((x, i) => (
         <mesh key={i} position={[x, -0.04, 0]}>
           <boxGeometry args={[1.5, 0.08, 8.2]} />
-          <meshStandardMaterial color={i % 2 === 0 ? "#46d683" : "#3bc975"} roughness={0.85} />
+          <meshStandardMaterial color={i % 2 === 0 ? "#1cb37c" : "#169d6c"} roughness={0.85} />
         </mesh>
       ))}
 

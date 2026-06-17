@@ -1,38 +1,28 @@
-import React, { useState, useEffect, Suspense, lazy } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { TacticEntity } from "../entities/TacticEntity.ts";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { TacticCard } from "../components/TacticCard";
+import TopNav from "../components/TopNav";
+import HeroPitch from "../components/HeroPitch";
 import type { TacticSummary } from "../../../../packages/shared";
-import { Plus, ArrowUpRight, Clock, TrendingUp, Award, Share2, MousePointer2 } from "lucide-react";
+import {
+  Plus, ArrowRight, Clock, TrendingUp, Award,
+  Clapperboard, Box, Image as ImageIcon,
+} from "lucide-react";
 
-const TacticsHero3D = lazy(() => import("../components/TacticsHero3D"));
-
-/* Faint pitch-line artwork for the hero cards */
-const PitchArt: React.FC<{ accent: string; flip?: boolean }> = ({ accent, flip }) => (
-  <svg
-    className="hero-art"
-    viewBox="0 0 400 220"
-    preserveAspectRatio="xMaxYMid slice"
-    style={flip ? { transform: "scaleX(-1)" } : undefined}
-  >
-    {/* half-pitch lines anchored to the right edge */}
-    <g stroke={accent} strokeWidth="1.5" fill="none" opacity="0.16">
-      <circle cx="400" cy="110" r="80" />
-      <circle cx="400" cy="110" r="3" fill={accent} stroke="none" />
-      <rect x="260" y="-20" width="280" height="260" rx="2" />
-      <rect x="310" y="35" width="140" height="150" rx="2" />
-    </g>
-    <g stroke={accent} strokeWidth="1" fill="none" opacity="0.08">
-      <circle cx="400" cy="110" r="130" />
-    </g>
-  </svg>
-);
+const FEATURES = [
+  { icon: Clapperboard, bg: "var(--pitch-lime)", title: "Tactics Studio", body: "Animate presses, passing lanes and runs on a live board.", to: "/create-tactics" },
+  { icon: Box, bg: "var(--keeper-blue)", title: "3D Lineups", body: "Rotate, tilt and kit out your XI in real perspective.", to: "/create-lineups" },
+  { icon: ImageIcon, bg: "var(--card-yellow)", title: "Export anywhere", body: "Match‑ready PNG, JPG and animated clips in a click.", to: "/create-tactics" },
+];
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
   const [tactics, setTactics] = useState<TacticSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"trending" | "featured" | "latest">("latest");
   const [heroActive, setHeroActive] = useState(false);
+  const libraryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadTactics();
@@ -50,9 +40,6 @@ const Home: React.FC = () => {
     }
   };
 
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
-
   const TABS = [
     { value: "latest" as const, label: "Latest", icon: Clock },
     { value: "trending" as const, label: "Trending", icon: TrendingUp },
@@ -60,193 +47,95 @@ const Home: React.FC = () => {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--surface)" }}>
+    <div className="dot-bg" style={{ minHeight: "100vh", padding: "22px clamp(16px, 4vw, 30px) 70px" }}>
+      <div style={{ maxWidth: 1240, margin: "0 auto" }}>
 
-      {/* Top context bar */}
-      <div
-        className="glass-bar"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 32px",
-          position: "sticky",
-          top: 0,
-          zIndex: 40,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="kicker">Tactical Dashboard</span>
-          <span style={{ color: "var(--surface-high)", fontSize: 10 }}>·</span>
-          <span className="kicker" style={{ fontWeight: 400 }}>{dateStr}</span>
-        </div>
-        <button className="icon-btn" title="Share">
-          <Share2 size={14} />
-        </button>
-      </div>
+        {/* ── NAV ── */}
+        <TopNav />
 
-      <div style={{ padding: "36px 32px 48px", maxWidth: 1280, margin: "0 auto" }}>
-
-        {/* 3D hero — interactive tactics board */}
+        {/* ── HERO — perspective pitch as full-bleed background, copy on top ── */}
         <section
-          className="hero3d"
+          className="hero-stage"
           onMouseEnter={() => setHeroActive(true)}
           onMouseLeave={() => setHeroActive(false)}
         >
-          <Suspense fallback={null}>
-            <TacticsHero3D active={heroActive} />
-          </Suspense>
+          {/* pitch background */}
+          <HeroPitch active={heroActive} />
+          {/* gentle left scrim for copy legibility */}
+          <div className="hero-scrim" />
 
-          {/* Overlay copy — lets pointer events pass through to the board */}
-          <div className="hero3d-overlay">
-            <div className="kicker" style={{ marginBottom: 12, color: "var(--accent-pink)", fontSize: 11 }}>The Offside Trap</div>
-            <h1
-              className="display-title"
-              style={{ fontSize: "2.75rem", fontWeight: 700, margin: 0, lineHeight: 1.12, letterSpacing: "-0.02em" }}
-            >
-              Design football tactics<br />in motion.
-            </h1>
-            <p style={{ fontSize: 14.5, color: "var(--on-surface-variant)", marginTop: 14, maxWidth: 460, lineHeight: 1.6 }}>
-              Build animated tactical breakdowns, craft 3D lineups, and export
-              match-ready visuals — all in one place.
-            </p>
-            <div style={{ display: "flex", gap: 10, marginTop: 24, pointerEvents: "auto" }}>
-              <Link to="/create-tactics">
-                <button className="btn-primary">Open Tactics Studio</button>
-              </Link>
-              <Link to="/create-lineups">
-                <button className="btn-ghost">Create 3D Lineup</button>
-              </Link>
+          {/* copy */}
+          <div className="hero-copy">
+            <div className="kicker" style={{ fontSize: 13, letterSpacing: "0.16em", marginBottom: 14 }}>
+              The Offside Trap · Tactics, in motion
             </div>
-          </div>
-
-          <div className="hint-pill">
-            <MousePointer2 size={11} />
-            Move your cursor — watch the press unfold
+            <h1 style={{
+              fontFamily: "var(--font-display)", fontWeight: 900,
+              fontSize: "clamp(48px, 7vw, 104px)", lineHeight: 0.9, letterSpacing: "-0.035em",
+              maxWidth: 720, margin: 0, color: "var(--ink)", textWrap: "balance" as React.CSSProperties["textWrap"],
+            }}>
+              Out‑coach every opponent.
+            </h1>
+            <p style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 17, lineHeight: 1.5, color: "#3f3b30", margin: "20px 0 0", maxWidth: 420 }}>
+              Build animated tactical breakdowns, craft 3D lineups, and export match‑ready visuals — all in one place.
+            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 26 }}>
+              <button
+                onClick={() => navigate("/create-tactics")}
+                style={{
+                  background: "var(--ink)", color: "#fff", fontFamily: "var(--font-display)",
+                  fontWeight: 800, fontSize: 15, border: "none", padding: "14px 22px",
+                  borderRadius: 13, cursor: "pointer",
+                }}
+              >
+                Open Tactics Studio
+              </button>
+              <button
+                onClick={() => navigate("/create-tactics")}
+                aria-label="Open Tactics Studio"
+                style={{
+                  width: 50, height: 50, borderRadius: 13, background: "var(--surface)",
+                  border: "1.5px solid var(--ink)", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}
+              >
+                <ArrowRight size={20} strokeWidth={2.2} color="var(--ink)" />
+              </button>
+            </div>
           </div>
         </section>
 
-        {/* Hero row: Create cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 16, marginBottom: 16 }}>
-
-          {/* Create New Tactics Studio — big hero card */}
-          <Link to="/create-tactics" className="hero-card" style={{ background: "var(--pastel-mint)" }}>
-            <PitchArt accent="#0fa45f" />
-            <div style={{ position: "relative" }}>
+        {/* ── FEATURE STRIP ── */}
+        <section className="lp-features" style={{ marginTop: 46 }}>
+          {FEATURES.map(({ icon: Icon, bg, title, body, to }) => (
+            <Link key={title} to={to} className="sleek-card" style={{
+              background: "var(--surface-high)", border: "1.5px solid var(--ink)",
+              borderRadius: 18, padding: 24, textDecoration: "none", display: "block",
+            }}>
               <div style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: "rgba(255,255,255,0.65)",
-                border: "1px solid rgba(15,164,95,0.25)",
-                color: "var(--accent-mint)",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                padding: "4px 10px",
-                borderRadius: 99,
-                marginBottom: 18,
+                width: 46, height: 46, borderRadius: 13, background: bg, border: "1.5px solid var(--ink)",
+                display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16,
               }}>
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent-mint)", display: "inline-block" }} />
-                Studio
+                <Icon size={24} color="var(--ink)" strokeWidth={2.2} />
               </div>
-              <h2 style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "1.35rem",
-                fontWeight: 700,
-                color: "var(--on-surface)",
-                margin: 0,
-                lineHeight: 1.25,
-                letterSpacing: "-0.01em",
-              }}>
-                Create New<br />Tactics Studio
-              </h2>
-              <p style={{ fontSize: 12.5, color: "var(--on-surface-variant)", marginTop: 10, lineHeight: 1.55, maxWidth: 300 }}>
-                Build tactical breakdowns with animation, player markers, and field-of-view tools.
-              </p>
-            </div>
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
-              <span className="btn-primary" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 18px", fontSize: 12 }}>
-                <Plus size={13} strokeWidth={2.5} />
-                Create
-              </span>
-              <ArrowUpRight size={18} className="hero-arrow" />
-            </div>
-          </Link>
-
-          {/* Create New Lineup */}
-          <Link to="/create-lineups" className="hero-card" style={{ background: "var(--pastel-lavender)" }}>
-            <PitchArt accent="#6f68f2" flip />
-            <div style={{ position: "relative" }}>
-              <div style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: "rgba(255,255,255,0.65)",
-                border: "1px solid rgba(111,104,242,0.30)",
-                color: "var(--accent-lavender)",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                padding: "4px 10px",
-                borderRadius: 99,
-                marginBottom: 18,
-              }}>
-                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent-lavender)", display: "inline-block" }} />
-                3D Lineup
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 19, marginBottom: 6, color: "var(--ink)" }}>
+                {title}
               </div>
-              <h2 style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "1.2rem",
-                fontWeight: 700,
-                color: "var(--on-surface)",
-                margin: 0,
-                lineHeight: 1.25,
-                letterSpacing: "-0.01em",
-              }}>
-                Create New<br />Lineup
-              </h2>
-              <p style={{ fontSize: 12.5, color: "var(--on-surface-variant)", marginTop: 10, lineHeight: 1.55, maxWidth: 280 }}>
-                3D perspective field with rotation, tilt, and zoom controls.
+              <p style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 15, lineHeight: 1.5, color: "#56503f", margin: 0 }}>
+                {body}
               </p>
-            </div>
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
-              <span style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                background: "#ffffff",
-                border: "1.5px solid var(--accent-lavender)",
-                color: "var(--accent-lavender)",
-                fontSize: 12,
-                fontWeight: 700,
-                padding: "8px 18px",
-                borderRadius: 999,
-                fontFamily: "var(--font-display)",
-              }}>
-                <Plus size={13} strokeWidth={2.5} />
-                Create
-              </span>
-              <ArrowUpRight size={18} className="hero-arrow" />
-            </div>
-          </Link>
+            </Link>
+          ))}
+        </section>
 
-        </div>
-
-        {/* Tabs + Tactics grid */}
-        <div style={{ marginTop: 48 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20 }}>
+        {/* ── TACTICS LIBRARY ── */}
+        <section ref={libraryRef} style={{ marginTop: 64, scrollMarginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 16 }}>
             <div>
               <div className="kicker" style={{ marginBottom: 6 }}>Library</div>
               <h2 style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "1.25rem",
-                fontWeight: 700,
-                color: "var(--on-surface)",
-                margin: 0,
-                letterSpacing: "-0.01em",
+                fontFamily: "var(--font-display)", fontSize: "1.6rem", fontWeight: 900,
+                color: "var(--ink)", margin: 0, letterSpacing: "-0.02em",
               }}>
                 Tactics Library
               </h2>
@@ -266,23 +155,22 @@ const Home: React.FC = () => {
           </div>
 
           {loading ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            <div className="tactics-grid">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="skeleton-card" />
               ))}
             </div>
           ) : tactics.length === 0 ? (
             <div className="empty-state">
-              {/* mini pitch glyph */}
-              <svg width="56" height="40" viewBox="0 0 56 40" style={{ margin: "0 auto 16px", display: "block", opacity: 0.7 }}>
-                <g stroke="var(--outline)" strokeWidth="1.5" fill="none">
+              <svg width="56" height="40" viewBox="0 0 56 40" style={{ margin: "0 auto 16px", display: "block", opacity: 0.8 }}>
+                <g stroke="var(--ink)" strokeWidth="2" fill="none">
                   <rect x="1" y="1" width="54" height="38" rx="3" />
                   <line x1="28" y1="1" x2="28" y2="39" />
                   <circle cx="28" cy="20" r="6" />
                 </g>
-                <circle cx="28" cy="20" r="1.5" fill="var(--primary)" />
+                <circle cx="28" cy="20" r="1.5" fill="var(--ink)" />
               </svg>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, color: "var(--on-surface)", marginBottom: 6 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "var(--ink)", marginBottom: 6 }}>
                 No tactics yet
               </div>
               <p style={{ fontSize: 13, color: "var(--on-surface-variant)", marginBottom: 24 }}>
@@ -302,8 +190,7 @@ const Home: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
-
+        </section>
 
       </div>
     </div>

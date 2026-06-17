@@ -69,15 +69,10 @@ function AppRoutes() {
         }
       />
 
+      {/* Landing page — standalone, no sidebar */}
+      <Route path="/" element={<Home />} />
+
       {/* Main app — sidebar layout */}
-      <Route
-        path="/"
-        element={
-          <Layout>
-            <Home />
-          </Layout>
-        }
-      />
       <Route
         path="/tactics/:id"
         element={
@@ -108,7 +103,7 @@ const Sidebar: React.FC = () => {
         width: 232,
         flexShrink: 0,
         background: "var(--surface-container)",
-        borderRight: "1px solid var(--hairline)",
+        borderRight: "2px solid var(--ink)",
         display: "flex",
         flexDirection: "column",
         minHeight: "100vh",
@@ -121,13 +116,14 @@ const Sidebar: React.FC = () => {
       <div style={{ padding: "24px 20px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         {/* Logo mark — pitch glyph */}
         <div style={{
-          width: 38, height: 38, borderRadius: 13, flexShrink: 0,
-          background: "linear-gradient(135deg, var(--primary-light), var(--primary))",
+          width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+          background: "var(--primary)",
+          border: "2.5px solid var(--ink)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 12px rgba(94,233,160,0.45), inset 0 1px 0 rgba(255,255,255,0.5)",
+          boxShadow: "3px 3px 0 var(--ink)",
         }}>
           <svg width="20" height="15" viewBox="0 0 28 20">
-            <g stroke="#0c2718" strokeWidth="1.8" fill="none">
+            <g stroke="var(--ink)" strokeWidth="2.4" fill="none">
               <rect x="1" y="1" width="26" height="18" rx="2" />
               <line x1="14" y1="1" x2="14" y2="19" />
               <circle cx="14" cy="10" r="3.5" />
@@ -144,7 +140,7 @@ const Sidebar: React.FC = () => {
         </div>
       </div>
 
-      <div style={{ height: 1, background: "var(--hairline)", margin: "0 16px 14px" }} />
+      <div style={{ height: 2, background: "var(--ink)", margin: "0 16px 14px" }} />
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: "0 12px" }}>
@@ -184,20 +180,20 @@ const Sidebar: React.FC = () => {
         <div style={{
           display: "flex", alignItems: "center", gap: 10, marginTop: 14,
           padding: "10px 12px", borderRadius: 12,
-          background: "var(--surface-low)", border: "1px solid var(--hairline)",
+          background: "var(--surface-low)", border: "2px solid var(--ink)",
         }}>
           <div style={{
-            width: 30, height: 30, borderRadius: "50%", position: "relative",
-            background: "var(--pastel-mint)",
-            border: "1px solid rgba(15,164,95,0.35)",
+            width: 32, height: 32, borderRadius: "50%", position: "relative",
+            background: "var(--keeper-blue)",
+            border: "2px solid var(--ink)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 10, fontWeight: 700, color: "var(--accent-mint)",
+            fontSize: 11, fontWeight: 800, fontFamily: "var(--font-display)", color: "var(--ink)",
             flexShrink: 0,
           }}>
             SV
             <span style={{
-              position: "absolute", right: -1, bottom: -1, width: 8, height: 8,
-              borderRadius: "50%", background: "#4ade80",
+              position: "absolute", right: -2, bottom: -2, width: 9, height: 9,
+              borderRadius: "50%", background: "var(--grass-green)",
               border: "2px solid var(--surface-low)",
             }} />
           </div>

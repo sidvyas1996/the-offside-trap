@@ -281,7 +281,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
   return (
     <div
       className="rounded-2xl p-6"
-      style={{ background: "var(--surface-container)", border: "1px solid var(--hairline)", boxShadow: "var(--card-shadow)" }}
+      style={{ background: "var(--surface-container)", border: "2px solid var(--ink)", boxShadow: "var(--card-shadow)" }}
     >
       <div className="w-full flex justify-center relative">
         {/* 3D Perspective Container */}

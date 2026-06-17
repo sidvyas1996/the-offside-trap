@@ -71,10 +71,10 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
         editable: true,
         fieldColor: DEFAULT_FOOTBALL_FIELD_COLOUR,
         playerColor: DEFAULT_PLAYER_COLOUR,
-        markerBgColor: '#111827',
-        markerBorderColor: '#ffffff',
-        markerTextColor: '#ffffff',
-        markerSecondaryColor: '#ffffff',
+        markerBgColor: '#fbf5e9',     // cream fill
+        markerBorderColor: '#c6f24e', // Pitch Lime ring
+        markerTextColor: '#15140f',   // Kit Black number
+        markerSecondaryColor: '#c6f24e',
         markerDesign: 'solid',
         enableContextMenu: true,
         showPlayerLabels: true,
@@ -88,10 +88,10 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
     const [draggedOppositionPlayer, setDraggedOppositionPlayer] = useState<Player | null>(null);
     const [oppositionOptions, setOppositionOptions] = useState<FieldOptions>({
         editable: true,
-        markerBgColor: '#7f1d1d',
-        markerBorderColor: '#ef4444',
-        markerTextColor: '#ffffff',
-        markerSecondaryColor: '#ef4444',
+        markerBgColor: '#fbf5e9',     // cream fill
+        markerBorderColor: '#ff6fae', // Striker Pink ring
+        markerTextColor: '#15140f',   // Kit Black number
+        markerSecondaryColor: '#ff6fae',
         markerDesign: 'solid',
         enableContextMenu: true,
         showPlayerLabels: true,

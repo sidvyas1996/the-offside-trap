@@ -22,7 +22,7 @@ const LineupOptions: React.FC = () => {
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: "var(--surface-container)", border: "1px solid var(--hairline)", boxShadow: "var(--card-shadow)" }}
+      style={{ background: "var(--surface-container)", border: "2px solid var(--ink)", boxShadow: "var(--card-shadow)" }}
     >
       <h2 className="panel-title mb-4">
         <span className="icon-chip"><Users size={14} /></span>
@@ -33,7 +33,7 @@ const LineupOptions: React.FC = () => {
           <div
             key={title}
             className="flex items-start gap-3 rounded-xl p-3 cursor-pointer transition-all hover:translate-y-[-1px]"
-            style={{ background: "var(--surface-low)", border: "1px solid var(--hairline)" }}
+            style={{ background: "var(--surface-low)", border: "2px solid var(--ink)" }}
           >
             <span
               className="flex items-center justify-center rounded-lg flex-shrink-0"

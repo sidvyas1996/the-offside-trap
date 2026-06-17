@@ -35,7 +35,7 @@ const TacticDetails: React.FC<TacticDetailsProps> = ({
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: "var(--surface-container)", border: "1px solid var(--hairline)", boxShadow: "var(--card-shadow)" }}
+      style={{ background: "var(--surface-container)", border: "2px solid var(--ink)", boxShadow: "var(--card-shadow)" }}
     >
       <h2 className="panel-title mb-5">
         <span className="icon-chip"><ClipboardList size={14} /></span>

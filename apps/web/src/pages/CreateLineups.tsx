@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, Loader2 } from "lucide-react";
-import { renderBackButton } from "../components/ui/back-button";
-import { Button } from "../components/ui/button";
+import { Save, Loader2, Users } from "lucide-react";
+import { Input } from "../components/ui/input";
+import { Textarea } from "../components/ui/textarea";
+import EditorBar from "../components/EditorBar";
 import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
 import { useTacticsForm } from "../hooks/useTacticsForm";
 import { useTacticsState } from "../hooks/useTacticsState";
@@ -112,7 +113,7 @@ const CreateLineupsContent: React.FC = () => {
         description: form.description,
         players,
         fieldSettings: {
-          fieldColor: options.fieldColor || '#0d4b3e',
+          fieldColor: options.fieldColor || '#19a974',
           playerColor: options.playerColor || '#1a1a1a',
           showPlayerLabels: state.showPlayerLabels,
           markerType: state.markerType,
@@ -139,59 +140,42 @@ const CreateLineupsContent: React.FC = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--theme-bg)', display: 'flex', flexDirection: 'column' }}>
+    <div className="dot-bg" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-      {/* Studio top bar — title, description, formation, save */}
-      <div className="glass-bar" style={{ padding: '0 20px', height: 58, display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0, position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-          {renderBackButton(() => navigate(-1))}
-          <div style={{ width: 1, height: 26, background: 'var(--hairline-strong)' }} />
-          <div>
-            <div className="kicker" style={{ marginBottom: 1 }}>Lineup Creator</div>
-            <input
-              className="studio-title-input"
-              value={form.title}
-              onChange={e => form.setTitle(e.target.value)}
-              placeholder="Untitled Lineup"
-            />
-          </div>
-        </div>
-
-        {/* Description — inline, top bar */}
-        <input
-          value={form.description}
-          onChange={e => form.setDescription(e.target.value)}
-          placeholder="Add a short description…"
-          style={{
-            flex: 1,
-            maxWidth: 520,
-            background: 'var(--surface-high)',
-            border: '1px solid var(--hairline)',
-            borderRadius: 99,
-            padding: '8px 16px',
-            fontSize: 13,
-            color: 'var(--on-surface)',
-            outline: 'none',
-          }}
+      {/* Contextual editor bar */}
+      <div style={{ padding: '14px 16px 0', flexShrink: 0 }}>
+        <EditorBar
+          kicker="Lineup Creator"
+          title={form.title}
+          onTitleChange={form.setTitle}
+          placeholder="Untitled Lineup"
+          actions={
+            <>
+              {form.formation && (
+                <span style={{
+                  fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 13, fontWeight: 700,
+                  color: "#fff", background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.18)",
+                  borderRadius: 10, padding: "7px 13px",
+                }}>
+                  {form.formation}
+                </span>
+              )}
+              <button
+                onClick={handleSubmit}
+                disabled={form.loading}
+                className="editorbar-btn"
+                style={{ background: 'var(--primary)', color: 'var(--ink)', border: 'none', opacity: form.loading ? 0.7 : 1 }}
+              >
+                {form.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={15} />}
+                {form.loading ? 'Saving…' : (editId ? 'Update Lineup' : 'Save Lineup')}
+              </button>
+            </>
+          }
         />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, marginLeft: 'auto' }}>
-          {/* Formation — editable mono chip */}
-          <input
-            className="chip-mono"
-            value={form.formation}
-            onChange={e => form.setFormation(e.target.value)}
-            style={{ width: 76, textAlign: 'center', outline: 'none' }}
-            title="Formation"
-          />
-          <Button onClick={handleSubmit} disabled={form.loading} className="btn-primary" style={{ padding: '8px 18px', borderRadius: 9 }}>
-            {form.loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />{editId ? 'Update Lineup' : 'Save Lineup'}</>}
-          </Button>
-        </div>
       </div>
 
       {/* Main area: stage left, options + preview right */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', height: 'calc(100vh - 58px)' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
 
         {/* Left — field stage */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 24px', background: 'var(--theme-stage)' }}>
@@ -261,8 +245,45 @@ const CreateLineupsContent: React.FC = () => {
         </div>
         </div>
 
-        {/* Right panel — options + preview */}
-        <div style={{ width: 380, borderLeft: '1px solid var(--hairline)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+        {/* Right panel — details + options + preview */}
+        <div style={{ width: 380, borderLeft: '2px solid var(--ink)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+          <div style={{ padding: '16px 16px 0' }}>
+            <div className="rounded-2xl p-5" style={{ background: "var(--surface-container)", border: "2px solid var(--ink)", boxShadow: "var(--card-shadow)" }}>
+              <h2 className="panel-title mb-4">
+                <span className="icon-chip"><Users size={14} /></span>
+                Lineup Details
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="field-label">Title</label>
+                  <Input
+                    value={form.title}
+                    onChange={e => form.setTitle(e.target.value)}
+                    placeholder="e.g. Matchday XI"
+                  />
+                </div>
+                <div>
+                  <label className="field-label">Description</label>
+                  <Textarea
+                    rows={3}
+                    value={form.description}
+                    onChange={e => form.setDescription(e.target.value)}
+                    placeholder="Describe this lineup…"
+                    className="!rounded-lg !p-3 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="field-label">Formation</label>
+                  <Input
+                    value={form.formation}
+                    onChange={e => form.setFormation(e.target.value)}
+                    placeholder="e.g. 4-3-3"
+                    style={{ fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", letterSpacing: "0.04em" }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
           <div style={{ padding: 16 }}>
             <LineupOptions />
           </div>
