@@ -74,7 +74,7 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
         markerBgColor: '#fbf5e9',     // cream fill
         markerBorderColor: '#c6f24e', // Pitch Lime ring
         markerTextColor: '#15140f',   // Kit Black number
-        markerSecondaryColor: '#c6f24f',
+        markerSecondaryColor: '#c6f24e',
         markerDesign: 'solid',
         enableContextMenu: true,
         showPlayerLabels: true,
