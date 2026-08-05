@@ -63,11 +63,16 @@ export function getInterpolatedFrame(
 
   const fs = before.fieldSettings;
   const fs2 = after.fieldSettings;
+  const ball =
+    fs.ball && fs2.ball
+      ? { x: lerp(fs.ball.x, fs2.ball.x, t), y: lerp(fs.ball.y, fs2.ball.y, t) }
+      : (fs.ball || fs2.ball);
   const fieldSettings: FieldSettings = {
     fieldColor: lerpHex(fs.fieldColor, fs2.fieldColor, t),
     playerColor: lerpHex(fs.playerColor, fs2.playerColor, t),
     showPlayerLabels: t < 0.5 ? fs.showPlayerLabels : fs2.showPlayerLabels,
     markerType: t < 0.5 ? fs.markerType : fs2.markerType,
+    ...(ball && { ball }),
   };
 
   return { players, fieldSettings, oppositionPlayers };
@@ -75,9 +80,16 @@ export function getInterpolatedFrame(
 
 interface UseAnimationOptions {
   onFrame?: (players: Player[], fieldSettings: FieldSettings, oppositionPlayers?: Player[]) => void;
+  /**
+   * Loop forever instead of stopping at the end. A tactic is a repeating
+   * pattern, so this is the default for on-screen playback. Compiled animations
+   * open and close on the same pose, which is what makes the wrap seamless.
+   */
+  loop?: boolean;
 }
 
 export function useAnimation(options: UseAnimationOptions = {}) {
+  const { loop = true } = options;
   const [keyframes, setKeyframes] = useState<Keyframe[]>([]);
   const [currentTimeMs, setCurrentTimeMs] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -109,11 +121,10 @@ export function useAnimation(options: UseAnimationOptions = {}) {
 
       setCurrentTimeMs(prev => {
         const next = prev + elapsed;
-        if (next >= durationMs) {
-          setIsPlaying(false);
-          return durationMs;
-        }
-        return next;
+        if (next < durationMs) return next;
+        if (loop) return next % durationMs;
+        setIsPlaying(false);
+        return durationMs;
       });
 
       rafRef.current = requestAnimationFrame(tick);
@@ -123,7 +134,7 @@ export function useAnimation(options: UseAnimationOptions = {}) {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [isPlaying, durationMs]);
+  }, [isPlaying, durationMs, loop]);
 
   // Call onFrame whenever currentTimeMs changes during playback
   useEffect(() => {
@@ -184,6 +195,11 @@ export function useAnimation(options: UseAnimationOptions = {}) {
 
   return {
     keyframes,
+    /**
+     * Replace the compiled keyframes without disturbing the playhead, so
+     * re-compiling after a movement edit doesn't yank playback back to 0.
+     */
+    setKeyframes,
     currentTimeMs,
     isPlaying,
     durationMs,

@@ -87,6 +87,7 @@ export const exportVideo = async (req: Request, res: Response) => {
         players: Array<{ id: number; x: number; y: number; name: string; number: string; }>;
         showPlayerLabels: boolean;
         markerType: 'circle' | 'shirt';
+        ball?: { x: number; y: number };
       };
     };
 

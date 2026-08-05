@@ -151,10 +151,13 @@ const TacticsDetailsContent: React.FC = () => {
     setOptions,
     setActions,
     setDraggedPlayer,
+    setBall,
+    setIsAnimating,
   } = useFootballField();
   const animation = useAnimation({
     onFrame: (framePlayers, frameFieldSettings) => {
       setPlayers(framePlayers);
+      if (frameFieldSettings.ball) setBall(frameFieldSettings.ball);
       setOptions(prev => ({
         ...prev,
         fieldColor: frameFieldSettings.fieldColor,
@@ -164,6 +167,11 @@ const TacticsDetailsContent: React.FC = () => {
       }));
     },
   });
+
+  // Markers drop their positional CSS transition while the rAF loop drives them
+  useEffect(() => {
+    setIsAnimating(animation.isPlaying);
+  }, [animation.isPlaying, setIsAnimating]);
 
   // Disable movement completely for details page
   useEffect(() => {
@@ -188,6 +196,7 @@ const TacticsDetailsContent: React.FC = () => {
     const frame = animation.getInterpolatedFrame(timeMs);
     if (frame) {
       setPlayers(frame.players);
+      if (frame.fieldSettings.ball) setBall(frame.fieldSettings.ball);
       setOptions(prev => ({
         ...prev,
         fieldColor: frame.fieldSettings.fieldColor,
@@ -196,7 +205,7 @@ const TacticsDetailsContent: React.FC = () => {
         markerType: frame.fieldSettings.markerType,
       }));
     }
-  }, [animation, setPlayers, setOptions]);
+  }, [animation, setPlayers, setOptions, setBall]);
 
   // Fetch tactic data on mount
   useEffect(() => {
@@ -225,6 +234,7 @@ const TacticsDetailsContent: React.FC = () => {
           showPlayerLabels: (data.fieldSettings as any)?.showPlayerLabels ?? prev.showPlayerLabels,
           markerType: (data.fieldSettings as any)?.markerType || prev.markerType,
         }));
+        if ((data.fieldSettings as any)?.ball) setBall((data.fieldSettings as any).ball);
       }
     } catch (err) {
       console.error("Error fetching tactic:", err);

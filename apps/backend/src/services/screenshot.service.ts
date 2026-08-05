@@ -19,6 +19,7 @@ interface FieldState {
   }>;
   showPlayerLabels: boolean;
   markerType: 'circle' | 'shirt';
+  ball?: { x: number; y: number };
   waypointsMode: boolean;
   horizontalZonesMode: boolean;
   verticalSpacesMode: boolean;

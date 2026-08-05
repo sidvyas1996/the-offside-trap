@@ -23,6 +23,7 @@ interface BaseFieldState {
   }>;
   showPlayerLabels: boolean;
   markerType: 'circle' | 'shirt';
+  ball?: { x: number; y: number };
 }
 
 function lerp(a: number, b: number, t: number): number {
@@ -82,11 +83,16 @@ function getInterpolatedFrame(
 
   const fs1 = before.fieldSettings;
   const fs2 = after.fieldSettings;
+  const ball =
+    fs1.ball && fs2.ball
+      ? { x: lerp(fs1.ball.x, fs2.ball.x, t), y: lerp(fs1.ball.y, fs2.ball.y, t) }
+      : (fs1.ball || fs2.ball);
   const fieldSettings: FieldSettings = {
     fieldColor: lerpHex(fs1.fieldColor, fs2.fieldColor, t),
     playerColor: lerpHex(fs1.playerColor, fs2.playerColor, t),
     showPlayerLabels: t < 0.5 ? fs1.showPlayerLabels : fs2.showPlayerLabels,
     markerType: t < 0.5 ? fs1.markerType : fs2.markerType,
+    ...(ball && { ball }),
   };
 
   return { players, fieldSettings };
@@ -136,6 +142,7 @@ export class VideoExportService {
         players: baseFieldState.players,
         showPlayerLabels: baseFieldState.showPlayerLabels,
         markerType: baseFieldState.markerType,
+        ball: baseFieldState.ball,
       });
 
       // Wait for page ready (fast mode skips 1500ms delay)

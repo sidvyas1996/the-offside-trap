@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import type { Player } from "../../../../packages/shared";
+import { clientToPitchPct } from "../utils/pitch";
 
 interface UsePlayerDragOptions {
     sticky?: boolean; // true = snap back after drag
@@ -27,35 +28,9 @@ export const usePlayerDrag = (
         (e: React.MouseEvent) => {
             if (!draggedPlayerRef.current || !fieldRef.current) return;
 
-            const el = fieldRef.current;
-            const parent = el.parentElement;
-
-            if (!parent) return;
-
-            const parentRect = parent.getBoundingClientRect();
-
-            // Offset of cursor from the perspective container's center
-            const cx = parentRect.width / 2;
-            const cy = parentRect.height / 2;
-            const localX = e.clientX - parentRect.left - cx;
-            const localY = e.clientY - parentRect.top - cy;
-
-            // Read the live CSS transform matrix (rotateX + rotateZ + scale)
-            // and invert it to map viewport coords back to field-local coords
-            const rawTransform = window.getComputedStyle(el).transform;
-            const matrix = new DOMMatrix(rawTransform === 'none' ? undefined : rawTransform);
-            const inv = matrix.inverse();
-            const pt = inv.transformPoint(new DOMPoint(localX, localY, 0, 1));
-
-            // Map centered local coords back to 0–100% of the field itself.
-            // The field is flex-centered in its container, so container-center
-            // and field-center coincide — but the field's own layout size is
-            // the correct divisor (container height can differ from field height).
-            const newX = ((pt.x + el.offsetWidth / 2) / el.offsetWidth) * 100;
-            const newY = ((pt.y + el.offsetHeight / 2) / el.offsetHeight) * 100;
-
-            const clampedX = Math.max(0, Math.min(100, newX));
-            const clampedY = Math.max(0, Math.min(100, newY));
+            const mapped = clientToPitchPct(fieldRef.current, e.clientX, e.clientY);
+            if (!mapped) return;
+            const { x: clampedX, y: clampedY } = mapped;
 
             const draggedId = draggedPlayerRef.current.id;
             if (draggedId) {

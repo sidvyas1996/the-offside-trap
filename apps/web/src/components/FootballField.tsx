@@ -2,13 +2,31 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { RotateCw } from "lucide-react";
 import { useFootballField } from "../contexts/FootballFieldContext.tsx";
 import PlayerMarker from "./PlayerMarker.tsx";
+import BallMarker from "./BallMarker.tsx";
 import ArrowOverlay, { BALL_ARROW_TYPES } from "./ArrowOverlay.tsx";
 import {
   DEFAULT_FOOTBALL_FIELD_COLOUR,
   CHARCOAL_GRAY,
 } from "../utils/colors.ts";
+import {
+  PITCH_LENGTH,
+  PITCH_WIDTH,
+  PITCH_MARGIN,
+  PITCH_CENTRE_X,
+  PITCH_CENTRE_Y,
+  PITCH_INNER_LENGTH,
+  PITCH_ASPECT,
+  PITCH_VIEWBOX,
+  PITCH_X_SCALE,
+  PITCH_STRIPE_PCT,
+  pctToSvgX,
+  pctToSvgY,
+  clientToPitchPct,
+} from "../utils/pitch.ts";
+import MovementOverlay from "./MovementOverlay";
+import { useMovementCapture } from "../hooks/useMovementCapture";
 
-import type { Player, TacticArrow } from "../../../../packages/shared";
+import type { Player, TacticArrow, Movement } from "../../../../packages/shared";
 
 interface FootballFieldProps {
   editable?: boolean;
@@ -32,10 +50,42 @@ const FootballField: React.FC<FootballFieldProps> = ({
   onPlayerSelect,
 }) => {
   const {
-    players, draggedPlayer, options, actions, fieldRef,
-    oppositionPlayers, draggedOppositionPlayer, oppositionOptions, oppositionActions, showOpposition,
+    players, setPlayers, draggedPlayer, options, actions, fieldRef,
+    oppositionPlayers, setOppositionPlayers, draggedOppositionPlayer, oppositionOptions, oppositionActions, showOpposition,
+    ball, setBall, isAnimating,
+    movements, setMovements, movementMode,
     arrows, setArrows, arrowTool, arrowBallColor, arrowRunColor,
   } = useFootballField();
+
+  const capture = useMovementCapture({ movements, setMovements });
+
+  // Begin a capture only in movement mode; otherwise dragging behaves exactly as
+  // it always has. `rest` is the object's position before the drag, which becomes
+  // path[0] and the place it returns to on release.
+  const beginCapture = useCallback((target: Movement['target'], rest: { x: number; y: number }) => {
+    if (movementMode) capture.begin(target, rest);
+  }, [movementMode, capture]);
+
+  const handleCaptureMove = useCallback((e: React.MouseEvent) => {
+    if (!capture.isCapturing() || !fieldRef.current) return;
+    const pt = clientToPitchPct(fieldRef.current, e.clientX, e.clientY);
+    if (pt) capture.sample(pt);
+  }, [capture, fieldRef]);
+
+  // On release the drawn object goes back to where it started — the movement it
+  // just became is what carries it away from there during playback.
+  const handleCaptureEnd = useCallback(() => {
+    const result = capture.end();
+    if (!result) return;
+    const { target, restoreTo } = result;
+    if (target.kind === 'ball') {
+      setBall(restoreTo);
+    } else if (target.team === 'home') {
+      setPlayers(prev => prev.map(p => p.id === target.playerId ? { ...p, ...restoreTo } : p));
+    } else {
+      setOppositionPlayers(prev => prev.map(p => p.id === target.playerId ? { ...p, ...restoreTo } : p));
+    }
+  }, [capture, setPlayers, setOppositionPlayers, setBall]);
 
   const { onUpdatePlayer, onPlayerNameChange } = actions;
 
@@ -59,6 +109,17 @@ const FootballField: React.FC<FootballFieldProps> = ({
   const playersRef = useRef<any[]>(players);
   useEffect(() => { playersRef.current = players; });
 
+  // Ball drag state
+  const [isDraggingBall, setIsDraggingBall] = useState(false);
+
+  // Same viewport→field mapping as usePlayerDrag: invert the live CSS
+  // transform so dragging works when the field is 3D-tilted in fullscreen
+  const handleBallMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDraggingBall || !fieldRef.current) return;
+    const pt = clientToPitchPct(fieldRef.current, e.clientX, e.clientY);
+    if (pt) setBall(pt);
+  }, [isDraggingBall, fieldRef, setBall]);
+
   // Arrow drawing state
   const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
   const [drawingCurrent, setDrawingCurrent] = useState<{ x: number; y: number } | null>(null);
@@ -81,8 +142,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
     let nearest: Player | null = null;
     let minDist = THRESHOLD;
     for (const p of all) {
-      // Scale x by 7/11 to account for 11:7 field aspect ratio
-      const dx = (p.x - pt.x) * (7 / 11);
+      // Scale x by the pitch aspect ratio so the snap radius is circular on screen
+      const dx = (p.x - pt.x) * PITCH_X_SCALE;
       const dy = p.y - pt.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < minDist) { minDist = dist; nearest = p; }
@@ -212,7 +273,11 @@ const FootballField: React.FC<FootballFieldProps> = ({
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const fieldWidth = entry.contentRect.width;
-        const newScale = Math.max(0.8, Math.min(1.5, fieldWidth / 1000));
+        // Markers scale with the board, so this divisor sets how much room the
+        // pitch has in marker-widths. It was tuned up alongside the longer 16:9
+        // pitch: the extra length only buys space to manoeuvre (notably with a
+        // full opposition team) if markers shrink relative to the surface.
+        const newScale = Math.max(0.7, Math.min(1.5, fieldWidth / 1150));
         setScale(newScale);
       }
     });
@@ -267,16 +332,16 @@ const FootballField: React.FC<FootballFieldProps> = ({
   const pitchBackground = `repeating-linear-gradient(
     90deg,
     transparent 0%,
-    transparent 9.09%,
-    ${stripeColor} 9.09%,
-    ${stripeColor} 18.18%
+    transparent ${PITCH_STRIPE_PCT}%,
+    ${stripeColor} ${PITCH_STRIPE_PCT}%,
+    ${stripeColor} ${PITCH_STRIPE_PCT * 2}%
   ), ${fieldColor}`;
 
   const fieldStyle =
     size === "fullscreen" || options.size === "fullscreen" || isFullScreen
       ? {
           background: pitchBackground,
-          aspectRatio: "11/7",
+          aspectRatio: PITCH_ASPECT,
           width: "100%",
           maxWidth: "100%",
           height: "auto",
@@ -284,9 +349,9 @@ const FootballField: React.FC<FootballFieldProps> = ({
         }
       : {
           background: pitchBackground,
-          aspectRatio: "11/7",
+          aspectRatio: PITCH_ASPECT,
           width: "100%",
-          maxWidth: "800px",
+          maxWidth: "900px",
           margin: "0 auto",
         };
 
@@ -295,45 +360,45 @@ const FootballField: React.FC<FootballFieldProps> = ({
       ref={fieldRef}
       className={`relative rounded-xl overflow-hidden cursor-move ${isFullScreen ? '' : 'mb-6'}`}
       style={fieldStyle}
-      onMouseMove={(e) => { actions.onMouseMove?.(e); oppositionActions.onMouseMove?.(e); }}
-      onMouseUp={() => { actions.onMouseUp?.(); oppositionActions.onMouseUp?.(); }}
-      onMouseLeave={() => { actions.onMouseUp?.(); oppositionActions.onMouseUp?.(); }}
+      onMouseMove={(e) => { actions.onMouseMove?.(e); oppositionActions.onMouseMove?.(e); handleBallMouseMove(e); handleCaptureMove(e); }}
+      onMouseUp={() => { actions.onMouseUp?.(); oppositionActions.onMouseUp?.(); setIsDraggingBall(false); handleCaptureEnd(); }}
+      onMouseLeave={() => { actions.onMouseUp?.(); oppositionActions.onMouseUp?.(); setIsDraggingBall(false); handleCaptureEnd(); }}
     >
       {/* Field Markings */}
       <svg
         className="absolute inset-0 w-full h-full opacity-55"
-        viewBox="0 0 550 350"
+        viewBox={PITCH_VIEWBOX}
       >
         <rect
-          x="20"
-          y="20"
-          width="510"
-          height="310"
+          x={PITCH_MARGIN}
+          y={PITCH_MARGIN}
+          width={PITCH_INNER_LENGTH}
+          height={PITCH_WIDTH - PITCH_MARGIN * 2}
           stroke="white"
           strokeWidth="2.5"
           fill="none"
         />
         <line
-          x1="275"
-          y1="20"
-          x2="275"
-          y2="330"
+          x1={PITCH_CENTRE_X}
+          y1={PITCH_MARGIN}
+          x2={PITCH_CENTRE_X}
+          y2={PITCH_WIDTH - PITCH_MARGIN}
           stroke="white"
           strokeWidth="2.5"
         />
         <circle
-          cx="275"
-          cy="175"
+          cx={PITCH_CENTRE_X}
+          cy={PITCH_CENTRE_Y}
           r="40"
           stroke="white"
           strokeWidth="2.5"
           fill="none"
         />
-        <circle cx="275" cy="175" r="3" fill="white" />
+        <circle cx={PITCH_CENTRE_X} cy={PITCH_CENTRE_Y} r="3" fill="white" />
 
-        {/* Goal and Box Markings */}
+        {/* Goal and Box Markings — fixed real-world sizes, independent of pitch length */}
         <rect
-          x="20"
+          x={PITCH_MARGIN}
           y="90"
           width="70"
           height="170"
@@ -342,7 +407,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
           fill="none"
         />
         <rect
-          x="460"
+          x={PITCH_LENGTH - PITCH_MARGIN - 70}
           y="90"
           width="70"
           height="170"
@@ -351,7 +416,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
           fill="none"
         />
         <rect
-          x="20"
+          x={PITCH_MARGIN}
           y="135"
           width="30"
           height="80"
@@ -360,7 +425,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
           fill="none"
         />
         <rect
-          x="500"
+          x={PITCH_LENGTH - PITCH_MARGIN - 30}
           y="135"
           width="30"
           height="80"
@@ -368,18 +433,18 @@ const FootballField: React.FC<FootballFieldProps> = ({
           strokeWidth="2.5"
           fill="none"
         />
-        <circle cx="65" cy="175" r="3" fill="white" />
-        <circle cx="485" cy="175" r="3" fill="white" />
+        <circle cx={PITCH_MARGIN + 45} cy={PITCH_CENTRE_Y} r="3" fill="white" />
+        <circle cx={PITCH_LENGTH - PITCH_MARGIN - 45} cy={PITCH_CENTRE_Y} r="3" fill="white" />
 
         {/* Penalty Arcs */}
         <path
-          d="M 90 155 A 30 30 0 0 1 90 195"
+          d={`M ${PITCH_MARGIN + 70} 155 A 30 30 0 0 1 ${PITCH_MARGIN + 70} 195`}
           stroke="white"
           strokeWidth="2.5"
           fill="none"
         />
         <path
-          d="M 460 155 A 30 30 0 0 0 460 195"
+          d={`M ${PITCH_LENGTH - PITCH_MARGIN - 70} 155 A 30 30 0 0 0 ${PITCH_LENGTH - PITCH_MARGIN - 70} 195`}
           stroke="white"
           strokeWidth="2.5"
           fill="none"
@@ -387,25 +452,25 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
         {/* Corner Arcs */}
         <path
-          d="M 20 30 A 10 10 0 0 0 30 20"
+          d={`M ${PITCH_MARGIN} ${PITCH_MARGIN + 10} A 10 10 0 0 0 ${PITCH_MARGIN + 10} ${PITCH_MARGIN}`}
           stroke="white"
           strokeWidth="2.5"
           fill="none"
         />
         <path
-          d="M 520 20 A 10 10 0 0 0 530 30"
+          d={`M ${PITCH_LENGTH - PITCH_MARGIN - 10} ${PITCH_MARGIN} A 10 10 0 0 0 ${PITCH_LENGTH - PITCH_MARGIN} ${PITCH_MARGIN + 10}`}
           stroke="white"
           strokeWidth="2.5"
           fill="none"
         />
         <path
-          d="M 30 330 A 10 10 0 0 0 20 320"
+          d={`M ${PITCH_MARGIN + 10} ${PITCH_WIDTH - PITCH_MARGIN} A 10 10 0 0 0 ${PITCH_MARGIN} ${PITCH_WIDTH - PITCH_MARGIN - 10}`}
           stroke="white"
           strokeWidth="2.5"
           fill="none"
         />
         <path
-          d="M 530 320 A 10 10 0 0 0 520 330"
+          d={`M ${PITCH_LENGTH - PITCH_MARGIN} ${PITCH_WIDTH - PITCH_MARGIN - 10} A 10 10 0 0 0 ${PITCH_LENGTH - PITCH_MARGIN - 10} ${PITCH_WIDTH - PITCH_MARGIN}`}
           stroke="white"
           strokeWidth="2.5"
           fill="none"
@@ -416,18 +481,18 @@ const FootballField: React.FC<FootballFieldProps> = ({
           <g>
             {/* Defensive Third - Left penalty box area */}
             <rect
-              x="20"
-              y="20"
-              width="127.5"
-              height="310"
+              x={PITCH_MARGIN}
+              y={PITCH_MARGIN}
+              width={PITCH_INNER_LENGTH / 4}
+              height={PITCH_WIDTH - PITCH_MARGIN * 2}
               fill="rgba(255, 255, 255, 0.1)"
               stroke="rgba(255, 255, 255, 0.8)"
               strokeWidth="2"
               strokeDasharray="5.5"
             />
             <text
-              x="93.75"
-              y="340"
+              x={PITCH_MARGIN + PITCH_INNER_LENGTH / 8}
+              y={PITCH_WIDTH - 10}
               textAnchor="middle"
               fill="white"
               fontSize="12"
@@ -439,18 +504,18 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
             {/* Middle Third - Center area between penalty boxes */}
             <rect
-              x="147.5"
-              y="20"
-              width="255"
-              height="310"
+              x={PITCH_MARGIN + PITCH_INNER_LENGTH / 4}
+              y={PITCH_MARGIN}
+              width={PITCH_INNER_LENGTH / 2}
+              height={PITCH_WIDTH - PITCH_MARGIN * 2}
               fill="rgba(255, 255, 255, 0.1)"
               stroke="rgba(255, 255, 255, 0.8)"
               strokeWidth="2"
               strokeDasharray="5.5"
             />
             <text
-              x="275"
-              y="340"
+              x={PITCH_CENTRE_X}
+              y={PITCH_WIDTH - 10}
               textAnchor="middle"
               fill="white"
               fontSize="12"
@@ -462,18 +527,18 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
             {/* Final Third - Right penalty box area */}
             <rect
-              x="402.5"
-              y="20"
-              width="127.5"
-              height="310"
+              x={PITCH_LENGTH - PITCH_MARGIN - PITCH_INNER_LENGTH / 4}
+              y={PITCH_MARGIN}
+              width={PITCH_INNER_LENGTH / 4}
+              height={PITCH_WIDTH - PITCH_MARGIN * 2}
               fill="rgba(255, 255, 255, 0.1)"
               stroke="rgba(255, 255, 255, 0.8)"
               strokeWidth="2"
               strokeDasharray="5.5"
             />
             <text
-              x="466.25"
-              y="340"
+              x={PITCH_LENGTH - PITCH_MARGIN - PITCH_INNER_LENGTH / 8}
+              y={PITCH_WIDTH - 10}
               textAnchor="middle"
               fill="white"
               fontSize="12"
@@ -489,9 +554,9 @@ const FootballField: React.FC<FootballFieldProps> = ({
           <g>
             {/* Wide Area Top - Outside penalty box */}
             <rect
-              x="20"
-              y="20"
-              width="510"
+              x={PITCH_MARGIN}
+              y={PITCH_MARGIN}
+              width={PITCH_INNER_LENGTH}
               height="70"
               fill="rgba(255, 255, 255, 0.15)"
               stroke="rgba(255, 255, 255, 0.9)"
@@ -499,7 +564,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
               strokeDasharray="5,5"
             />
             <text
-              x="278"
+              x={PITCH_CENTRE_X}
               y="43.25"
               textAnchor="middle"
               fill="white"
@@ -512,14 +577,14 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
               {/*Half Space Top*/}
             <rect
-              x="20"
+              x={PITCH_MARGIN}
               y="90"
-              width="510"
+              width={PITCH_INNER_LENGTH}
               height="45"
               fill="rgba(255, 255, 255, 0.2)"
             />
             <text
-              x="281"
+              x={PITCH_CENTRE_X}
               y="115"
               textAnchor="middle"
               fill="white"
@@ -532,9 +597,9 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
             {/* Center - Center circle area */}
             <rect
-              x="20"
+              x={PITCH_MARGIN}
               y="135"
-              width="510"
+              width={PITCH_INNER_LENGTH}
               height="80"
               fill="rgba(255, 255, 255, 0.15)"
               stroke="rgba(255, 255, 255, 0.9)"
@@ -542,8 +607,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
               strokeDasharray="5.5"
             />
             <text
-              x="275"
-              y="175"
+              x={PITCH_CENTRE_X}
+              y={PITCH_CENTRE_Y}
               textAnchor="middle"
               fill="white"
               fontSize="14"
@@ -555,16 +620,16 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
             {/*/!* Half-space Bottom - Inside penalty box *!/*/}
             <rect
-              x="20" y="215" width="510" height="45"
+              x={PITCH_MARGIN} y="215" width={PITCH_INNER_LENGTH} height="45"
               fill="rgba(255, 255, 255, 0.2)"
             />
-            <text x="281" y="245" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Half Space</text>
+            <text x={PITCH_CENTRE_X} y="245" textAnchor="middle" fill="white" fontSize="12" dominantBaseline="middle" fontWeight="bold">Half Space</text>
 
             {/* Wide Area Bottom - Outside penalty box */}
             <rect
-              x="20"
+              x={PITCH_MARGIN}
               y="260"
-              width="510"
+              width={PITCH_INNER_LENGTH}
               height="70"
               fill="rgba(255, 255, 255, 0.15)"
               stroke="rgba(255, 255, 255, 0.9)"
@@ -572,7 +637,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
               strokeDasharray="5,5"
             />
             <text
-              x="278"
+              x={PITCH_CENTRE_X}
               y="306.75"
               textAnchor="middle"
               fill="white"
@@ -638,7 +703,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
         <>
           <svg
             className="absolute inset-0 w-full h-full"
-            viewBox="0 0 550 350"
+            viewBox={PITCH_VIEWBOX}
             style={{ pointerEvents: "none" }}
           >
             <defs>
@@ -649,8 +714,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
               </radialGradient>
             </defs>
             {players.map((player: any) => {
-              const px = player.x * 5.5;
-              const py = player.y * 3.5;
+              const px = pctToSvgX(player.x);
+              const py = pctToSvgY(player.y);
               const r = 45;
               const angle = fovAngles[player.id] ?? 0;
               const sx = r * 0.5;
@@ -712,7 +777,11 @@ const FootballField: React.FC<FootballFieldProps> = ({
           player={player}
           scale={scale}
           isDragged={draggedPlayer?.id === player.id}
-          onMouseDown={() => actions.onMouseDown && actions.onMouseDown(player)}
+          isAnimating={isAnimating}
+          onMouseDown={() => {
+            actions.onMouseDown?.(player);
+            beginCapture({ kind: 'player', team: 'home', playerId: player.id }, { x: player.x, y: player.y });
+          }}
           editable={typeof editable === "boolean" ? editable : options.editable}
           onNameChange={onPlayerNameChange}
           onPositionChange={
@@ -750,7 +819,11 @@ const FootballField: React.FC<FootballFieldProps> = ({
           player={player}
           scale={scale}
           isDragged={draggedOppositionPlayer?.id === player.id}
-          onMouseDown={() => oppositionActions.onMouseDown && oppositionActions.onMouseDown(player)}
+          isAnimating={isAnimating}
+          onMouseDown={() => {
+            oppositionActions.onMouseDown?.(player);
+            beginCapture({ kind: 'player', team: 'away', playerId: player.id }, { x: player.x, y: player.y });
+          }}
           editable={typeof editable === "boolean" ? editable : oppositionOptions.editable}
           onNameChange={oppositionActions.onPlayerNameChange}
           onPositionChange={
@@ -775,6 +848,26 @@ const FootballField: React.FC<FootballFieldProps> = ({
           shirtTextureUrl={oppositionOptions.shirtTextureUrl}
         />
       ))}
+
+      {/* Ball marker */}
+      <BallMarker
+        ball={ball}
+        scale={scale}
+        isDragged={isDraggingBall}
+        isAnimating={isAnimating}
+        editable={typeof editable === "boolean" ? editable : options.editable}
+        onMouseDown={() => {
+          setIsDraggingBall(true);
+          beginCapture({ kind: 'ball' }, { x: ball.x, y: ball.y });
+        }}
+      />
+
+      {/* Movement paths — hidden during playback, where the markers say it better */}
+      <MovementOverlay
+        movements={movements}
+        liveTrail={capture.liveTrail}
+        visible={!isAnimating}
+      />
 
       {/* Arrow annotations */}
       <ArrowOverlay

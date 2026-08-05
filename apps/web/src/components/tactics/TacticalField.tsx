@@ -66,8 +66,10 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
   onPlayerSelect,
 }) => {
   if (studioMode) {
+    // Wide cap: the 16:9 board is short enough to grow horizontally before it
+    // overflows the stage, so let big screens use the room they have.
     return (
-      <div style={{ maxWidth: 950, margin: '0 auto', width: '100%' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
         <FootballField
           waypointsMode={waypointsMode}
           horizontalZonesMode={horizontalZonesMode}

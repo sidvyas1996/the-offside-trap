@@ -1,8 +1,9 @@
 import React from "react";
 import type { TacticArrow, ArrowType } from "../../../../packages/shared";
+import { PITCH_VIEWBOX, pctToSvgX, pctToSvgY } from "../utils/pitch";
 
-// SVG coordinate space matches field markings: viewBox 0 0 550 350
-const toSvg = (p: { x: number; y: number }) => ({ x: p.x * 5.5, y: p.y * 3.5 });
+// SVG coordinate space matches the field markings — see utils/pitch.ts
+const toSvg = (p: { x: number; y: number }) => ({ x: pctToSvgX(p.x), y: pctToSvgY(p.y) });
 
 // Visual radius of a player marker in SVG units (~40px diameter, 0.88 scale, on ~800px field → ≈13 SVG units)
 const MARKER_RADIUS = 13;
@@ -258,7 +259,7 @@ interface ArrowOverlayProps {
 const ArrowOverlay: React.FC<ArrowOverlayProps> = ({ arrows, onDeleteArrow, previewArrow }) => (
   <svg
     className="absolute inset-0 w-full h-full"
-    viewBox="0 0 550 350"
+    viewBox={PITCH_VIEWBOX}
     style={{ zIndex: 20, pointerEvents: 'none', overflow: 'visible' }}
   >
     {arrows.map(arrow => (

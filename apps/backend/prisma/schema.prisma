@@ -32,6 +32,9 @@ model Tactic {
   players       Json     // Store Player[] as JSON
   fieldSettings Json?    // FieldSettings | null
   animation     Json?    // AnimationData | null (tactics only)
+  oppositionPlayers       Json? // Player[] | null
+  oppositionFieldSettings Json? // FieldSettings | null
+  arrows                  Json? // TacticArrow[] | null
   authorId    String @map("author_id")
   createdAt   DateTime @map("created_at")@default(now())
   updatedAt   DateTime @map("updated_at")@updatedAt

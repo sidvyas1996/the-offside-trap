@@ -19,7 +19,7 @@ const Preview: React.FC<PreviewProps> = ({
   zoomLevel = 1.0,
   animation,
 }) => {
-  const { players, options } = useFootballField();
+  const { players, options, ball } = useFootballField();
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingVideo, setIsExportingVideo] = useState(false);
 
@@ -45,6 +45,7 @@ const Preview: React.FC<PreviewProps> = ({
         })),
         showPlayerLabels: options.showPlayerLabels ?? true,
         markerType: options.markerType || 'circle',
+        ...(isTactics && { ball }),
         waypointsMode: false,
         horizontalZonesMode: false,
         verticalSpacesMode: false,
@@ -75,7 +76,7 @@ const Preview: React.FC<PreviewProps> = ({
 
   const handleExportVideo = async () => {
     if (!animation || animation.keyframes.length < 2) {
-      alert("Add at least 2 keyframes before exporting a video.");
+      alert("Draw a movement on the pitch (or pick a preset) before exporting a video.");
       return;
     }
     setIsExportingVideo(true);
@@ -95,6 +96,7 @@ const Preview: React.FC<PreviewProps> = ({
         })),
         showPlayerLabels: options.showPlayerLabels ?? true,
         markerType: options.markerType || 'circle',
+        ball,
       };
       const response = await api.post('/export/video', { animation, baseFieldState }, {
         responseType: 'blob',

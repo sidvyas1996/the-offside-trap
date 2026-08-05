@@ -1,4 +1,5 @@
 import { Player, TacticFormData, TacticFilters } from '@the-offside-trap/shared';
+import { Prisma } from '@prisma/client';
 import { prisma } from './db.service';
 import { createError } from '../middlewares/error.middleware';
 import { tacticSummarySelect } from './tactics.utils';
@@ -176,6 +177,10 @@ export class TacticsService {
       throw createError('Exactly 11 players are required', 400);
     }
 
+    if (data.oppositionPlayers != null && data.oppositionPlayers.length !== 11) {
+      throw createError('Exactly 11 opposition players are required', 400);
+    }
+
     // Validate formation format
     if (!/^\d+-\d+(-\d+)*$/.test(data.formation)) {
       throw createError('Invalid formation format', 400);
@@ -193,6 +198,9 @@ export class TacticsService {
         players: data.players as any,
         fieldSettings: data.fieldSettings ?? undefined,
         animation: data.animation ?? undefined,
+        oppositionPlayers: (data.oppositionPlayers as any) ?? undefined,
+        oppositionFieldSettings: (data.oppositionFieldSettings as any) ?? undefined,
+        arrows: (data.arrows as any) ?? undefined,
         author: {
           connect: { id: userId },
         },
@@ -271,6 +279,21 @@ export class TacticsService {
       updateData.animation = data.animation as any;
     }
 
+    // null clears the stored value (e.g. opposition removed); undefined leaves it untouched
+    if (data.oppositionPlayers !== undefined) {
+      if (data.oppositionPlayers !== null && data.oppositionPlayers.length !== 11) {
+        throw createError('Exactly 11 opposition players are required', 400);
+      }
+      updateData.oppositionPlayers = (data.oppositionPlayers as any) ?? Prisma.DbNull;
+    }
+
+    if (data.oppositionFieldSettings !== undefined) {
+      updateData.oppositionFieldSettings = (data.oppositionFieldSettings as any) ?? Prisma.DbNull;
+    }
+
+    if (data.arrows !== undefined) {
+      updateData.arrows = (data.arrows as any) ?? Prisma.DbNull;
+    }
 
     const updatedTactic = await prisma.tactic.update({
       where: { id },
@@ -551,6 +574,9 @@ export class TacticsService {
       players: (typeof tactic.players === 'string' ? JSON.parse(tactic.players) : tactic.players) as Player[],
       fieldSettings: tactic.fieldSettings ? (typeof tactic.fieldSettings === 'string' ? JSON.parse(tactic.fieldSettings) : tactic.fieldSettings) : null,
       animation: tactic.animation ? (typeof tactic.animation === 'string' ? JSON.parse(tactic.animation) : tactic.animation) : null,
+      oppositionPlayers: tactic.oppositionPlayers ? (typeof tactic.oppositionPlayers === 'string' ? JSON.parse(tactic.oppositionPlayers) : tactic.oppositionPlayers) : null,
+      oppositionFieldSettings: tactic.oppositionFieldSettings ? (typeof tactic.oppositionFieldSettings === 'string' ? JSON.parse(tactic.oppositionFieldSettings) : tactic.oppositionFieldSettings) : null,
+      arrows: tactic.arrows ? (typeof tactic.arrows === 'string' ? JSON.parse(tactic.arrows) : tactic.arrows) : null,
       author: {
         id: tactic.author.id,
         username: tactic.author.username,

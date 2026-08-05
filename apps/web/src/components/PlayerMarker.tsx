@@ -25,6 +25,8 @@ interface PlayerMarkerProps {
   player: Player;
   scale: number;
   isDragged: boolean;
+  /** Set during animation playback so the positional CSS transition is dropped. */
+  isAnimating?: boolean;
   onMouseDown: (player: Player) => void;
   editable?: boolean;
   onNameChange?: (id: number, name: string) => void;
@@ -54,6 +56,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   player,
   scale,
   isDragged,
+  isAnimating = false,
   onMouseDown,
   editable = false,
   onNameChange,
@@ -130,7 +133,14 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
         zIndex: isDragged ? 50 : 10,
         transform: `translate(-50%, -50%) scale(${scale * 0.88 * (isHovered ? 1.1 : 1)})`,
         transformOrigin: "center",
-        transition: isDragged ? "none" : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+        // Position must never be transitioned while dragging or animating: both
+        // push a fresh position every frame, so an ease on left/top makes the
+        // marker lag behind its own target instead of tracking it. Idle hover
+        // still eases, and only the properties that need it — `all` would drag
+        // colours and shadows into every positional update as well.
+        transition: isDragged || isAnimating
+          ? "none"
+          : "left 0.2s cubic-bezier(0.4, 0, 0.2, 1), top 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
       onMouseEnter={() => { setIsHovered(true); if (onMouseEnter) onMouseEnter(); }}
       onMouseLeave={() => { setIsHovered(false); if (onMouseLeave) onMouseLeave(); }}

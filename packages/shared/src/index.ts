@@ -26,6 +26,12 @@ export interface TacticSummary {
 
 export type MarkerDesign = 'solid' | 'stripes' | 'diagonal-left' | 'diagonal-right' | 'horizontal-split' | 'vertical-split';
 
+// Ball position on the field (0-100 percentage coords, same space as Player x/y)
+export interface Ball {
+  x: number;
+  y: number;
+}
+
 // Arrow annotation types
 export type ArrowType =
   | 'pass'           // dashed line + open arrowhead (ball)
@@ -59,6 +65,8 @@ export interface FieldSettings {
   markerDesign?: MarkerDesign;
   // View settings
   fieldOfViewMode?: boolean;
+  // Ball marker position; rides in fieldSettings so it persists and animates with keyframes
+  ball?: Ball;
 }
 
 // Single keyframe snapshot
@@ -71,11 +79,52 @@ export interface Keyframe {
   label?: string;
 }
 
+/** How fast the object covers its path. Football words, not milliseconds. */
+export type MovementTempo = 'jog' | 'run' | 'sprint';
+
+/**
+ * One repeating motion, authored by dragging on the pitch.
+ *
+ * A movement is deliberately *cyclic*: it always finishes where it started, so
+ * a whole animation loops seamlessly without the author having to think about
+ * it. That is the property that lets the studio drop keyframes entirely.
+ *
+ * There is only one shape here, not one-per-gesture. "Run", "shuttle" and
+ * "circuit" are readings of `cycle` + `repeats`, derived for display by
+ * describeMovement() — never stored. Adding a new gesture should mean teaching
+ * the recognizer a new reading, not widening this type.
+ */
+export interface Movement {
+  id: string;
+  /** Which object moves. The ball rides in fieldSettings, so it is its own case. */
+  target:
+    | { kind: 'player'; team: 'home' | 'away'; playerId: number }
+    | { kind: 'ball' };
+  /** Waypoints in 0-100 pitch pct. path[0] is the object's resting position. */
+  path: { x: number; y: number }[];
+  /** 'out-and-back' retraces the path; 'loop' runs a closed circuit. */
+  cycle: 'out-and-back' | 'loop';
+  /** 1 = a single run and recover. 2+ = a shuttle. */
+  repeats: number;
+  tempo: MovementTempo;
+  /** Phase offset as a fraction of the loop; keeps players out of lockstep. */
+  delay: number;
+}
+
 // Full animation attached to a tactic
 export interface AnimationData {
   durationMs: number;   // total duration, default 5000
   fps: number;          // export fps, default 24
+  /**
+   * Compiled output, and the only thing playback and MP4 export ever read.
+   * Authored movements are compiled into this, which is why adding gestures
+   * needed no change to the server-side exporter.
+   */
   keyframes: Keyframe[];
+  /** Authoring source of truth. Absent on tactics made before gestures existed. */
+  movements?: Movement[];
+  /** Repeat forever on screen. Defaults to true. */
+  loop?: boolean;
 }
 
 // Tactic Form Data
@@ -87,9 +136,10 @@ export interface TacticFormData {
   players: Player[];
   fieldSettings?: FieldSettings;
   animation?: AnimationData;
-  oppositionPlayers?: Player[];
-  oppositionFieldSettings?: FieldSettings;
-  arrows?: TacticArrow[];
+  // null = explicitly cleared (opposition removed / arrows erased); undefined = leave as-is
+  oppositionPlayers?: Player[] | null;
+  oppositionFieldSettings?: FieldSettings | null;
+  arrows?: TacticArrow[] | null;
 }
 
 // User Types

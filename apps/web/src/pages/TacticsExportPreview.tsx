@@ -17,12 +17,21 @@ interface ExportState {
   }>;
   showPlayerLabels: boolean;
   markerType: 'circle' | 'shirt';
+  ball?: { x: number; y: number };
 }
 
 const TacticsExportPreviewContent: React.FC = () => {
-  const { setPlayers, setOptions } = useFootballField();
+  const { setPlayers, setOptions, setBall, setIsAnimating } = useFootballField();
   const [isReady, setIsReady] = useState(false);
   const [exportState, setExportState] = useState<ExportState | null>(null);
+
+  // Frames are pushed and screenshotted one rAF later, so markers must land on
+  // their exact position immediately. With a transition still attached they'd
+  // only be a fraction of the way there and every frame would trail the pose we
+  // asked for — we'd be relying on Playwright fast-forwarding the transition.
+  useEffect(() => {
+    setIsAnimating(true);
+  }, [setIsAnimating]);
 
   const applyState = (state: ExportState) => {
     setPlayers(
@@ -47,6 +56,7 @@ const TacticsExportPreviewContent: React.FC = () => {
       editable: false,
       enableContextMenu: false,
     }));
+    if (state.ball) setBall(state.ball);
   };
 
   // Initial state injection (static export + first frame of video)
@@ -95,6 +105,7 @@ const TacticsExportPreviewContent: React.FC = () => {
         players: update.players,
         showPlayerLabels: update.fieldSettings?.showPlayerLabels ?? true,
         markerType: update.fieldSettings?.markerType || 'circle',
+        ball: update.fieldSettings?.ball,
       });
 
       requestAnimationFrame(() => {

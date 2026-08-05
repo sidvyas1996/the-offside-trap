@@ -15,7 +15,9 @@ import AnimationTimeline from "../components/tactics/AnimationTimeline";
 import CreatorsMenu from "../components/ui/creators-menu";
 import PlayerEditorPanel from "../components/ui/PlayerEditorPanel";
 import { TacticEntity } from "../entities/TacticEntity";
-import type { TacticFormData, FieldSettings, Player, AnimationData } from "../../../../packages/shared/src";
+import { ANIMATION_PRESETS, buildPresetAnimation } from "../utils/animation-presets";
+import { compileMovements, restingPose, restingBall } from "../utils/movement-compiler";
+import type { TacticFormData, FieldSettings, Player, AnimationData, Movement } from "../../../../packages/shared/src";
 
 const CreateTacticsContent: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +27,8 @@ const CreateTacticsContent: React.FC = () => {
     oppositionPlayers, setOppositionPlayers,
     oppositionOptions, setOppositionOptions,
     showOpposition,
+    ball, setBall, setIsAnimating,
+    movements, setMovements, movementMode, setMovementMode,
     arrows, setArrows, arrowTool, setArrowTool, arrowBallColor, setArrowBallColor, arrowRunColor, setArrowRunColor,
   } = useFootballField();
 
@@ -63,6 +67,7 @@ const CreateTacticsContent: React.FC = () => {
     markerSecondaryColor: options.markerSecondaryColor,
     markerDesign: options.markerDesign,
     fieldOfViewMode,
+    ball,
   });
 
   const getOppositionFieldSettings = (): FieldSettings => ({
@@ -77,13 +82,20 @@ const CreateTacticsContent: React.FC = () => {
     markerDesign: oppositionOptions.markerDesign,
   });
 
+  // Tracks the visual settings last pushed to the field during playback, so a
+  // frame that only moved players doesn't also rebuild the options object. That
+  // object is a dependency of every marker's props, so churning it once per
+  // frame re-rendered the whole field 60 times a second for nothing.
+  const lastPushedVisualsRef = React.useRef<string | null>(null);
+
   // Animation hook — when playing back, override players + field settings
   const animation = useAnimation({
     onFrame: (framePlayers, frameFieldSettings, frameOppositionPlayers) => {
       setPlayers(framePlayers);
       if (frameOppositionPlayers) setOppositionPlayers(frameOppositionPlayers);
-      setOptions(prev => ({
-        ...prev,
+      if (frameFieldSettings.ball) setBall(frameFieldSettings.ball);
+
+      const visuals = {
         fieldColor: frameFieldSettings.fieldColor,
         playerColor: frameFieldSettings.playerColor,
         showPlayerLabels: frameFieldSettings.showPlayerLabels,
@@ -93,9 +105,78 @@ const CreateTacticsContent: React.FC = () => {
         ...(frameFieldSettings.markerTextColor && { markerTextColor: frameFieldSettings.markerTextColor }),
         ...(frameFieldSettings.markerSecondaryColor && { markerSecondaryColor: frameFieldSettings.markerSecondaryColor }),
         ...(frameFieldSettings.markerDesign && { markerDesign: frameFieldSettings.markerDesign }),
-      }));
+      };
+      const fingerprint = JSON.stringify(visuals);
+      if (fingerprint === lastPushedVisualsRef.current) return;
+      lastPushedVisualsRef.current = fingerprint;
+      setOptions(prev => ({ ...prev, ...visuals }));
     },
   });
+
+  // Markers must drop their positional CSS transition while the rAF loop is
+  // driving them, or they lag behind their own target position.
+  useEffect(() => {
+    setIsAnimating(animation.isPlaying);
+  }, [animation.isPlaying, setIsAnimating]);
+
+  /**
+   * Which authoring surface owns the keyframes.
+   *
+   * Presets still write keyframes directly, so without this the recompile effect
+   * below would immediately overwrite a freshly applied preset with the (empty)
+   * compilation of zero movements. It also keeps tactics saved before gestures
+   * existed playable instead of silently blanking them.
+   */
+  const [animationSource, setAnimationSource] = React.useState<'movements' | 'keyframes'>('movements');
+
+  // Recompile whenever the authored movements — or the loop length — change.
+  // Skipped during playback: onFrame writes interpolated positions into
+  // `players`, and recompiling from those would feed the animation its own
+  // output frame after frame.
+  useEffect(() => {
+    if (animationSource !== 'movements' || animation.isPlaying) return;
+    const compiled = compileMovements({
+      movements,
+      players,
+      oppositionPlayers: showOpposition ? oppositionPlayers : undefined,
+      ball,
+      fieldSettings: getCurrentFieldSettings(),
+      durationMs: animation.durationMs,
+      fps: animation.fps,
+    });
+    animation.setKeyframes(compiled?.keyframes ?? []);
+    // getCurrentFieldSettings is rebuilt every render; the values it reads are
+    // already covered by the dependencies that matter for geometry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    movements, players, oppositionPlayers, showOpposition, ball,
+    animation.durationMs, animation.fps, animation.isPlaying, animationSource,
+  ]);
+
+  // Drawing a movement hands ownership back to the gesture surface.
+  useEffect(() => {
+    if (movements.length > 0) setAnimationSource('movements');
+  }, [movements.length]);
+
+  // When playback stops, settle every moving object back on its starting
+  // position — that is where the loop begins, and where the drawn paths start.
+  const wasPlayingRef = React.useRef(false);
+  useEffect(() => {
+    if (wasPlayingRef.current && !animation.isPlaying && movements.length > 0) {
+      setPlayers(prev => restingPose(movements, prev, 'home'));
+      setOppositionPlayers(prev => restingPose(movements, prev, 'away'));
+      setBall(prev => restingBall(movements, prev));
+    }
+    wasPlayingRef.current = animation.isPlaying;
+  }, [animation.isPlaying, movements, setPlayers, setOppositionPlayers, setBall]);
+
+  const handleUpdateMovement = (id: string, patch: Partial<Movement>) => {
+    setMovements(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
+  };
+
+  const handleRemoveMovement = (id: string) => {
+    setMovements(prev => prev.filter(m => m.id !== id));
+  };
 
   // Load existing tactic when editing
   useEffect(() => {
@@ -122,6 +203,7 @@ const CreateTacticsContent: React.FC = () => {
         state.setShowPlayerLabels(fs.showPlayerLabels ?? true);
         if (fs.markerType) state.setMarkerType(fs.markerType);
         if (fs.fieldOfViewMode !== undefined) setFieldOfViewMode(fs.fieldOfViewMode);
+        if (fs.ball) setBall(fs.ball);
       }
       if (tactic.oppositionPlayers && tactic.oppositionPlayers.length > 0) {
         setOppositionPlayers(tactic.oppositionPlayers);
@@ -143,17 +225,56 @@ const CreateTacticsContent: React.FC = () => {
         if (fs.markerType) state.setOppMarkerType(fs.markerType);
       }
       if (tactic.arrows && tactic.arrows.length > 0) setArrows(tactic.arrows);
-      if (tactic.animation) animation.loadAnimation(tactic.animation as AnimationData);
+      if (tactic.animation) {
+        const data = tactic.animation as AnimationData;
+        animation.loadAnimation(data);
+        // Tactics saved before gestures existed have keyframes but no movements;
+        // leave those keyframes alone so they keep playing as authored.
+        if (data.movements && data.movements.length > 0) {
+          setMovements(data.movements);
+          setAnimationSource('movements');
+        } else {
+          setAnimationSource('keyframes');
+        }
+      }
     }).catch(console.error);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
 
-  const handleAddKeyframe = () => {
-    animation.addKeyframe(
-      players,
-      getCurrentFieldSettings(),
-      showOpposition ? oppositionPlayers : undefined,
-    );
+  const handleApplyPreset = (presetId: string) => {
+    const preset = ANIMATION_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+
+    const data = buildPresetAnimation(preset, players, getCurrentFieldSettings(), animation.fps);
+    if (!data) {
+      alert("Presets need a full 11-player lineup.");
+      return;
+    }
+
+    // A preset is a fully sequenced pattern, so it replaces whatever is there.
+    // Only interrupt when there is actually something to lose.
+    if (movements.length > 0) {
+      const count = movements.length;
+      const ok = window.confirm(
+        `Replace your ${count} movement${count !== 1 ? 's' : ''} with the "${preset.name}" preset?`,
+      );
+      if (!ok) return;
+    }
+
+    // Presets author keyframes directly, so hand ownership over — otherwise the
+    // recompile effect would overwrite them on the next render.
+    setMovements([]);
+    setAnimationSource('keyframes');
+    animation.loadAnimation(data);
+
+    // Paint frame 0 onto the field ourselves: loadAnimation doesn't touch the
+    // field (onFrame only fires during playback), and animation.getInterpolatedFrame
+    // closes over the previous keyframes so it would be stale this tick.
+    const first = data.keyframes[0];
+    if (first) {
+      setPlayers(first.players);
+      if (first.fieldSettings.ball) setBall(first.fieldSettings.ball);
+    }
   };
 
   const handleSubmit = async () => {
@@ -170,12 +291,15 @@ const CreateTacticsContent: React.FC = () => {
         description: form.description,
         players,
         fieldSettings: getCurrentFieldSettings(),
-        animation: animation.keyframes.length > 0 ? animation.getAnimation() : undefined,
-        ...(showOpposition && {
-          oppositionPlayers,
-          oppositionFieldSettings: getOppositionFieldSettings(),
-        }),
-        ...(arrows.length > 0 && { arrows }),
+        // getAnimation carries the compiled keyframes; movements ride alongside so
+        // the tactic reopens as editable gestures rather than opaque keyframes.
+        animation: animation.keyframes.length > 0
+          ? { ...animation.getAnimation(), movements, loop: true }
+          : undefined,
+        // null (not omission) so removing opposition/arrows clears them on update
+        oppositionPlayers: showOpposition ? oppositionPlayers : null,
+        oppositionFieldSettings: showOpposition ? getOppositionFieldSettings() : null,
+        arrows: arrows.length > 0 ? arrows : null,
       };
       const entity = new TacticEntity();
       if (editId) {
@@ -275,8 +399,8 @@ const CreateTacticsContent: React.FC = () => {
           {/* Left — field stage */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-            {/* Stage: field + toolbar */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 0', background: 'var(--theme-stage)' }}>
+            {/* Stage: field + toolbar + timeline, all in one scroll flow */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 24px', background: 'var(--theme-stage)' }}>
               <TacticalField
                 studioMode
                 waypointsMode={state.waypointsMode}
@@ -325,6 +449,8 @@ const CreateTacticsContent: React.FC = () => {
                   markerType={state.markerType}
                   onToggleWaypoints={state.handleToggleWaypoints}
                   waypointsMode={state.waypointsMode}
+                  onToggleMovementMode={() => setMovementMode(prev => !prev)}
+                  movementMode={movementMode}
                   onToggleHorizontalZones={state.handleToggleHorizontalZones}
                   horizontalZonesMode={state.horizontalZonesMode}
                   onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
@@ -362,25 +488,29 @@ const CreateTacticsContent: React.FC = () => {
                   oppMarkerType={state.oppMarkerType}
                 />
               </div>
-            </div>
 
-            {/* Animation timeline bar */}
-            <div style={{ flexShrink: 0, borderTop: '2px solid var(--ink)', background: 'var(--surface-low)', padding: '12px 24px' }}>
-              <AnimationTimeline
-                keyframes={animation.keyframes}
-                currentTimeMs={animation.currentTimeMs}
-                isPlaying={animation.isPlaying}
-                durationMs={animation.durationMs}
-                fps={animation.fps}
-                onPlay={animation.play}
-                onPause={animation.pause}
-                onAddKeyframe={handleAddKeyframe}
-                onRemoveKeyframe={animation.removeKeyframe}
-                onUpdateKeyframeTime={animation.updateKeyframeTime}
-                onSeek={animation.seekTo}
-                onSetDuration={animation.setDuration}
-                onSetFps={animation.setFps}
-              />
+              {/* Animation timeline — sits in the scroll flow with the field and
+                  toolbar rather than pinned to the bottom of the stage */}
+              <div style={{ marginTop: 16, border: '2px solid var(--ink)', borderRadius: 16, background: 'var(--surface-low)', padding: '12px 16px' }}>
+                <AnimationTimeline
+                  movements={movements}
+                  players={players}
+                  oppositionPlayers={oppositionPlayers}
+                  keyframeCount={animation.keyframes.length}
+                  isPlaying={animation.isPlaying}
+                  durationMs={animation.durationMs}
+                  fps={animation.fps}
+                  movementMode={movementMode}
+                  onToggleMovementMode={() => setMovementMode(prev => !prev)}
+                  onPlay={animation.play}
+                  onPause={animation.pause}
+                  onUpdateMovement={handleUpdateMovement}
+                  onRemoveMovement={handleRemoveMovement}
+                  onSetDuration={animation.setDuration}
+                  onSetFps={animation.setFps}
+                  onApplyPreset={handleApplyPreset}
+                />
+              </div>
             </div>
           </div>
 
