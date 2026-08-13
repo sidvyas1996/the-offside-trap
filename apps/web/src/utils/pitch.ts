@@ -11,8 +11,19 @@
  * a real pitch regardless of its length, so the extra length becomes midfield
  * space. That is also what makes room for a full opposition team.
  */
-export const PITCH_LENGTH = 622;
-export const PITCH_WIDTH = 350;
+// The constants and distance maths now live in packages/shared, because the V2
+// compiler derives *time* from distance and runs outside the browser too. They are
+// re-exported here so every existing `from "../utils/pitch"` import keeps working
+// and there is still exactly one definition.
+export {
+  PITCH_LENGTH,
+  PITCH_WIDTH,
+  PITCH_X_SCALE,
+  PITCH_LENGTH_METRES,
+  pitchDistance,
+  mpsToPctPerSecond,
+} from "../../../../packages/shared/src/pitch-geometry";
+import { PITCH_LENGTH, PITCH_WIDTH } from "../../../../packages/shared/src/pitch-geometry";
 
 /** Touchline inset inside the viewBox — the pitch surface bleeds past the lines. */
 export const PITCH_MARGIN = 20;
@@ -36,31 +47,6 @@ export const pctToSvgX = (x: number) => (x / 100) * PITCH_LENGTH;
 export const pctToSvgY = (y: number) => (y / 100) * PITCH_WIDTH;
 
 /**
- * Correction factor for distance maths done in percentage space: one percent of
- * length covers more ground than one percent of width, so x must be scaled
- * before comparing the two (used for arrow snapping).
- */
-export const PITCH_X_SCALE = PITCH_WIDTH / PITCH_LENGTH;
-
-/**
- * Distance between two points held in 0-100 percentage coords, expressed in
- * units of pitch *length* percent, so it is proportional to real on-screen
- * distance.
- *
- * Derivation: separation on screen is
- *   sqrt((dx/100 * LENGTH)^2 + (dy/100 * WIDTH)^2)
- *   = (LENGTH/100) * sqrt(dx^2 + (dy * WIDTH/LENGTH)^2)
- * so it is **dy** that carries the PITCH_X_SCALE factor, not dx. Use this
- * rather than hand-rolling the maths — percentage space is anisotropic here
- * (the pitch is 622x350), so a raw hypot over percentages over-weights the
- * vertical axis by ~1.8x.
- */
-export const pitchDistance = (
-  a: { x: number; y: number },
-  b: { x: number; y: number },
-): number => Math.hypot(a.x - b.x, (a.y - b.y) * PITCH_X_SCALE);
-
-/**
  * Map a viewport point onto 0-100 pitch percentages.
  *
  * The board carries a live CSS transform (rotateX + rotateZ + scale), so the
@@ -78,6 +64,11 @@ export function clientToPitchPct(
 ): { x: number; y: number } | null {
   const parent = el.parentElement;
   if (!parent) return null;
+  // A zero-sized field would divide by zero and hand back NaN, which then flows
+  // into stored movements and passes as a permanently broken point. Happens
+  // legitimately when the board hasn't been laid out yet or its container is
+  // collapsed, so refuse rather than poison the data.
+  if (el.offsetWidth === 0 || el.offsetHeight === 0) return null;
 
   const parentRect = parent.getBoundingClientRect();
   // Offset of the cursor from the perspective container's centre.
@@ -93,6 +84,9 @@ export function clientToPitchPct(
   // differ from the field's.
   const x = ((pt.x + el.offsetWidth / 2) / el.offsetWidth) * 100;
   const y = ((pt.y + el.offsetHeight / 2) / el.offsetHeight) * 100;
+
+  // A non-invertible transform yields NaN, which Math.min/max would pass through.
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
   return {
     x: Math.max(0, Math.min(100, x)),

@@ -1,14 +1,17 @@
 import React from "react";
-import { X, Repeat } from "lucide-react";
-import type { Movement, MovementTempo, Player } from "../../../../../packages/shared/src";
+import { X, Repeat, ArrowRight, Timer, Pause, Wind } from "lucide-react";
+import type { Movement, MovementTempo, PassSequence, Player } from "../../../../../packages/shared/src";
 import { describeMovement } from "../../utils/movement-compiler";
 
 interface MovementListProps {
   movements: Movement[];
+  passes: PassSequence;
   players: Player[];
   oppositionPlayers: Player[];
   onUpdate: (id: string, patch: Partial<Movement>) => void;
   onRemove: (id: string) => void;
+  onRemovePassNode: (index: number) => void;
+  onToggleClosed: () => void;
 }
 
 const TEMPOS: MovementTempo[] = ['jog', 'run', 'sprint'];
@@ -45,10 +48,13 @@ const chip = (active: boolean): React.CSSProperties => ({
  */
 const MovementList: React.FC<MovementListProps> = ({
   movements,
+  passes,
   players,
   oppositionPlayers,
   onUpdate,
   onRemove,
+  onRemovePassNode,
+  onToggleClosed,
 }) => {
   const labelFor = (m: Movement): string => {
     const { target } = m;
@@ -61,44 +67,154 @@ const MovementList: React.FC<MovementListProps> = ({
     return describeMovement(m, target.team === 'away' ? `${who} (opp)` : who);
   };
 
-  if (movements.length === 0) {
+  const nameOf = (ref?: { team: 'home' | 'away'; playerId: number }): string => {
+    if (!ref) return 'space';
+    const roster = ref.team === 'home' ? players : oppositionPlayers;
+    const p = roster.find(pl => pl.id === ref.playerId);
+    const who = p?.position || p?.name || `#${p?.number ?? '?'}`;
+    return ref.team === 'away' ? `${who} (opp)` : who;
+  };
+
+  if (movements.length === 0 && passes.nodes.length === 0) {
     return (
-      <p className="text-xs text-[var(--text-secondary)] text-center py-3">
-        Turn on <strong>Movement</strong> in the toolbar, then drag a player to show what they do.
-        Drag out and back to make them <strong>shuttle</strong>; drag a loop for a <strong>circuit</strong>.
-        A short nudge still just repositions.
+      <p className="text-xs text-[var(--text-secondary)] py-2" style={{ lineHeight: 1.55 }}>
+        Hit <strong>Draw movement</strong>, then drag a player to show what they do.
+        Out and back makes them <strong>shuttle</strong>; a loop makes a <strong>circuit</strong>.
+        Drag the <strong>ball</strong> to pass — onto a player, or into space to leave a
+        target for someone to run onto. A short nudge still just repositions.
       </p>
     );
   }
 
   return (
     <div className="space-y-2">
-      {movements.map(m => (
+      {/* ---- The passing move ------------------------------------------- */}
+      {passes.nodes.length > 1 && (
         <div
-          key={m.id}
-          className="flex items-center gap-2 flex-wrap"
           style={{
             border: '2px solid var(--ink)',
             borderRadius: 12,
-            background: 'var(--surface-container)',
-            padding: '7px 10px',
+            background: 'var(--surface-low)',
+            padding: '8px 10px',
             boxShadow: '2px 2px 0 var(--ink)',
           }}
         >
-          <span
-            className="flex items-center gap-1.5"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 12,
-              fontWeight: 800,
-              color: 'var(--ink)',
-              minWidth: 132,
-            }}
-          >
-            <Repeat size={12} />
-            {labelFor(m)}
-          </span>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span style={{
+              fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 800, color: 'var(--ink)',
+            }}>
+              ⚽ Passing move
+            </span>
+            <button
+              type="button"
+              onClick={onToggleClosed}
+              className="ml-auto"
+              style={{ ...chip(passes.closed !== false), fontSize: 9 }}
+              title={passes.closed !== false
+                ? 'The move recycles back to the start, so the loop is seamless. Click to end it where it finishes instead.'
+                : 'The move ends where it finishes, so the ball jumps when the loop restarts. Click to recycle it back to the start.'}
+            >
+              {passes.closed !== false ? 'recycles' : 'ends open'}
+            </button>
+          </div>
 
+          {passes.nodes.map((node, i) => (
+            <div key={i} className="flex items-center gap-1.5" style={{ padding: '2px 0' }}>
+              <span style={{
+                fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 800,
+                color: 'var(--text-secondary)', minWidth: 14,
+              }}>
+                {i + 1}
+              </span>
+              <span
+                className="flex items-center gap-1"
+                style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--ink)' }}
+              >
+                {i === 0 ? (
+                  node.receiver ? <>starts at {nameOf(node.receiver)}</> : <>ball starts here</>
+                ) : node.via === 'dribble' ? (
+                  <><Wind size={11} /> {nameOf(node.carrier)} carries it</>
+                ) : node.receiver ? (
+                  <><ArrowRight size={11} /> pass to {nameOf(node.receiver)}</>
+                ) : (
+                  <><ArrowRight size={11} /> into space</>
+                )}
+                {node.holdMs ? (
+                  <span
+                    className="flex items-center gap-0.5"
+                    style={{ color: 'var(--text-secondary)', fontSize: 10 }}
+                    title="The ball is held here before the next pass"
+                  >
+                    <Pause size={9} /> held
+                  </span>
+                ) : null}
+              </span>
+              {i > 0 && (
+                <button
+                  type="button"
+                  onClick={() => onRemovePassNode(i)}
+                  title="Remove this leg"
+                  className="ml-auto"
+                  style={{
+                    background: 'transparent', border: 'none', cursor: 'pointer',
+                    color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', padding: 2,
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {movements.map(m => (
+        <div
+          key={m.id}
+          style={{
+            border: '2px solid var(--ink)',
+            borderRadius: 12,
+            background: 'var(--surface-low)',
+            padding: '8px 10px',
+            boxShadow: '2px 2px 0 var(--ink)',
+          }}
+        >
+          {/* Title line, then a control line. Two lines rather than one because
+              this panel now lives in the 400px rail, where a single row of label
+              plus a dozen chips wraps into an unreadable pile. */}
+          <div className="flex items-center gap-1.5">
+            <span
+              className="flex items-center gap-1.5"
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 12.5,
+                fontWeight: 800,
+                color: 'var(--ink)',
+              }}
+            >
+              {m.repeats > 1 || m.cycle === 'loop' ? <Repeat size={12} /> : <ArrowRight size={12} />}
+              {labelFor(m)}
+            </span>
+            <button
+              type="button"
+              onClick={() => onRemove(m.id)}
+              title="Remove this movement"
+              className="ml-auto"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                padding: 2,
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 flex-wrap mt-1.5">
           <div className="flex items-center gap-1">
             {TEMPOS.map(t => (
               <button
@@ -135,37 +251,43 @@ const MovementList: React.FC<MovementListProps> = ({
             </div>
           )}
 
-          <div className="flex items-center gap-1">
-            <span className="field-label" style={{ fontSize: 9 }}>delay</span>
-            {DELAY_OPTIONS.map(d => (
-              <button
-                key={d.value}
-                type="button"
-                onClick={() => onUpdate(m.id, { delay: d.value })}
-                style={chip(Math.abs(m.delay - d.value) < 0.01)}
-                title="Sets off later than the others"
-              >
-                {d.label}
-              </button>
-            ))}
+          {/* A run linked to a pass has its delay derived, so offering chips
+              would be offering a control that does nothing. */}
+          {m.syncToPassNode !== undefined ? (
+            <button
+              type="button"
+              onClick={() => onUpdate(m.id, { syncToPassNode: undefined })}
+              className="flex items-center gap-1"
+              style={{ ...chip(true), textTransform: 'none' }}
+              title="Timed to arrive with the pass. Click to unlink and set the delay yourself."
+            >
+              <Timer size={10} />
+              arrives with the pass
+            </button>
+          ) : (
+            <div className="flex items-center gap-1">
+              <span className="field-label" style={{ fontSize: 9 }}>delay</span>
+              {DELAY_OPTIONS.map(d => (
+                <button
+                  key={d.value}
+                  type="button"
+                  onClick={() => onUpdate(m.id, { delay: d.value })}
+                  style={chip(Math.abs(m.delay - d.value) < 0.01)}
+                  title="Sets off later than the others"
+                >
+                  {d.label}
+                </button>
+              ))}
+              {/* A dwelt delay usually isn't one of the presets; showing it
+                  stops a real delay from looking unset. */}
+              {!DELAY_OPTIONS.some(d => Math.abs(m.delay - d.value) < 0.01) && (
+                <span style={chip(true)} title="Set by holding the marker still before dragging">
+                  {m.delay.toFixed(2)}
+                </span>
+              )}
+            </div>
+          )}
           </div>
-
-          <button
-            type="button"
-            onClick={() => onRemove(m.id)}
-            title="Remove this movement"
-            className="ml-auto"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <X size={14} />
-          </button>
         </div>
       ))}
     </div>

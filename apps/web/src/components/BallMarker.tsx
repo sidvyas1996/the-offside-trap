@@ -54,17 +54,30 @@ const BallMarker: React.FC<BallMarkerProps> = ({
             : '0 0 0 2px #15140f, 2px 2px 0 #15140f',
         }}
       >
-        {/* Classic football: white ball, black pentagon patches */}
-        <circle cx="12" cy="12" r="12" fill="#fbf5e9" />
-        <polygon points="12,8 15.8,10.8 14.3,15.2 9.7,15.2 8.2,10.8" fill="#15140f" />
-        <polygon points="12,0 14.5,3.4 12,5.8 9.5,3.4" fill="#15140f" />
-        <polygon points="23.4,8.3 22.6,12.6 19.6,13.3 18.4,9.6 21,7.2" fill="#15140f" />
-        <polygon points="0.6,8.3 3,7.2 5.6,9.6 4.4,13.3 1.4,12.6" fill="#15140f" />
-        <polygon points="18.6,21.9 15,23.6 13.6,19.9 16.6,17.4 19.5,19.3" fill="#15140f" />
-        <polygon points="5.4,21.9 4.5,19.3 7.4,17.4 10.4,19.9 9,23.6" fill="#15140f" />
+        <BallGlyph />
       </svg>
     </div>
   );
 };
+
+/**
+ * The ball itself, as bare SVG children on a 0 0 24 24 viewBox.
+ *
+ * Pulled out so the ghost ball marking a pass into space is literally the same
+ * ball at lower opacity, rather than a second hand-drawn one that would drift
+ * out of step with this one.
+ */
+export const BallGlyph: React.FC = () => (
+  <>
+    {/* Classic football: white ball, black pentagon patches */}
+    <circle cx="12" cy="12" r="12" fill="#fbf5e9" />
+    <polygon points="12,8 15.8,10.8 14.3,15.2 9.7,15.2 8.2,10.8" fill="#15140f" />
+    <polygon points="12,0 14.5,3.4 12,5.8 9.5,3.4" fill="#15140f" />
+    <polygon points="23.4,8.3 22.6,12.6 19.6,13.3 18.4,9.6 21,7.2" fill="#15140f" />
+    <polygon points="0.6,8.3 3,7.2 5.6,9.6 4.4,13.3 1.4,12.6" fill="#15140f" />
+    <polygon points="18.6,21.9 15,23.6 13.6,19.9 16.6,17.4 19.5,19.3" fill="#15140f" />
+    <polygon points="5.4,21.9 4.5,19.3 7.4,17.4 10.4,19.9 9,23.6" fill="#15140f" />
+  </>
+);
 
 export default BallMarker;

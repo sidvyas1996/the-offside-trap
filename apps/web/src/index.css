@@ -1065,6 +1065,16 @@ p {
 /* Editor bar title input (on dark pill) */
 .editor-title-input::placeholder { color: rgba(255,255,255,0.4); }
 
+/* Description line under the editor-bar title. Reads as a subtitle at rest and
+   only shows its edges on hover/focus, so the header stays a header. */
+.editor-subtitle-input::placeholder { color: rgba(255,255,255,0.35); }
+.editor-subtitle-input {
+  border-bottom: 1px solid transparent !important;
+  transition: border-color 0.15s ease;
+}
+.editor-subtitle-input:hover { border-bottom-color: rgba(255,255,255,0.2) !important; }
+.editor-subtitle-input:focus { border-bottom-color: rgba(255,255,255,0.45) !important; }
+
 /* Pill button used inside the dark editor bar */
 .editorbar-btn {
   display: inline-flex;

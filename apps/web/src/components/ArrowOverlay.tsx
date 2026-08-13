@@ -38,7 +38,8 @@ export function defaultColor(type: ArrowType): string {
 }
 
 // Generate zigzag SVG path — amplitudes reduced 15%: 7→6, 9→7.6
-function zigzagPath(x1: number, y1: number, x2: number, y2: number, amplitude = 6, wavelength = 22): string {
+// Exported so drawn dribble movements use the same stroke as dribble arrows.
+export function zigzagPath(x1: number, y1: number, x2: number, y2: number, amplitude = 6, wavelength = 22): string {
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.sqrt(dx * dx + dy * dy);
@@ -58,7 +59,9 @@ function zigzagPath(x1: number, y1: number, x2: number, y2: number, amplitude = 
   return parts.join(' ');
 }
 
-function curveControl(x1: number, y1: number, x2: number, y2: number) {
+// Exported so animated curved runs and lofted passes bow exactly the way the
+// drawn arrow does — two sets of curve maths would visibly disagree.
+export function curveControl(x1: number, y1: number, x2: number, y2: number) {
   const mx = (x1 + x2) / 2;
   const my = (y1 + y2) / 2;
   const dx = x2 - x1;
@@ -250,21 +253,80 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
   );
 };
 
+/**
+ * Beat badge at the tail of an arrow.
+ *
+ * Drawn on the pitch rather than only in the panel because the same number
+ * appearing on two arrows is the clearest possible statement that they happen
+ * together — that is the whole notation.
+ */
+const BeatBadge: React.FC<{ arrow: TacticArrow; color: string }> = ({ arrow, color }) => {
+  const beat = Math.max(1, Math.floor(arrow.beat ?? 1));
+  const at = arrow.points[0];
+  if (!at) return null;
+  const cx = pctToSvgX(at.x);
+  const cy = pctToSvgY(at.y);
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      <circle cx={cx} cy={cy - 14} r={8} fill="#15140f" stroke={color} strokeWidth={1.5} />
+      <text
+        x={cx} y={cy - 14} textAnchor="middle" dominantBaseline="central"
+        fontSize={10} fontWeight={800} fill={color}
+        style={{ fontFamily: 'var(--font-display)' }}
+      >
+        {beat}
+      </text>
+    </g>
+  );
+};
+
 interface ArrowOverlayProps {
   arrows: TacticArrow[];
   onDeleteArrow?: (id: string) => void;
   previewArrow?: TacticArrow | null;
+  /** Show running order on the pitch. Off when arrows are just annotation. */
+  showBeats?: boolean;
+  /**
+   * Draw this beat solid and dim the rest. Undefined shows every beat solid, which
+   * is the flattened diagram — what the static image export renders.
+   *
+   * Dimming rather than hiding is deliberate: an arrow you cannot see is an arrow
+   * you draw on top of, and the earlier beats are the context that makes the
+   * current one make sense.
+   */
+  activeBeat?: number;
 }
 
-const ArrowOverlay: React.FC<ArrowOverlayProps> = ({ arrows, onDeleteArrow, previewArrow }) => (
+/** Matches the compiler and BeatList: an absent beat is beat 1. */
+const beatOf = (a: TacticArrow) => Math.max(1, Math.floor(a.beat ?? 1));
+
+const ArrowOverlay: React.FC<ArrowOverlayProps> = ({
+  arrows,
+  onDeleteArrow,
+  previewArrow,
+  showBeats,
+  activeBeat,
+}) => (
   <svg
     className="absolute inset-0 w-full h-full"
     viewBox={PITCH_VIEWBOX}
     style={{ zIndex: 20, pointerEvents: 'none', overflow: 'visible' }}
   >
-    {arrows.map(arrow => (
-      <ArrowSvg key={arrow.id} arrow={arrow} onDelete={onDeleteArrow} />
-    ))}
+    {arrows.map(arrow => {
+      // A target marker belongs to no beat, so it is never ghosted.
+      const dimmed =
+        activeBeat !== undefined &&
+        arrow.type !== 'target-zone' &&
+        beatOf(arrow) !== activeBeat;
+      return (
+        <g key={arrow.id} opacity={dimmed ? 0.28 : 1}>
+          <ArrowSvg arrow={arrow} onDelete={onDeleteArrow} />
+          {showBeats && arrow.type !== 'target-zone' && arrow.points.length >= 2 && (
+            <BeatBadge arrow={arrow} color={arrow.color || defaultColor(arrow.type)} />
+          )}
+        </g>
+      );
+    })}
     {previewArrow && <ArrowSvg key="preview" arrow={previewArrow} isPreview />}
   </svg>
 );

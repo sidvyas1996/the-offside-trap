@@ -2,7 +2,7 @@ import React from "react";
 import type { MarkerDesign } from "../../contexts/FootballFieldContext";
 import type { ArrowType } from "../../../../../packages/shared/src";
 
-import { Users, Circle, CaseSensitive, Waypoints, Eye, Sun, Moon, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2, RotateCw, RotateCcw, ChevronUp, ChevronDown, ZoomIn, ZoomOut, Trash2, Repeat } from "lucide-react";
+import { Users, Circle, CaseSensitive, Waypoints, Eye, Sun, Moon, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2, RotateCw, RotateCcw, ChevronUp, ChevronDown, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
 
 const HangerIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 -960 960 960" fill="currentColor">
@@ -526,19 +526,6 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                     {(activeOnChangeDesign || activeOnChangeBg || activeOnChangeBorder || activeOnChangeText) &&
                      (onToggleWaypoints || activeOnToggleMarkerType || activeOnToggleLabels) && (
                         <div className="self-stretch w-px bg-[var(--theme-border)] mx-1" />
-                    )}
-                    {onToggleMovementMode && (
-                        <Button
-                            onClick={(e) => { e.preventDefault(); onToggleMovementMode(); }}
-                            className="!p-2"
-                            style={btnStyle(movementMode)}
-                            variant="outline" type="button"
-                            title={movementMode
-                                ? "Exit Movement mode — dragging repositions again"
-                                : "Movement mode — drag a player to draw how they move (out and back to shuttle)"}
-                        >
-                            <Repeat size={18} />
-                        </Button>
                     )}
                     {/* Waypoints only for home team */}
                     {!isAway && onToggleWaypoints && (

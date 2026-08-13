@@ -27,6 +27,11 @@ interface PlayerMarkerProps {
   isDragged: boolean;
   /** Set during animation playback so the positional CSS transition is dropped. */
   isAnimating?: boolean;
+  /**
+   * Milliseconds this marker has been held still mid-drag. Drives the ring that
+   * shows a delay accumulating — a delay you can't see coming is a bug report.
+   */
+  dwellMs?: number;
   onMouseDown: (player: Player) => void;
   editable?: boolean;
   onNameChange?: (id: number, name: string) => void;
@@ -57,6 +62,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   scale,
   isDragged,
   isAnimating = false,
+  dwellMs = 0,
   onMouseDown,
   editable = false,
   onNameChange,
@@ -171,6 +177,27 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           }
       }}
     >
+      {/* Dwell ring: fills while you hold the marker still, so the delay you are
+          accumulating is visible as you make it. Full circle at 2s. */}
+      {dwellMs > 0 && (
+        <svg
+          width="56" height="56" viewBox="0 0 56 56"
+          style={{
+            position: 'absolute', left: '50%', top: '50%',
+            transform: 'translate(-50%, -50%)', pointerEvents: 'none', zIndex: 40,
+          }}
+        >
+          <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(21,20,15,0.18)" strokeWidth="3" />
+          <circle
+            cx="28" cy="28" r="24" fill="none"
+            stroke="var(--whistle-orange, #ff6b3d)" strokeWidth="3" strokeLinecap="round"
+            strokeDasharray={2 * Math.PI * 24}
+            strokeDashoffset={2 * Math.PI * 24 * (1 - Math.min(1, dwellMs / 2000))}
+            transform="rotate(-90 28 28)"
+          />
+        </svg>
+      )}
+
       <div className="relative flex flex-col items-center transition-all duration-300 ease-in-out">
         {/* FOV direction indicator — rotates around the marker to show facing direction */}
         {fovAngle !== undefined && (

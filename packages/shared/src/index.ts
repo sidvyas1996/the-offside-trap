@@ -49,6 +49,25 @@ export interface TacticArrow {
   points: { x: number; y: number }[]; // 0-100 percentage coords; target-zone has 1 pt, all others have 2
   color?: string;
   endsAtPlayer?: boolean; // ball arrows: skip end-clipping so arrowhead points to player centre
+
+  // --- Motion. An arrow is the notation *and* the animation. -----------------
+  /**
+   * Running order. Arrows sharing a beat move together; beats play in order.
+   * Absent means beat 1. This single number is what makes parallel and
+   * sequential the same mechanism rather than two.
+   */
+  beat?: number;
+  /** Overrides the tempo implied by the arrow type. */
+  tempo?: MovementTempo;
+  /**
+   * Who the arrow starts and ends on, bound when it is drawn.
+   *
+   * Resolving by proximity at compile time alone would orphan an arrow the
+   * moment its player is repositioned; the ref is also what lets a run
+   * re-anchor to the player's live position, which is what a diagram implies.
+   */
+  from?: { team: 'home' | 'away'; playerId: number };
+  to?: { team: 'home' | 'away'; playerId: number };
 }
 
 // Field visual settings (CreateTactics / 2D field only)
@@ -102,13 +121,116 @@ export interface Movement {
     | { kind: 'ball' };
   /** Waypoints in 0-100 pitch pct. path[0] is the object's resting position. */
   path: { x: number; y: number }[];
-  /** 'out-and-back' retraces the path; 'loop' runs a closed circuit. */
-  cycle: 'out-and-back' | 'loop';
+  /**
+   * 'out-and-back' retraces the path; 'loop' runs a closed circuit; 'one-way'
+   * travels A→B and *holds* B until the sequence resets.
+   *
+   * One-way is what sequential beats need: a striker who runs into the box in
+   * beat 1 has to still be there in beat 2 for the cross to reach him. Returning
+   * home is then a single shared reset at the end of the loop rather than
+   * something each movement does on its own.
+   */
+  cycle: 'out-and-back' | 'loop' | 'one-way';
+  /**
+   * The span of the loop this movement travels in, as loop fractions — how a
+   * beat is expressed. Before it the object holds path[0]; after it, the end of
+   * its path when one-way. Non-wrapping only (start < end).
+   *
+   * When set, the window *is* the timing: `delay` and `tempo` no longer apply,
+   * because the beat already says when and for how long.
+   */
+  window?: { start: number; end: number };
   /** 1 = a single run and recover. 2+ = a shuttle. */
   repeats: number;
   tempo: MovementTempo;
   /** Phase offset as a fraction of the loop; keeps players out of lockstep. */
   delay: number;
+  /**
+   * Ties this movement to a moment in the passing move, deriving `delay` from it.
+   *
+   * Absent means the movement runs from the start of every loop — simultaneous
+   * with everything else, which is the common case and stays the default.
+   */
+  cue?: MovementCue;
+  /** @deprecated Superseded by `cue`; read as `{ node, on: 'meet' }`. */
+  syncToPassNode?: number;
+}
+
+export type CueRelation =
+  /** Arrive at the same moment the ball does — a run onto a pass. */
+  | 'meet'
+  /** Set off when the ball arrives at that node. */
+  | 'reaches'
+  /** Set off when the ball is played onward from that node. */
+  | 'leaves';
+
+/**
+ * When a movement fires, relative to the passing move.
+ *
+ * The *link* is stored rather than the resulting delay, on purpose: changing the
+ * loop length or inserting an earlier pass would otherwise leave the runner
+ * silently drifting out of step with the ball.
+ */
+export interface MovementCue {
+  /** Index into PassSequence.nodes. */
+  node: number;
+  on: CueRelation;
+}
+
+/** How the ball reached a node. */
+export type PassLegKind = 'pass' | 'dribble';
+
+/**
+ * One point in a passing move.
+ *
+ * Passes are deliberately *not* Movements. A player's movement is cyclic —
+ * shuttle, circuit, repeats, tempo — whereas a passing move is an ordered chain
+ * of one-off events. Forcing the ball into Movement is what limited a tactic to
+ * a single ball action, because one-movement-per-object collapsed every ball
+ * drag into the same slot.
+ *
+ * As with movements, everything here is read off the gesture: a leg that ends on
+ * a marker is a pass to feet, one that ends in space is a through ball, and
+ * dragging the player who is standing on the ball is a carry.
+ */
+export interface PassNode {
+  /** Where the ball arrives, in 0-100 pitch pct. */
+  at: { x: number; y: number };
+  /** How the ball got here. nodes[0] is where the ball starts, so it has none. */
+  via?: PassLegKind;
+  /** Intermediate points, so a curled pass or a weaving carry keeps its shape. */
+  bend?: { x: number; y: number }[];
+  /**
+   * Who receives here. Absent on a non-first node means it was played into
+   * space — a through ball — which is what puts a ghost ball on the pitch.
+   */
+  receiver?: { team: 'home' | 'away'; playerId: number };
+  /** 'dribble' only: who carries the ball along this leg. */
+  carrier?: { team: 'home' | 'away'; playerId: number };
+  /**
+   * How long the ball waits here, and how long it took to get here, both in
+   * milliseconds as actually drawn.
+   *
+   * Deliberately real durations rather than loop fractions: the compiler treats
+   * them as *relative weights* and rescales them to fill the loop, so a chain
+   * keeps its rhythm when the loop length changes. Storing fractions instead
+   * would mean a leg drawn over 2s in a 5s loop could not be expressed at all
+   * once the loop shrank, and it would make these incomparable with the
+   * distance-derived fallback used for chains that carry no timing.
+   */
+  holdMs?: number;
+  travelMs?: number;
+}
+
+export interface PassSequence {
+  /** Ordered chain; nodes[0] is where the ball starts and returns to. */
+  nodes: PassNode[];
+  /**
+   * Whether the move recycles back to nodes[0]. Defaults to true, because the
+   * compiled animation has to open and close on the same pose for the loop (and
+   * the exported MP4) to be seamless.
+   */
+  closed?: boolean;
 }
 
 // Full animation attached to a tactic
@@ -121,10 +243,40 @@ export interface AnimationData {
    * needed no change to the server-side exporter.
    */
   keyframes: Keyframe[];
-  /** Authoring source of truth. Absent on tactics made before gestures existed. */
+  /** Authoring source of truth for players. Absent on pre-gesture tactics. */
   movements?: Movement[];
+  /**
+   * Authoring source of truth for the ball. When present this owns the ball
+   * outright; a `movements` entry targeting the ball is legacy data from before
+   * passes were their own type, and only used as a fallback.
+   */
+  passes?: PassSequence;
+  /**
+   * Derive the animation from the tactic's arrows.
+   *
+   * Absent means no — so tactics drawn before arrows carried motion keep their
+   * arrows as static annotation and look exactly as they always did. A new tactic
+   * turns it on, so drawing an arrow animates without hunting for a switch.
+   */
+  fromArrows?: boolean;
+  /**
+   * Loop fraction at which everything that moved eases back to where it started.
+   * Shared by every object so the reset reads as one movement and the loop closes.
+   */
+  resetStart?: number;
   /** Repeat forever on screen. Defaults to true. */
   loop?: boolean;
+  /**
+   * The compiled V2 phase state.
+   *
+   * Typed loosely here because `TacticState` is declared in ./tactic-v2, which
+   * imports from this module — naming the type would close the cycle. Read it with
+   * a cast; `schemaVersion` is what tells you it is V2.
+   *
+   * Redundant with `arrows` while arrows remain the authoring surface, but it is
+   * what lets playback and export stop depending on stored keyframes.
+   */
+  tacticV2?: unknown;
 }
 
 // Tactic Form Data
@@ -269,3 +421,15 @@ export interface User {
 }
 
 export type TabValue = "trending" | "featured" | "latest";
+
+// ---------------------------------------------------------------------------
+// Pitch geometry, and the V2 phase-driven movement model.
+//
+// Everything above this line is the V1 (fraction-based) vocabulary, still read by
+// saved tactics. V2 lives in its own modules and is re-exported here so both the
+// app and the backend exporter reach it the same way.
+// ---------------------------------------------------------------------------
+export * from "./pitch-geometry";
+export * from "./tactic-v2";
+export * from "./compile-tactic";
+export * from "./migrate-v1";

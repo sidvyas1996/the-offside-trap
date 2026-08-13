@@ -22,9 +22,10 @@ import {
   pctToSvgX,
   pctToSvgY,
   clientToPitchPct,
+  pitchDistance,
 } from "../utils/pitch.ts";
 import MovementOverlay from "./MovementOverlay";
-import { useMovementCapture } from "../hooks/useMovementCapture";
+import { useMovementCapture, type PlayerRef } from "../hooks/useMovementCapture";
 
 import type { Player, TacticArrow, Movement } from "../../../../packages/shared";
 
@@ -53,17 +54,58 @@ const FootballField: React.FC<FootballFieldProps> = ({
     players, setPlayers, draggedPlayer, options, actions, fieldRef,
     oppositionPlayers, setOppositionPlayers, draggedOppositionPlayer, oppositionOptions, oppositionActions, showOpposition,
     ball, setBall, isAnimating,
-    movements, setMovements, movementMode,
+    movements, setMovements, passes, setPasses, loopDurationMs, movementMode, showBeats,
     arrows, setArrows, arrowTool, arrowBallColor, arrowRunColor,
+    currentBeat, showAllBeats, previewingPhase,
   } = useFootballField();
 
-  const capture = useMovementCapture({ movements, setMovements });
+  /**
+   * Which player a point landed on, or null for empty space. A pass that finds
+   * nobody is a ball played into space, which is the whole basis of the ghost.
+   */
+  const resolvePlayerAt = useCallback((pt: { x: number; y: number }): PlayerRef | null => {
+    const RECEIVE_RADIUS = 5;
+    let best: PlayerRef | null = null;
+    let bestDist = RECEIVE_RADIUS;
+    for (const p of players) {
+      const d = pitchDistance(p, pt);
+      if (d < bestDist) { bestDist = d; best = { team: 'home', playerId: p.id }; }
+    }
+    if (showOpposition) {
+      for (const p of oppositionPlayers) {
+        const d = pitchDistance(p, pt);
+        if (d < bestDist) { bestDist = d; best = { team: 'away', playerId: p.id }; }
+      }
+    }
+    return best;
+  }, [players, oppositionPlayers, showOpposition]);
 
-  // Begin a capture only in movement mode; otherwise dragging behaves exactly as
-  // it always has. `rest` is the object's position before the drag, which becomes
-  // path[0] and the place it returns to on release.
-  const beginCapture = useCallback((target: Movement['target'], rest: { x: number; y: number }) => {
-    if (movementMode) capture.begin(target, rest);
+  const capture = useMovementCapture({
+    movements, setMovements, passes, setPasses, ball,
+    durationMs: loopDurationMs,
+    resolvePlayerAt,
+  });
+
+  /**
+   * Start recording, but only in movement mode — otherwise dragging behaves
+   * exactly as it always has.
+   *
+   * A player who is standing on the ball carries it: dragging them records a
+   * dribble leg rather than a run. That needs no separate gesture because it is
+   * what actually happens on a pitch.
+   */
+  const beginCapture = useCallback((
+    target: Movement['target'],
+    rest: { x: number; y: number },
+  ) => {
+    if (!movementMode) return;
+    if (target.kind === 'player' && capture.isCarrying(rest)) {
+      capture.begin({ kind: 'dribble', carrier: { team: target.team, playerId: target.playerId } }, rest);
+    } else if (target.kind === 'ball') {
+      capture.begin({ kind: 'pass' }, rest);
+    } else {
+      capture.begin({ kind: 'movement', target }, rest);
+    }
   }, [movementMode, capture]);
 
   const handleCaptureMove = useCallback((e: React.MouseEvent) => {
@@ -72,18 +114,33 @@ const FootballField: React.FC<FootballFieldProps> = ({
     if (pt) capture.sample(pt);
   }, [capture, fieldRef]);
 
-  // On release the drawn object goes back to where it started — the movement it
-  // just became is what carries it away from there during playback.
+  /**
+   * Continue the passing move from where it ended.
+   *
+   * Needed because the ball rests at the start of the chain, so there is no way
+   * to carry on from the last node by dragging the ball itself — which is what
+   * limited a tactic to a single ball action.
+   */
+  const handleExtendPass = useCallback((from: { x: number; y: number }) => {
+    capture.begin({ kind: 'pass' }, from);
+  }, [capture]);
+
+  // On release the drawn object goes back to where it started — the movement or
+  // pass leg it just became is what carries it away from there during playback.
   const handleCaptureEnd = useCallback(() => {
     const result = capture.end();
     if (!result) return;
-    const { target, restoreTo } = result;
-    if (target.kind === 'ball') {
+    const { restore, target, restoreTo } = result;
+
+    if (restore === 'ball') {
       setBall(restoreTo);
-    } else if (target.team === 'home') {
-      setPlayers(prev => prev.map(p => p.id === target.playerId ? { ...p, ...restoreTo } : p));
-    } else {
-      setOppositionPlayers(prev => prev.map(p => p.id === target.playerId ? { ...p, ...restoreTo } : p));
+      return;
+    }
+    if (restore === 'player' && target?.kind === 'player') {
+      const patch = (roster: Player[]) =>
+        roster.map(p => p.id === target.playerId ? { ...p, ...restoreTo } : p);
+      if (target.team === 'home') setPlayers(patch);
+      else setOppositionPlayers(patch);
     }
   }, [capture, setPlayers, setOppositionPlayers, setBall]);
 
@@ -160,6 +217,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
     const snapPt = { x: nearest.x, y: nearest.y };
     const color = BALL_ARROW_TYPES.includes(arrowTool) ? arrowBallColor : arrowRunColor;
     if (arrowTool === 'target-zone') {
+      // A target marker never moves anything, so it carries no beat.
       setArrows(prev => [...prev, { id: crypto.randomUUID(), type: arrowTool, points: [snapPt], color }]);
     } else {
       setDrawingStart(snapPt);
@@ -187,17 +245,27 @@ const FootballField: React.FC<FootballFieldProps> = ({
       const isBall = BALL_ARROW_TYPES.includes(arrowTool);
       const color = isBall ? arrowBallColor : arrowRunColor;
       const endPlayer = isBall ? findNearestPlayer(end) : null;
+      // Bind who the arrow runs from and to at draw time. Resolving by position
+      // later would orphan the arrow the moment its player is repositioned, and
+      // the ref is what lets the run re-anchor to where they actually are.
+      const fromRef = resolvePlayerAt(drawingStart);
+      const toRef = resolvePlayerAt(end);
       setArrows(prev => [...prev, {
         id: crypto.randomUUID(),
         type: arrowTool,
         points: [drawingStart, end],
         color,
+        // The beat you are on is the beat you are drawing into. Without this every
+        // arrow would land on beat 1 and Step would have nothing to show for itself.
+        beat: currentBeat,
         ...(isBall && endPlayer ? { endsAtPlayer: true } : {}),
+        ...(fromRef && { from: fromRef }),
+        ...(toRef && { to: toRef }),
       }]);
     }
     setDrawingStart(null);
     setDrawingCurrent(null);
-  }, [arrowTool, drawingStart, arrowBallColor, arrowRunColor, toFieldPct, findNearestPlayer, setArrows]);
+  }, [arrowTool, drawingStart, arrowBallColor, arrowRunColor, currentBeat, toFieldPct, findNearestPlayer, resolvePlayerAt, setArrows]);
 
   const handleArrowOverlayLeave = useCallback(() => {
     setDrawingStart(null);
@@ -778,7 +846,12 @@ const FootballField: React.FC<FootballFieldProps> = ({
           scale={scale}
           isDragged={draggedPlayer?.id === player.id}
           isAnimating={isAnimating}
+          dwellMs={draggedPlayer?.id === player.id ? capture.liveDwellMs : 0}
           onMouseDown={() => {
+            // While a later beat is on screen the positions are a computed preview,
+            // so a drag has nowhere legitimate to land: committing it would write a
+            // mid-move pose back into the tactic's starting board.
+            if (previewingPhase) return;
             actions.onMouseDown?.(player);
             beginCapture({ kind: 'player', team: 'home', playerId: player.id }, { x: player.x, y: player.y });
           }}
@@ -820,7 +893,9 @@ const FootballField: React.FC<FootballFieldProps> = ({
           scale={scale}
           isDragged={draggedOppositionPlayer?.id === player.id}
           isAnimating={isAnimating}
+          dwellMs={draggedOppositionPlayer?.id === player.id ? capture.liveDwellMs : 0}
           onMouseDown={() => {
+            if (previewingPhase) return;
             oppositionActions.onMouseDown?.(player);
             beginCapture({ kind: 'player', team: 'away', playerId: player.id }, { x: player.x, y: player.y });
           }}
@@ -857,16 +932,21 @@ const FootballField: React.FC<FootballFieldProps> = ({
         isAnimating={isAnimating}
         editable={typeof editable === "boolean" ? editable : options.editable}
         onMouseDown={() => {
+          if (previewingPhase) return;
           setIsDraggingBall(true);
           beginCapture({ kind: 'ball' }, { x: ball.x, y: ball.y });
         }}
       />
 
-      {/* Movement paths — hidden during playback, where the markers say it better */}
+      {/* Movement paths — hidden during playback, where the markers say it better.
+          The ghost ball lives here too, which is what keeps it an authoring aid
+          and leaves the export path untouched. */}
       <MovementOverlay
         movements={movements}
+        passes={passes}
         liveTrail={capture.liveTrail}
         visible={!isAnimating}
+        onExtendFrom={movementMode ? handleExtendPass : undefined}
       />
 
       {/* Arrow annotations */}
@@ -874,6 +954,10 @@ const FootballField: React.FC<FootballFieldProps> = ({
         arrows={arrows}
         onDeleteArrow={handleDeleteArrow}
         previewArrow={previewArrow}
+        showBeats={showBeats && !isAnimating}
+        // Ghost the beats you are not authoring, so the board shows what happens
+        // *now* without throwing away the context of what led here.
+        activeBeat={showBeats && !isAnimating && !showAllBeats ? currentBeat : undefined}
       />
 
       {/* Arrow drawing overlay — transparent full-field capture layer */}

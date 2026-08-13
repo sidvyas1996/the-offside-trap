@@ -9,15 +9,28 @@ import { useTacticsActions } from "../hooks/useTacticsActions";
 import { useAnimation } from "../hooks/useAnimation";
 import FullscreenLayout from "../components/tactics/FullscreenLayout";
 import TacticalField from "../components/tactics/TacticalField";
-import TacticDetails from "../components/tactics/TacticDetails";
 import Preview from "../components/tactics/Preview";
 import AnimationTimeline from "../components/tactics/AnimationTimeline";
 import CreatorsMenu from "../components/ui/creators-menu";
+import PhaseStrip from "../components/tactics/PhaseStrip";
 import PlayerEditorPanel from "../components/ui/PlayerEditorPanel";
 import { TacticEntity } from "../entities/TacticEntity";
 import { ANIMATION_PRESETS, buildPresetAnimation } from "../utils/animation-presets";
-import { compileMovements, restingPose, restingBall } from "../utils/movement-compiler";
-import type { TacticFormData, FieldSettings, Player, AnimationData, Movement } from "../../../../packages/shared/src";
+import { compileMovements } from "../utils/movement-compiler";
+import { useTacticV2, type AuthoredBoard } from "../hooks/useTacticV2";
+import { migrateTacticToV2 } from "../../../../packages/shared/src";
+import type { TacticFormData, FieldSettings, Player, AnimationData, Movement, MovementTempo, TacticArrow } from "../../../../packages/shared/src";
+
+/**
+ * Playback compression for physics-grounded time.
+ *
+ * V2 derives duration from distance at real football speeds, which puts a full
+ * move at 10-25s — honest, but much slower than the fixed 5s loop V1 crammed
+ * everything into. Dividing by this keeps every *ratio* intact while landing a
+ * typical move near the old feel, and it is the one number to change if playback
+ * reads too fast or too slow.
+ */
+const PLAYBACK_TIME_SCALE = 2;
 
 const CreateTacticsContent: React.FC = () => {
   const navigate = useNavigate();
@@ -28,8 +41,9 @@ const CreateTacticsContent: React.FC = () => {
     oppositionOptions, setOppositionOptions,
     showOpposition,
     ball, setBall, setIsAnimating,
-    movements, setMovements, movementMode, setMovementMode,
+    movements, setMovements, passes, setPasses, setLoopDurationMs, setShowBeats, movementMode, setMovementMode,
     arrows, setArrows, arrowTool, setArrowTool, arrowBallColor, setArrowBallColor, arrowRunColor, setArrowRunColor,
+    currentBeat, setCurrentBeat, showAllBeats, setShowAllBeats, setPreviewingPhase,
   } = useFootballField();
 
   // Custom hooks
@@ -119,6 +133,13 @@ const CreateTacticsContent: React.FC = () => {
     setIsAnimating(animation.isPlaying);
   }, [animation.isPlaying, setIsAnimating]);
 
+  // Gesture capture converts a dwell in milliseconds into a fraction of the
+  // loop, so it needs the loop length that lives in the animation hook.
+  useEffect(() => {
+    setLoopDurationMs(animation.durationMs);
+  }, [animation.durationMs, setLoopDurationMs]);
+
+
   /**
    * Which authoring surface owns the keyframes.
    *
@@ -129,46 +150,207 @@ const CreateTacticsContent: React.FC = () => {
    */
   const [animationSource, setAnimationSource] = React.useState<'movements' | 'keyframes'>('movements');
 
-  // Recompile whenever the authored movements — or the loop length — change.
-  // Skipped during playback: onFrame writes interpolated positions into
-  // `players`, and recompiling from those would feed the animation its own
-  // output frame after frame.
+  /**
+   * Whether the tactic's arrows are its animation.
+   *
+   * A new tactic starts true so drawing an arrow just works. Loading a tactic
+   * saved before arrows carried motion leaves it false, so those arrows stay
+   * static annotation and the tactic looks exactly as it always did.
+   */
+  const [fromArrows, setFromArrows] = React.useState(!editId);
+
+  // Beat badges belong on the pitch only while arrows are the animation — on a
+  // static diagram they would just be clutter.
+  useEffect(() => {
+    setShowBeats(fromArrows);
+  }, [fromArrows, setShowBeats]);
+
+  /**
+   * The board on screen is not always the board being authored.
+   *
+   * Two things now write poses straight into `players`: playback, and stepping to a
+   * later beat to see where everyone has got to. Both are *displays*. The tactic's
+   * starting shape is the thing arrows are measured from, so compiling from whatever
+   * happens to be on screen would let a preview become the truth — a full-back
+   * previewed 40m upfield would silently become a full-back who starts there.
+   *
+   * So: while you are authoring beat 1 with playback stopped, the live board *is*
+   * the authored board. The moment either display takes over, the authored board
+   * freezes and is restored when you come back.
+   */
+  const previewing = animation.isPlaying || currentBeat > 1;
+  const wasPreviewingRef = React.useRef(false);
+  const [authored, setAuthored] = React.useState<AuthoredBoard>({
+    players,
+    oppositionPlayers,
+    ball,
+  });
+
+  useEffect(() => {
+    setPreviewingPhase(previewing);
+  }, [previewing, setPreviewingPhase]);
+
+  /**
+   * Capture and restore, deliberately in one place.
+   *
+   * They are mutually exclusive and the ordering between them is the whole
+   * correctness argument, so splitting them across two effects just invites one to
+   * run against a board the other has not finished fixing. Held as state rather
+   * than a ref so a capture re-renders and the compile below sees it immediately —
+   * with a ref, a drag would compile against the *previous* authored board.
+   *
+   * A layout effect so the restore lands before paint: a frame of the preview pose
+   * showing up as the authored board would read as the tactic having changed.
+   */
+  React.useLayoutEffect(() => {
+    if (previewing) {
+      wasPreviewingRef.current = true;
+      return;
+    }
+    if (wasPreviewingRef.current) {
+      setPlayers(authored.players);
+      setOppositionPlayers(authored.oppositionPlayers);
+      setBall(authored.ball);
+      wasPreviewingRef.current = false;
+      // Emphatically do not capture on this pass: the board on screen is still the
+      // preview's pose, and capturing it is exactly the corruption to avoid.
+      return;
+    }
+    if (
+      authored.players === players &&
+      authored.oppositionPlayers === oppositionPlayers &&
+      authored.ball === ball
+    ) {
+      return;
+    }
+    setAuthored({ players, oppositionPlayers, ball });
+  }, [previewing, players, oppositionPlayers, ball, authored, setPlayers, setOppositionPlayers, setBall]);
+
+  /**
+   * The compiled tactic.
+   *
+   * V2: an arrow's `beat` is its phase, and duration comes out of distance over
+   * speed rather than being a share of a fixed loop. That is what stops a four-unit
+   * shift taking as long as a forty-unit overlap just because they share a beat.
+   */
+  const v2 = useTacticV2({
+    arrows,
+    board: authored,
+    fieldSettings: getCurrentFieldSettings(),
+    enabled: fromArrows,
+    fps: animation.fps,
+    timeScale: PLAYBACK_TIME_SCALE,
+  });
+
+  /**
+   * Gesture-authored movements still compile through V1.
+   *
+   * `movementMode` writes `movements`/`passes`, which V2 does not yet author — only
+   * the arrow surface has been moved over. Rather than silently stop animating those
+   * tactics, the old compiler keeps them working, gated so the two can never both
+   * own the keyframes.
+   */
+  const legacyGestures = !fromArrows && (movements.length > 0 || passes.nodes.length > 0);
+
   useEffect(() => {
     if (animationSource !== 'movements' || animation.isPlaying) return;
-    const compiled = compileMovements({
-      movements,
-      players,
-      oppositionPlayers: showOpposition ? oppositionPlayers : undefined,
-      ball,
-      fieldSettings: getCurrentFieldSettings(),
-      durationMs: animation.durationMs,
-      fps: animation.fps,
-    });
-    animation.setKeyframes(compiled?.keyframes ?? []);
+
+    if (legacyGestures) {
+      const compiled = compileMovements({
+        movements,
+        passes,
+        players,
+        oppositionPlayers: showOpposition ? oppositionPlayers : undefined,
+        ball,
+        fieldSettings: getCurrentFieldSettings(),
+        durationMs: animation.durationMs,
+        fps: animation.fps,
+      });
+      animation.setKeyframes(compiled?.keyframes ?? []);
+      return;
+    }
+
+    animation.setKeyframes(v2.keyframes);
     // getCurrentFieldSettings is rebuilt every render; the values it reads are
     // already covered by the dependencies that matter for geometry.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    movements, players, oppositionPlayers, showOpposition, ball,
-    animation.durationMs, animation.fps, animation.isPlaying, animationSource,
+    v2.keyframes, legacyGestures, movements, passes, players, oppositionPlayers,
+    showOpposition, ball, animation.durationMs, animation.fps, animation.isPlaying,
+    animationSource,
   ]);
 
-  // Drawing a movement hands ownership back to the gesture surface.
+  // V2 derives the loop length, so the playback clock has to follow it rather than
+  // the other way round — a fixed loop is what forced every beat to be a share.
   useEffect(() => {
-    if (movements.length > 0) setAnimationSource('movements');
-  }, [movements.length]);
+    if (animationSource !== 'movements' || legacyGestures || v2.durationMs <= 0) return;
+    animation.setDuration(v2.durationMs);
+  }, [v2.durationMs, animationSource, legacyGestures, animation.setDuration]);
 
-  // When playback stops, settle every moving object back on its starting
-  // position — that is where the loop begins, and where the drawn paths start.
-  const wasPlayingRef = React.useRef(false);
+  // Drawing anything hands ownership back to the authoring surface.
   useEffect(() => {
-    if (wasPlayingRef.current && !animation.isPlaying && movements.length > 0) {
-      setPlayers(prev => restingPose(movements, prev, 'home'));
-      setOppositionPlayers(prev => restingPose(movements, prev, 'away'));
-      setBall(prev => restingBall(movements, prev));
+    if (movements.length > 0 || passes.nodes.length > 0 || (fromArrows && arrows.length > 0)) {
+      setAnimationSource('movements');
     }
-    wasPlayingRef.current = animation.isPlaying;
-  }, [animation.isPlaying, movements, setPlayers, setOppositionPlayers, setBall]);
+  }, [movements.length, passes.nodes.length, fromArrows, arrows.length]);
+
+  // --- Phases ---------------------------------------------------------------
+
+  /** One new beat past the end is reachable; that is how you start the next one. */
+  const maxBeat = v2.phaseCount + 1;
+
+  const handleSetPhase = React.useCallback(
+    (n: number) => setCurrentBeat(Math.max(1, Math.min(n, maxBeat))),
+    [maxBeat, setCurrentBeat],
+  );
+  const handleStep = React.useCallback(
+    () => setCurrentBeat(b => Math.min(b + 1, maxBeat)),
+    [maxBeat, setCurrentBeat],
+  );
+
+  // Deleting the last arrow in a beat can leave you standing past the end.
+  useEffect(() => {
+    setCurrentBeat(b => Math.min(b, maxBeat));
+  }, [maxBeat, setCurrentBeat]);
+
+  /**
+   * Fast-forward the board to the start of the beat being authored.
+   *
+   * This is the whole point of Step: you draw beat 3 from where the players
+   * actually are once beats 1 and 2 have played, rather than from the kick-off
+   * shape. Beat 1 is left alone because that *is* the authored board.
+   */
+  useEffect(() => {
+    if (animation.isPlaying || currentBeat <= 1) return;
+    const pose = v2.boardAtPhase(currentBeat);
+    setPlayers(pose.players);
+    setOppositionPlayers(pose.oppositionPlayers);
+    setBall(pose.ball);
+  }, [currentBeat, v2.boardAtPhase, animation.isPlaying, setPlayers, setOppositionPlayers, setBall]);
+
+  // Spacebar is Step. Guarded against text fields and focused controls, where the
+  // spacebar already means something.
+  useEffect(() => {
+    if (!fromArrows) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      if (
+        el &&
+        (el.tagName === 'INPUT' ||
+          el.tagName === 'TEXTAREA' ||
+          el.tagName === 'SELECT' ||
+          el.tagName === 'BUTTON' ||
+          el.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      handleStep();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [fromArrows, handleStep]);
 
   const handleUpdateMovement = (id: string, patch: Partial<Movement>) => {
     setMovements(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
@@ -177,6 +359,29 @@ const CreateTacticsContent: React.FC = () => {
   const handleRemoveMovement = (id: string) => {
     setMovements(prev => prev.filter(m => m.id !== id));
   };
+
+  /** Removing a leg also has to drop any run that was timed to arrive at it. */
+  const handleRemovePassNode = (index: number) => {
+    setPasses(prev => ({ ...prev, nodes: prev.nodes.filter((_, i) => i !== index) }));
+    setMovements(prev => prev.map(m => {
+      if (m.syncToPassNode === undefined) return m;
+      if (m.syncToPassNode === index) return { ...m, syncToPassNode: undefined };
+      // Later nodes shift down by one, so their links have to follow.
+      return m.syncToPassNode > index ? { ...m, syncToPassNode: m.syncToPassNode - 1 } : m;
+    }));
+  };
+
+  const handleToggleClosed = () => {
+    setPasses(prev => ({ ...prev, closed: prev.closed === false }));
+  };
+
+  // --- Arrow motion ---------------------------------------------------------
+  const patchArrow = (id: string, patch: Partial<TacticArrow>) =>
+    setArrows(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a));
+
+  const handleSetArrowBeat = (id: string, beat: number) => patchArrow(id, { beat });
+  const handleSetArrowTempo = (id: string, tempo: MovementTempo) => patchArrow(id, { tempo });
+  const handleRemoveArrow = (id: string) => setArrows(prev => prev.filter(a => a.id !== id));
 
   // Load existing tactic when editing
   useEffect(() => {
@@ -228,12 +433,41 @@ const CreateTacticsContent: React.FC = () => {
       if (tactic.animation) {
         const data = tactic.animation as AnimationData;
         animation.loadAnimation(data);
-        // Tactics saved before gestures existed have keyframes but no movements;
-        // leave those keyframes alone so they keep playing as authored.
-        if (data.movements && data.movements.length > 0) {
-          setMovements(data.movements);
+
+        /**
+         * Ask the migration what this tactic actually is.
+         *
+         * It answers the one question that matters on load: does this animate at
+         * all? A tactic drawn before arrows carried motion has arrows but no
+         * `fromArrows`, and must keep them as decoration — deciding that here, with
+         * the same converter the golden tests cover, is what stops every old diagram
+         * in the database from springing to life when someone opens it.
+         */
+        const migrated = migrateTacticToV2({
+          animation: data,
+          arrows: tactic.arrows ?? null,
+          players: tactic.players ?? [],
+          oppositionPlayers: tactic.oppositionPlayers ?? null,
+          fieldSettings: tactic.fieldSettings ?? null,
+        });
+        if (migrated.warnings.length > 0) {
+          console.info('[tactic migration]', migrated.source, migrated.warnings);
+        }
+
+        if (migrated.source === 'arrows') {
+          // Arrows are the animation and V2 recompiles them from the board, so there
+          // is nothing else to restore.
+          setFromArrows(true);
+          setAnimationSource('movements');
+        } else if (migrated.source === 'movements') {
+          // Gesture-authored: still V1's compiler until that surface moves over too.
+          setFromArrows(false);
+          if (data.passes && data.passes.nodes.length > 0) setPasses(data.passes);
+          setMovements(data.movements ?? []);
           setAnimationSource('movements');
         } else {
+          // Presets and pre-gesture tactics: keep the keyframes exactly as authored.
+          setFromArrows(false);
           setAnimationSource('keyframes');
         }
       }
@@ -253,10 +487,11 @@ const CreateTacticsContent: React.FC = () => {
 
     // A preset is a fully sequenced pattern, so it replaces whatever is there.
     // Only interrupt when there is actually something to lose.
-    if (movements.length > 0) {
-      const count = movements.length;
+    const authored = movements.length + Math.max(0, passes.nodes.length - 1);
+    if (authored > 0) {
+      const count = authored;
       const ok = window.confirm(
-        `Replace your ${count} movement${count !== 1 ? 's' : ''} with the "${preset.name}" preset?`,
+        `Replace your ${count} action${count !== 1 ? 's' : ''} with the "${preset.name}" preset?`,
       );
       if (!ok) return;
     }
@@ -264,6 +499,7 @@ const CreateTacticsContent: React.FC = () => {
     // Presets author keyframes directly, so hand ownership over — otherwise the
     // recompile effect would overwrite them on the next render.
     setMovements([]);
+    setPasses({ nodes: [] });
     setAnimationSource('keyframes');
     animation.loadAnimation(data);
 
@@ -291,10 +527,21 @@ const CreateTacticsContent: React.FC = () => {
         description: form.description,
         players,
         fieldSettings: getCurrentFieldSettings(),
-        // getAnimation carries the compiled keyframes; movements ride alongside so
-        // the tactic reopens as editable gestures rather than opaque keyframes.
+        // getAnimation carries the compiled keyframes, which is all the MP4 exporter
+        // reads. The authoring source rides alongside so the tactic reopens editable
+        // rather than as opaque keyframes: arrows for V2, movements for legacy
+        // gestures. `tacticV2` is the compiled phase state — redundant with the
+        // arrows today, but it is what lets playback stop depending on stored
+        // keyframes later.
         animation: animation.keyframes.length > 0
-          ? { ...animation.getAnimation(), movements, loop: true }
+          ? {
+              ...animation.getAnimation(),
+              movements,
+              ...(passes.nodes.length > 0 && { passes }),
+              ...(fromArrows && { fromArrows: true }),
+              ...(fromArrows && v2.phaseCount > 0 && { tacticV2: v2.state }),
+              loop: true,
+            }
           : undefined,
         // null (not omission) so removing opposition/arrows clears them on update
         oppositionPlayers: showOpposition ? oppositionPlayers : null,
@@ -321,17 +568,51 @@ const CreateTacticsContent: React.FC = () => {
     if (!showOpposition) setActiveTeam('home');
   }, [showOpposition]);
 
+  // Description lives under the title in the header rather than in a rail panel:
+  // the header already owns the tactic's identity, and a details card there just
+  // restated it. It stays visible rather than folded because saving requires 10+
+  // characters — a required field behind a disclosure is a trap.
+  const isDescriptionShort = form.description.trim().length > 0 && form.description.trim().length < 10;
+  const studioSubtitle = (
+    <input
+      value={form.description}
+      onChange={e => form.setDescription(e.target.value)}
+      placeholder="Add a description…"
+      aria-label="Tactic description"
+      title="Describe your tactical approach (10 characters minimum)"
+      className="editor-subtitle-input"
+      style={{
+        fontFamily: 'var(--font-body)',
+        fontSize: 12.5,
+        color: isDescriptionShort ? 'var(--whistle-orange)' : 'rgba(255,255,255,0.72)',
+        background: 'transparent',
+        border: 'none',
+        outline: 'none',
+        padding: 0,
+        marginTop: 1,
+        width: 'min(46vw, 420px)',
+      }}
+    />
+  );
+
   const studioActions = (
     <>
-      {form.formation && (
-        <span style={{
+      {/* Formation is edited where it is displayed — it used to be a read-only
+          chip here and a separate input in the rail. */}
+      <input
+        value={form.formation}
+        onChange={e => form.setFormation(e.target.value)}
+        placeholder="4-3-3"
+        aria-label="Formation"
+        title="Formation, e.g. 4-3-3"
+        style={{
           fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 13, fontWeight: 700,
-          color: "#fff", background: "rgba(255,255,255,0.08)", border: "1.5px solid rgba(255,255,255,0.18)",
-          borderRadius: 10, padding: "7px 13px",
-        }}>
-          {form.formation}
-        </span>
-      )}
+          color: "#fff", background: "rgba(255,255,255,0.08)",
+          border: `1.5px solid ${/^\d+-\d+(-\d+)*$/.test(form.formation) ? 'rgba(255,255,255,0.18)' : 'var(--whistle-orange)'}`,
+          borderRadius: 10, padding: "7px 10px", width: 84, textAlign: "center",
+          outline: "none",
+        }}
+      />
       <button
         onClick={state.handleToggleOpposition}
         type="button"
@@ -368,6 +649,7 @@ const CreateTacticsContent: React.FC = () => {
           title={form.title}
           onTitleChange={form.setTitle}
           placeholder="Untitled Tactic"
+          subtitle={studioSubtitle}
           actions={studioActions}
         />
       </div>
@@ -449,8 +731,6 @@ const CreateTacticsContent: React.FC = () => {
                   markerType={state.markerType}
                   onToggleWaypoints={state.handleToggleWaypoints}
                   waypointsMode={state.waypointsMode}
-                  onToggleMovementMode={() => setMovementMode(prev => !prev)}
-                  movementMode={movementMode}
                   onToggleHorizontalZones={state.handleToggleHorizontalZones}
                   horizontalZonesMode={state.horizontalZonesMode}
                   onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
@@ -488,48 +768,51 @@ const CreateTacticsContent: React.FC = () => {
                   oppMarkerType={state.oppMarkerType}
                 />
               </div>
-
-              {/* Animation timeline — sits in the scroll flow with the field and
-                  toolbar rather than pinned to the bottom of the stage */}
-              <div style={{ marginTop: 16, border: '2px solid var(--ink)', borderRadius: 16, background: 'var(--surface-low)', padding: '12px 16px' }}>
-                <AnimationTimeline
-                  movements={movements}
-                  players={players}
-                  oppositionPlayers={oppositionPlayers}
-                  keyframeCount={animation.keyframes.length}
-                  isPlaying={animation.isPlaying}
-                  durationMs={animation.durationMs}
-                  fps={animation.fps}
-                  movementMode={movementMode}
-                  onToggleMovementMode={() => setMovementMode(prev => !prev)}
-                  onPlay={animation.play}
-                  onPause={animation.pause}
-                  onUpdateMovement={handleUpdateMovement}
-                  onRemoveMovement={handleRemoveMovement}
-                  onSetDuration={animation.setDuration}
-                  onSetFps={animation.setFps}
-                  onApplyPreset={handleApplyPreset}
-                />
-              </div>
             </div>
           </div>
 
-          {/* Right panel — details */}
+          {/* Right rail — purely for authoring. Title, description and formation
+              all live in the header now, so what used to be a details card here
+              (restating them) is gone; Movement used to sit under the pitch, where
+              it squeezed the board into a letterbox. */}
           <div style={{ width: 400, borderLeft: '2px solid var(--ink)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
-            <div style={{ padding: 16 }}>
-              <TacticDetails
-                title={form.title}
-                setTitle={form.setTitle}
-                description={form.description}
-                setDescription={form.setDescription}
-                formation={form.formation}
-                setFormation={form.setFormation}
-                selectedOptions={form.selectedOptions}
-                loading={form.loading}
-                onSubmit={handleSubmit}
+            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {fromArrows && (
+                <PhaseStrip
+                  current={currentBeat}
+                  count={v2.phaseCount}
+                  onSetPhase={handleSetPhase}
+                  onStep={handleStep}
+                  showAll={showAllBeats}
+                  onToggleShowAll={() => setShowAllBeats(prev => !prev)}
+                  warnings={v2.warnings}
+                  durationMs={v2.durationMs}
+                  disabled={animation.isPlaying}
+                />
+              )}
+
+              <AnimationTimeline
+                arrows={arrows}
+                fromArrows={fromArrows}
+                currentBeat={currentBeat}
+                derivedDurationMs={legacyGestures ? undefined : v2.durationMs}
+                onToggleFromArrows={() => setFromArrows(prev => !prev)}
+                onSetBeat={handleSetArrowBeat}
+                onSetTempo={handleSetArrowTempo}
+                onRemoveArrow={handleRemoveArrow}
+                players={players}
+                oppositionPlayers={oppositionPlayers}
+                keyframeCount={animation.keyframes.length}
+                isPlaying={animation.isPlaying}
+                durationMs={animation.durationMs}
+                fps={animation.fps}
+                onPlay={animation.play}
+                onPause={animation.pause}
+                onSetDuration={animation.setDuration}
+                onSetFps={animation.setFps}
+                onApplyPreset={handleApplyPreset}
               />
-            </div>
-            <div style={{ padding: '0 16px 16px' }}>
+
               <Preview animation={animation.getAnimation()} />
             </div>
           </div>

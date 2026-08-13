@@ -37,9 +37,6 @@ export const useTacticsForm = () => {
     );
   };
 
-  // Expose selectedOptions as tags alias for backwards compat with TacticDetails
-  const selectedOptions = tags;
-
   return {
     // Form state
     title,
@@ -50,7 +47,6 @@ export const useTacticsForm = () => {
     setFormation,
     tags,
     setTags,
-    selectedOptions,
     loading,
     setLoading,
 

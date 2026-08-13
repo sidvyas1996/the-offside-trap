@@ -38,7 +38,7 @@ export interface AnimationPreset {
   /** One-liner shown under the name in the picker. */
   description: string;
   /**
-   * Must be one of TimelineControls' DURATION_OPTIONS — that <select> has no
+   * Must be one of AnimationTimeline's DURATION_OPTIONS — that <select> has no
    * custom entry, so an off-list duration would render blank.
    */
   durationMs: number;

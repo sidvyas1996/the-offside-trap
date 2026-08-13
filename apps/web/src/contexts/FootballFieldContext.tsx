@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useRef } from "react";
-import type { Player, TacticArrow, ArrowType, Ball, Movement } from "../../../../packages/shared";
+import type { Player, TacticArrow, ArrowType, Ball, Movement, PassSequence } from "../../../../packages/shared";
 import { DEFAULT_FOOTBALL_FIELD_COLOUR, DEFAULT_PLAYER_COLOUR } from "../utils/colors.ts";
 
 // Default lineup puts the goalkeeper at (5, 50) — ball starts at their feet
@@ -64,9 +64,28 @@ interface FootballFieldContextProps {
      */
     isAnimating: boolean;
     setIsAnimating: React.Dispatch<React.SetStateAction<boolean>>;
-    // Gesture-authored movements — the authoring source of truth for animation.
+    // Gesture-authored movements — the authoring source of truth for players.
     movements: Movement[];
     setMovements: React.Dispatch<React.SetStateAction<Movement[]>>;
+    /**
+     * The passing move. Separate from `movements` because a pass chain is an
+     * ordered sequence of one-off events, not a cyclic motion — squeezing it into
+     * Movement is what once limited a tactic to a single ball action.
+     */
+    passes: PassSequence;
+    setPasses: React.Dispatch<React.SetStateAction<PassSequence>>;
+    /**
+     * Loop length, mirrored here from the animation hook so gesture capture can
+     * turn a dwell in milliseconds into a fraction of the loop.
+     */
+    loopDurationMs: number;
+    setLoopDurationMs: React.Dispatch<React.SetStateAction<number>>;
+    /**
+     * Draw running-order badges on the arrows. On when arrows are the animation;
+     * off when they are only annotation, so a static diagram stays uncluttered.
+     */
+    showBeats: boolean;
+    setShowBeats: React.Dispatch<React.SetStateAction<boolean>>;
     /**
      * When on, dragging an object draws its movement instead of just moving it.
      * Kept as an explicit mode rather than inferred from drag length, because
@@ -84,6 +103,33 @@ interface FootballFieldContextProps {
     setArrowBallColor: React.Dispatch<React.SetStateAction<string>>;
     arrowRunColor: string;
     setArrowRunColor: React.Dispatch<React.SetStateAction<string>>;
+    /**
+     * The beat being authored, 1-based. A newly drawn arrow is assigned this beat,
+     * which is what makes "Step, then draw" put the next arrows *after* the last
+     * ones rather than alongside them.
+     *
+     * It lives here rather than in the page because the arrow is created down in
+     * FootballField, and threading a beat down through TacticalField's prop wall
+     * would mean touching every layer in between for one number.
+     */
+    currentBeat: number;
+    setCurrentBeat: React.Dispatch<React.SetStateAction<number>>;
+    /**
+     * Draw every beat solid at once, rather than ghosting the ones you are not on.
+     *
+     * The flattened view *is* the diagram — it is what the static image export
+     * shows — so it has to stay reachable while authoring a single beat.
+     */
+    showAllBeats: boolean;
+    setShowAllBeats: React.Dispatch<React.SetStateAction<boolean>>;
+    /**
+     * True while the board is showing a later beat's pose rather than the authored
+     * starting shape. Markers must not be draggable then: the positions on screen
+     * are a computed preview, and committing a drag would write a phase-3 pose back
+     * into the tactic's starting board.
+     */
+    previewingPhase: boolean;
+    setPreviewingPhase: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const FootballFieldContext = createContext<FootballFieldContextProps | null>(null);
@@ -131,6 +177,9 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Gesture-authored movements
     const [movements, setMovements] = useState<Movement[]>([]);
+    const [passes, setPasses] = useState<PassSequence>({ nodes: [] });
+    const [loopDurationMs, setLoopDurationMs] = useState(5000);
+    const [showBeats, setShowBeats] = useState(false);
     const [movementMode, setMovementMode] = useState(false);
 
     // Arrow annotations
@@ -138,6 +187,11 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
     const [arrowTool, setArrowTool] = useState<ArrowType | null>(null);
     const [arrowBallColor, setArrowBallColor] = useState('#fbbf24');
     const [arrowRunColor, setArrowRunColor] = useState('#60a5fa');
+
+    // Phase authoring
+    const [currentBeat, setCurrentBeat] = useState(1);
+    const [showAllBeats, setShowAllBeats] = useState(false);
+    const [previewingPhase, setPreviewingPhase] = useState(false);
 
     return (
         <FootballFieldContext.Provider
@@ -167,6 +221,12 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
                 setIsAnimating,
                 movements,
                 setMovements,
+                passes,
+                setPasses,
+                loopDurationMs,
+                setLoopDurationMs,
+                showBeats,
+                setShowBeats,
                 movementMode,
                 setMovementMode,
                 arrows,
@@ -177,6 +237,12 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
                 setArrowBallColor,
                 arrowRunColor,
                 setArrowRunColor,
+                currentBeat,
+                setCurrentBeat,
+                showAllBeats,
+                setShowAllBeats,
+                previewingPhase,
+                setPreviewingPhase,
             }}
         >
             {children}

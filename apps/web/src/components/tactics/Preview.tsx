@@ -76,7 +76,7 @@ const Preview: React.FC<PreviewProps> = ({
 
   const handleExportVideo = async () => {
     if (!animation || animation.keyframes.length < 2) {
-      alert("Draw a movement on the pitch (or pick a preset) before exporting a video.");
+      alert("Draw a movement or a pass on the pitch (or pick a preset) before exporting a video.");
       return;
     }
     setIsExportingVideo(true);

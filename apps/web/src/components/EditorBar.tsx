@@ -7,6 +7,12 @@ interface EditorBarProps {
   title: string;
   onTitleChange: (value: string) => void;
   placeholder?: string;
+  /**
+   * Optional line under the title, for fields that belong to the document's
+   * identity rather than to authoring — a description, say. Keeping them here
+   * means the rail doesn't need a details panel that just restates the header.
+   */
+  subtitle?: React.ReactNode;
   actions?: React.ReactNode;
 }
 
@@ -15,7 +21,7 @@ interface EditorBarProps {
  * kicker + editable document title, and a right-side actions slot.
  * Shares the pill language of the marketing TopNav.
  */
-const EditorBar: React.FC<EditorBarProps> = ({ kicker, title, onTitleChange, placeholder, actions }) => {
+const EditorBar: React.FC<EditorBarProps> = ({ kicker, title, onTitleChange, placeholder, subtitle, actions }) => {
   const navigate = useNavigate();
 
   return (
@@ -62,6 +68,7 @@ const EditorBar: React.FC<EditorBarProps> = ({ kicker, title, onTitleChange, pla
               padding: 0, width: "min(42vw, 360px)", letterSpacing: "-0.01em",
             }}
           />
+          {subtitle}
         </div>
       </div>
 

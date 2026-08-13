@@ -17,6 +17,66 @@ import { pitchDistance } from "./pitch";
 
 export interface Pt { x: number; y: number }
 
+/** A sample from a live drag. `t` is a performance.now() reading. */
+export interface TimedPt extends Pt { t?: number }
+
+/**
+ * A pause shorter than this is not intent. Everyone hesitates slightly between
+ * grabbing a marker and moving it, and reading that as a delay would leave every
+ * run mysteriously late.
+ */
+export const DWELL_MIN_MS = 250;
+
+/** How still the cursor must be, in length-percent, to count as dwelling. */
+const DWELL_RADIUS = 1.5;
+
+/** Never let a dwell eat so much of the loop that nothing appears to happen. */
+const MAX_DELAY_FRACTION = 0.75;
+
+/**
+ * Split a stationary run of samples off one end of the stream.
+ *
+ * Returns the dwell in milliseconds and the samples that remain. Untimed samples
+ * yield a zero dwell, which is what keeps this a no-op for callers that don't
+ * record time.
+ */
+export function splitDwell(
+  samples: TimedPt[],
+  end: 'start' | 'end',
+): { dwellMs: number; rest: TimedPt[] } {
+  if (samples.length < 2) return { dwellMs: 0, rest: samples };
+
+  const anchor = end === 'start' ? samples[0] : samples[samples.length - 1];
+  let count = 0;
+  if (end === 'start') {
+    while (count < samples.length - 1 && pitchDistance(samples[count], anchor) <= DWELL_RADIUS) count++;
+  } else {
+    while (count < samples.length - 1
+      && pitchDistance(samples[samples.length - 1 - count], anchor) <= DWELL_RADIUS) count++;
+  }
+  if (count < 2) return { dwellMs: 0, rest: samples };
+
+  const first = end === 'start' ? samples[0] : samples[samples.length - count];
+  const last = end === 'start' ? samples[count - 1] : samples[samples.length - 1];
+  const dwellMs = first.t !== undefined && last.t !== undefined ? Math.max(0, last.t - first.t) : 0;
+  if (dwellMs < DWELL_MIN_MS) return { dwellMs: 0, rest: samples };
+
+  // Keep the anchor point itself: for a player it is the resting position, and
+  // for a pass leg it is where the ball starts.
+  const rest = end === 'start'
+    ? [samples[count - 1], ...samples.slice(count)]
+    : [...samples.slice(0, samples.length - count), samples[samples.length - count]];
+
+  return { dwellMs, rest: rest.length >= 2 ? rest : samples };
+}
+
+/** Elapsed time across a sample stream, or 0 when it isn't timed. */
+export function elapsedMs(samples: TimedPt[]): number {
+  if (samples.length < 2) return 0;
+  const a = samples[0].t, b = samples[samples.length - 1].t;
+  return a !== undefined && b !== undefined ? Math.max(0, b - a) : 0;
+}
+
 /**
  * Below this total path length a drag is a reposition, not a gesture — that
  * keeps the old behaviour (nudging a player into place) intact even with
@@ -160,13 +220,34 @@ export interface RecognizeResult {
 }
 
 /**
+ * Drop the drag timestamps before a path becomes part of a tactic.
+ *
+ * `t` is bookkeeping for dwell detection; persisting it would put meaningless
+ * millisecond readings in the database and in every exported payload.
+ */
+const cleanPath = (pts: TimedPt[]): Pt[] => pts.map(p => ({ x: p.x, y: p.y }));
+
+/**
  * Read a drag as a movement.
  *
  * Returns null for short drags so callers can fall through to plain
  * repositioning. `path[0]` is forced to the drag's own start point, which is the
  * object's resting position — the compiler relies on that.
  */
-export function recognizeMovement(samples: Pt[]): RecognizeResult {
+export function recognizeMovement(
+  rawSamples: TimedPt[],
+  opts: { durationMs?: number } = {},
+): RecognizeResult {
+  if (rawSamples.length < 2) return { movement: null };
+
+  // Hold still before you set off and that becomes the delay. Stripping the
+  // dwell cluster before shape recognition keeps a long pause from registering
+  // as path length or as a direction change.
+  const { dwellMs, rest: samples } = splitDwell(rawSamples, 'start');
+  const delay = opts.durationMs && dwellMs > 0
+    ? Math.max(0, Math.min(MAX_DELAY_FRACTION, dwellMs / opts.durationMs))
+    : 0;
+
   if (samples.length < 2) return { movement: null };
 
   const simplified = simplifyPath(samples);
@@ -189,11 +270,11 @@ export function recognizeMovement(samples: Pt[]): RecognizeResult {
     const ring = simplified.slice(0, -1);
     return {
       movement: {
-        path: ring.length >= 3 ? ring : simplified,
+        path: cleanPath(ring.length >= 3 ? ring : simplified),
         cycle: 'loop',
         repeats: 1,
         tempo: 'run',
-        delay: 0,
+        delay,
       },
     };
   }
@@ -214,11 +295,54 @@ export function recognizeMovement(samples: Pt[]): RecognizeResult {
 
   return {
     movement: {
-      path: outbound.length >= 2 ? outbound : [start, end],
+      path: cleanPath(outbound.length >= 2 ? outbound : [start, end]),
       cycle: 'out-and-back',
       repeats,
       tempo: 'run',
-      delay: 0,
+      delay,
     },
+  };
+}
+
+export interface PassLegResult {
+  /** Intermediate shape points, so a curled pass keeps its bend. Never empty-checked
+   *  by callers — an empty array simply means a straight leg. */
+  bend: Pt[];
+  /** Where the leg ended. */
+  to: Pt;
+  /** Loop-independent: how long the ball waited before setting off, in ms. */
+  holdBeforeMs: number;
+  /** How long it waited on arrival, in ms. */
+  holdAfterMs: number;
+  /** How long the travel itself took, in ms. */
+  travelMs: number;
+}
+
+/**
+ * Read a ball drag as a single leg of a passing move.
+ *
+ * Much simpler than recognizeMovement: a pass has no cycle, no repeats and no
+ * tempo — it happens once. All that matters is the shape it took, where it
+ * ended, and the pauses either side of it.
+ *
+ * Returns null for a drag too short to be a pass, so callers fall through to
+ * plain repositioning of the ball.
+ */
+export function recognizePassLeg(rawSamples: TimedPt[]): PassLegResult | null {
+  if (rawSamples.length < 2) return null;
+
+  const { dwellMs: holdBeforeMs, rest: afterLead } = splitDwell(rawSamples, 'start');
+  const { dwellMs: holdAfterMs, rest: travelling } = splitDwell(afterLead, 'end');
+
+  if (travelling.length < 2) return null;
+  const simplified = simplifyPath(travelling);
+  if (pathLength(simplified) < MIN_GESTURE_LENGTH) return null;
+
+  return {
+    bend: cleanPath(simplified.slice(1, -1)),
+    to: { x: simplified[simplified.length - 1].x, y: simplified[simplified.length - 1].y },
+    holdBeforeMs,
+    holdAfterMs,
+    travelMs: elapsedMs(travelling),
   };
 }
