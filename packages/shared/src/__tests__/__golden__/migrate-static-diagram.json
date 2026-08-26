@@ -1,0 +1,25 @@
+{
+  "source": "none",
+  "staticOnly": true,
+  "warnings": [
+    {
+      "code": "static-diagram-preserved",
+      "detail": "3 arrow(s) stay static annotation; this tactic had no animation"
+    }
+  ],
+  "initialBoard": {
+    "ball": "6,50",
+    "home:1": "6,50",
+    "home:10": "46,70",
+    "home:11": "62,86",
+    "home:2": "22,12",
+    "home:3": "22,88",
+    "home:4": "18,62",
+    "home:5": "16,38",
+    "home:6": "38,50",
+    "home:7": "62,14",
+    "home:8": "44,30",
+    "home:9": "70,50"
+  },
+  "phases": []
+}

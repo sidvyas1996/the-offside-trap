@@ -1,0 +1,45 @@
+{
+  "source": "movements",
+  "staticOnly": false,
+  "warnings": [
+    {
+      "code": "legacy-ball-movement",
+      "detail": "a Movement targeting the ball, from before passes had their own type",
+      "actorId": "ball",
+      "sourceId": "mv-ball"
+    },
+    {
+      "code": "tempo-rest-fraction-dropped",
+      "detail": "run spent part of its cycle at rest in V1; V2 has no rest fraction",
+      "actorId": "ball",
+      "sourceId": "mv-ball"
+    }
+  ],
+  "initialBoard": {
+    "ball": "6,50",
+    "home:1": "6,50",
+    "home:10": "46,70",
+    "home:11": "62,86",
+    "home:2": "22,12",
+    "home:3": "22,88",
+    "home:4": "18,62",
+    "home:5": "16,38",
+    "home:6": "38,50",
+    "home:7": "62,14",
+    "home:8": "44,30",
+    "home:9": "70,50"
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "actions": [
+        {
+          "id": "movement-0",
+          "actorId": "ball",
+          "to": "point 40,30",
+          "speed": "pass"
+        }
+      ]
+    }
+  ]
+}

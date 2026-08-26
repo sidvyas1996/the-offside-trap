@@ -1,0 +1,64 @@
+{
+  "totalMs": 27285,
+  "resetStartMs": 27285,
+  "phases": [
+    {
+      "id": "p1",
+      "startMs": 0,
+      "endMs": 27285,
+      "durationMs": 27285
+    }
+  ],
+  "criticalMs": [
+    0,
+    27285
+  ],
+  "warnings": [],
+  "segments": [
+    {
+      "actorId": "home:8",
+      "kind": "travel",
+      "actionId": "a1-shuttle",
+      "startMs": 0,
+      "endMs": 12600,
+      "motion": "out-and-back",
+      "traversals": 3,
+      "points": [
+        "44,30",
+        "60,30"
+      ]
+    },
+    {
+      "actorId": "home:10",
+      "kind": "travel",
+      "actionId": "a1-circuit",
+      "startMs": 0,
+      "endMs": 27285,
+      "motion": "circuit",
+      "traversals": 2,
+      "points": [
+        "46,70",
+        "58,66",
+        "58,78",
+        "44,80",
+        "46,70"
+      ]
+    }
+  ],
+  "posesAtCriticalInstants": [
+    {
+      "tMs": 0,
+      "at": {
+        "home:10": "46,70",
+        "home:8": "44,30"
+      }
+    },
+    {
+      "tMs": 27285,
+      "at": {
+        "home:10": "46,70",
+        "home:8": "44,30"
+      }
+    }
+  ]
+}

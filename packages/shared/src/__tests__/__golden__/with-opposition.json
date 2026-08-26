@@ -1,0 +1,121 @@
+{
+  "totalMs": 4515,
+  "resetStartMs": 4215,
+  "phases": [
+    {
+      "id": "p1",
+      "startMs": 0,
+      "endMs": 4215,
+      "durationMs": 4215
+    }
+  ],
+  "criticalMs": [
+    0,
+    4215,
+    4515
+  ],
+  "warnings": [],
+  "segments": [
+    {
+      "actorId": "home:7",
+      "kind": "travel",
+      "actionId": "a1-home7",
+      "startMs": 0,
+      "endMs": 2381,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "62,14",
+        "80,10"
+      ]
+    },
+    {
+      "actorId": "away:7",
+      "kind": "travel",
+      "actionId": "a1-away7",
+      "startMs": 0,
+      "endMs": 4215,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "38,14",
+        "30,30"
+      ]
+    },
+    {
+      "actorId": "ball",
+      "kind": "travel",
+      "actionId": "a1-home7:carry",
+      "startMs": 0,
+      "endMs": 2381,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "62,14",
+        "80,10"
+      ]
+    },
+    {
+      "actorId": "home:7",
+      "kind": "reset",
+      "startMs": 4215,
+      "endMs": 4515,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "80,10",
+        "62,14"
+      ]
+    },
+    {
+      "actorId": "away:7",
+      "kind": "reset",
+      "startMs": 4215,
+      "endMs": 4515,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "30,30",
+        "38,14"
+      ]
+    },
+    {
+      "actorId": "ball",
+      "kind": "reset",
+      "startMs": 4215,
+      "endMs": 4515,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "80,10",
+        "62,14"
+      ]
+    }
+  ],
+  "posesAtCriticalInstants": [
+    {
+      "tMs": 0,
+      "at": {
+        "away:7": "38,14",
+        "ball": "62,14",
+        "home:7": "62,14"
+      }
+    },
+    {
+      "tMs": 4215,
+      "at": {
+        "away:7": "30,30",
+        "ball": "80,10",
+        "home:7": "80,10"
+      }
+    },
+    {
+      "tMs": 4515,
+      "at": {
+        "away:7": "38,14",
+        "ball": "62,14",
+        "home:7": "62,14"
+      }
+    }
+  ]
+}

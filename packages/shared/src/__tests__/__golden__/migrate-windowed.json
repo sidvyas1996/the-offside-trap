@@ -1,0 +1,74 @@
+{
+  "source": "movements",
+  "staticOnly": false,
+  "warnings": [
+    {
+      "code": "closing-leg-dropped",
+      "detail": "V1 recycled the ball to the chain start; the compiler now resets instead"
+    },
+    {
+      "code": "tempo-rest-fraction-dropped",
+      "detail": "sprint spent part of its cycle at rest in V1; V2 has no rest fraction",
+      "actorId": "home:2",
+      "sourceId": "w1"
+    },
+    {
+      "code": "tempo-rest-fraction-dropped",
+      "detail": "run spent part of its cycle at rest in V1; V2 has no rest fraction",
+      "actorId": "home:9",
+      "sourceId": "w2"
+    }
+  ],
+  "initialBoard": {
+    "ball": "6,50",
+    "home:1": "6,50",
+    "home:10": "46,70",
+    "home:11": "62,86",
+    "home:2": "22,12",
+    "home:3": "22,88",
+    "home:4": "18,62",
+    "home:5": "16,38",
+    "home:6": "38,50",
+    "home:7": "62,14",
+    "home:8": "44,30",
+    "home:9": "70,50"
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "actions": [
+        {
+          "id": "leg-1",
+          "actorId": "ball",
+          "to": "point 16,38",
+          "speed": "pass",
+          "durationMs": 400
+        },
+        {
+          "id": "movement-0",
+          "actorId": "home:2",
+          "to": "point 60,10",
+          "speed": "sprint"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "actions": [
+        {
+          "id": "leg-2",
+          "actorId": "ball",
+          "to": "point 84,44",
+          "speed": "pass",
+          "durationMs": 400
+        },
+        {
+          "id": "movement-1",
+          "actorId": "home:9",
+          "to": "point 84,44",
+          "speed": "run"
+        }
+      ]
+    }
+  ]
+}

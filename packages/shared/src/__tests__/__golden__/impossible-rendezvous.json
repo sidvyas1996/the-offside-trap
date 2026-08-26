@@ -1,0 +1,101 @@
+{
+  "totalMs": 4864,
+  "resetStartMs": 4420,
+  "phases": [
+    {
+      "id": "p1",
+      "startMs": 0,
+      "endMs": 4420,
+      "durationMs": 4420
+    }
+  ],
+  "criticalMs": [
+    0,
+    4420,
+    4864
+  ],
+  "warnings": [
+    {
+      "code": "constraint-unreachable",
+      "detail": "needs 893ms to arrive with the ball but flat out takes 4420ms; arriving late",
+      "phaseId": "p1",
+      "actionId": "a1-sprint",
+      "actorId": "home:9"
+    }
+  ],
+  "segments": [
+    {
+      "actorId": "ball",
+      "kind": "travel",
+      "actionId": "a1-square",
+      "startMs": 0,
+      "endMs": 893,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "38,50",
+        "44,30"
+      ]
+    },
+    {
+      "actorId": "home:9",
+      "kind": "travel",
+      "actionId": "a1-sprint",
+      "startMs": 0,
+      "endMs": 4420,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "20,80",
+        "46,26"
+      ]
+    },
+    {
+      "actorId": "ball",
+      "kind": "reset",
+      "startMs": 4420,
+      "endMs": 4864,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "44,30",
+        "38,50"
+      ]
+    },
+    {
+      "actorId": "home:9",
+      "kind": "reset",
+      "startMs": 4420,
+      "endMs": 4864,
+      "motion": "one-way",
+      "traversals": 1,
+      "points": [
+        "46,26",
+        "20,80"
+      ]
+    }
+  ],
+  "posesAtCriticalInstants": [
+    {
+      "tMs": 0,
+      "at": {
+        "ball": "38,50",
+        "home:9": "20,80"
+      }
+    },
+    {
+      "tMs": 4420,
+      "at": {
+        "ball": "44,30",
+        "home:9": "46,26"
+      }
+    },
+    {
+      "tMs": 4864,
+      "at": {
+        "ball": "38,50",
+        "home:9": "20,80"
+      }
+    }
+  ]
+}
