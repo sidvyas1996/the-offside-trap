@@ -63,9 +63,16 @@ export function getInterpolatedFrame(
 
   const fs = before.fieldSettings;
   const fs2 = after.fieldSettings;
+  // `lift` must be interpolated alongside the position, not dropped — it is how a
+  // lofted pass reads as leaving the ground, and rebuilding the ball as {x,y}
+  // would silently flatten every long ball.
   const ball =
     fs.ball && fs2.ball
-      ? { x: lerp(fs.ball.x, fs2.ball.x, t), y: lerp(fs.ball.y, fs2.ball.y, t) }
+      ? {
+          x: lerp(fs.ball.x, fs2.ball.x, t),
+          y: lerp(fs.ball.y, fs2.ball.y, t),
+          lift: lerp(fs.ball.lift ?? 0, fs2.ball.lift ?? 0, t),
+        }
       : (fs.ball || fs2.ball);
   const fieldSettings: FieldSettings = {
     fieldColor: lerpHex(fs.fieldColor, fs2.fieldColor, t),

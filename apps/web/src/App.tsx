@@ -3,12 +3,15 @@ import { Routes, Route, Navigate, BrowserRouter, useLocation, NavLink } from "re
 import { LayoutDashboard, Swords, Users, Settings, Plus } from "lucide-react";
 import Home from "./pages/Home";
 import TacticsDetails from "./pages/TacticsDetails.tsx";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import CreateTactics from "./pages/CreateTactics.tsx";
+import Login from "./pages/Login.tsx";
+import Onboarding from "./pages/Onboarding.tsx";
 import CreateLineups from "./pages/CreateLineups.tsx";
 import ExportPreview from "./pages/ExportPreview.tsx";
 import TacticsExportPreview from "./pages/TacticsExportPreview.tsx";
 import { CreateTacticsProvider } from "./contexts/CreateTacticsContext";
+import Logo from "./components/Logo";
 
 function App() {
   return (
@@ -20,6 +23,54 @@ function App() {
   );
 }
 
+/** Full-page hold while the session is being restored. */
+const AuthLoading: React.FC = () => (
+  <div
+    className="dot-bg"
+    style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontFamily: "var(--font-display)",
+      fontWeight: 800,
+      fontSize: 15,
+      letterSpacing: "0.1em",
+      textTransform: "uppercase",
+      color: "var(--outline)",
+    }}
+  >
+    Warming up…
+  </div>
+);
+
+/**
+ * Gate for the app proper: needs a session, and a profile chosen. A signed-in
+ * user who has not picked a profile yet is sent to onboarding first.
+ */
+const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) return <AuthLoading />;
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+  if (!user.profile) return <Navigate to="/onboarding" replace />;
+
+  return <>{children}</>;
+};
+
+/** Gate for onboarding itself: needs a session, but no profile yet. */
+const RequireSession: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <AuthLoading />;
+  if (!user) return <Navigate to="/login" replace />;
+
+  return <>{children}</>;
+};
+
 function AppRoutes() {
   return (
     <Routes>
@@ -27,45 +78,66 @@ function AppRoutes() {
       <Route path="/export-preview" element={<ExportPreview />} />
       <Route path="/tactics-export-preview" element={<TacticsExportPreview />} />
 
+      {/* Auth */}
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/onboarding"
+        element={
+          <RequireSession>
+            <Onboarding />
+          </RequireSession>
+        }
+      />
+
       {/* Studio routes — full-screen, no sidebar */}
       <Route
         path="/create"
         element={
-          <CreateTacticsProvider>
-            <CreateTactics />
-          </CreateTacticsProvider>
+          <RequireAuth>
+            <CreateTacticsProvider>
+              <CreateTactics />
+            </CreateTacticsProvider>
+          </RequireAuth>
         }
       />
       <Route
         path="/create-tactics"
         element={
-          <CreateTacticsProvider>
-            <CreateTactics />
-          </CreateTacticsProvider>
+          <RequireAuth>
+            <CreateTacticsProvider>
+              <CreateTactics />
+            </CreateTacticsProvider>
+          </RequireAuth>
         }
       />
       <Route
         path="/create-lineups"
         element={
-          <CreateTacticsProvider>
-            <CreateLineups />
-          </CreateTacticsProvider>
+          <RequireAuth>
+            <CreateTacticsProvider>
+              <CreateLineups />
+            </CreateTacticsProvider>
+          </RequireAuth>
         }
       />
       <Route
         path="/edit-tactics/:id"
         element={
-          <CreateTacticsProvider>
-            <CreateTactics />
-          </CreateTacticsProvider>
+          <RequireAuth>
+            <CreateTacticsProvider>
+              <CreateTactics />
+            </CreateTacticsProvider>
+          </RequireAuth>
         }
       />
       <Route
         path="/edit-lineups/:id"
         element={
-          <CreateTacticsProvider>
-            <CreateLineups />
-          </CreateTacticsProvider>
+          <RequireAuth>
+            <CreateTacticsProvider>
+              <CreateLineups />
+            </CreateTacticsProvider>
+          </RequireAuth>
         }
       />
 
@@ -81,7 +153,6 @@ function AppRoutes() {
           </Layout>
         }
       />
-      <Route path="/login" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -114,22 +185,8 @@ const Sidebar: React.FC = () => {
     >
       {/* Logo */}
       <div style={{ padding: "24px 20px 20px", display: "flex", alignItems: "center", gap: 12 }}>
-        {/* Logo mark — pitch glyph */}
-        <div style={{
-          width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-          background: "var(--primary)",
-          border: "2.5px solid var(--ink)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "3px 3px 0 var(--ink)",
-        }}>
-          <svg width="20" height="15" viewBox="0 0 28 20">
-            <g stroke="var(--ink)" strokeWidth="2.4" fill="none">
-              <rect x="1" y="1" width="26" height="18" rx="2" />
-              <line x1="14" y1="1" x2="14" y2="19" />
-              <circle cx="14" cy="10" r="3.5" />
-            </g>
-          </svg>
-        </div>
+        {/* Logo mark */}
+        <Logo size={40} bordered />
         <div>
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--outline)" }}>
             The Offside Trap

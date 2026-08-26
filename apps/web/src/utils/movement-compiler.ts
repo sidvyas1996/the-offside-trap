@@ -27,12 +27,15 @@ import { pitchDistance } from "./pitch";
  */
 
 /**
- * Samples emitted per loop. Linear interpolation between samples has to
- * approximate an eased curve, so this trades payload size against how closely
- * the curve is followed. 24 keeps a 5s loop under a handful of milliseconds of
- * timing error while staying comparable in size to a hand-authored animation.
+ * Samples emitted per loop.
+ *
+ * Both interpolators lerp *linearly* between keyframes, so velocity is constant
+ * within a sample and changes in steps at each one. At 24 samples a 5s loop holds
+ * each velocity for ~12 frames at 60fps, which is visible as stepping through an
+ * acceleration; 48 halves that to ~6 and reads as continuous. The cost is payload
+ * size, which is why this isn't simply cranked to hundreds.
  */
-const SAMPLES_PER_LOOP = 24;
+const SAMPLES_PER_LOOP = 48;
 
 /**
  * Fraction of its cycle a movement spends actually travelling, by tempo. The
@@ -49,6 +52,25 @@ const TRAVEL_FRACTION: Record<MovementTempo, number> = {
 /** Smoothstep. Zero velocity at both ends, so reversals don't visibly snap. */
 function easeInOut(t: number): number {
   return t * t * (3 - 2 * t);
+}
+
+/**
+ * Ease out — fast away, then slowing.
+ *
+ * Right for the ball rather than easeInOut: a kicked ball leaves the boot at its
+ * quickest and decelerates. Easing it in as well makes a pass look pushed rather
+ * than struck.
+ */
+function easeOut(t: number): number {
+  return 1 - (1 - t) * (1 - t);
+}
+
+/**
+ * Height across a lofted leg: on the deck at both ends, highest in the middle.
+ * A sine arc rather than a parabola so it leaves and lands smoothly.
+ */
+function loftArc(t: number): number {
+  return Math.sin(Math.PI * Math.max(0, Math.min(1, t)));
 }
 
 interface Pt { x: number; y: number }
@@ -354,7 +376,28 @@ export function ballPositionAt(sequence: PassSequence, phases: PassPhase[], u: n
   const span = phase.end - phase.start;
   const local = span <= 0 ? 1 : (t - phase.start) / span;
   const acc = arcLengths(phase.points);
-  return pointAt(phase.points, acc, easeInOut(Math.max(0, Math.min(1, local))));
+  // The ball is struck, not carried — unless it *is* being carried, in which case
+  // it moves like the player who has it.
+  const ease = nodes[phase.nodeIndex].via === 'dribble' ? easeInOut : easeOut;
+  return pointAt(phase.points, acc, ease(Math.max(0, Math.min(1, local))));
+}
+
+/**
+ * How high the ball is at `u`, 0-1.
+ *
+ * Only lofted legs leave the ground; everything else is flat, so this returns 0
+ * and the renderer draws the ball as it always has.
+ */
+export function ballLiftAt(sequence: PassSequence, phases: PassPhase[], u: number): number {
+  if (phases.length === 0) return 0;
+  const t = ((u % 1) + 1) % 1;
+  const phase = phases.find(p => t >= p.start && t < p.end);
+  if (!phase || phase.kind !== 'travel' || phase.isReturn) return 0;
+  if (!sequence.nodes[phase.nodeIndex]?.lofted) return 0;
+
+  const span = phase.end - phase.start;
+  const local = span <= 0 ? 1 : (t - phase.start) / span;
+  return loftArc(local);
 }
 
 /** Loop fraction at which the ball arrives at a node. */
@@ -514,6 +557,7 @@ export function compileMovements({
     const ballPos = hasPasses
       ? ballPositionAt(passes!, phases, u)
       : legacyBallMove ? movementPositionAt(legacyBallMove, u) : ball;
+    const lift = hasPasses ? ballLiftAt(passes!, phases, u) : 0;
 
     let home = poseAt(homeMoves, players, u);
     let away = oppositionPlayers ? poseAt(awayMoves, oppositionPlayers, u) : [];
@@ -534,7 +578,11 @@ export function compileMovements({
       id: crypto.randomUUID(),
       timeMs: Math.round(u * durationMs),
       players: home,
-      fieldSettings: { ...fieldSettings, ball: { x: ballPos.x, y: ballPos.y } },
+      fieldSettings: {
+        ...fieldSettings,
+        // Only carry lift when there is some, so a flat tactic's payload is unchanged.
+        ball: { x: ballPos.x, y: ballPos.y, ...(lift > 0 && { lift }) },
+      },
       ...(oppositionPlayers && oppositionPlayers.length > 0 && { oppositionPlayers: away }),
     });
   }

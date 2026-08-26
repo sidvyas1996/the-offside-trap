@@ -20,6 +20,15 @@ export interface TacticSummary {
   formation: string;
   tags: string[];
   stats: TacticStats;
+  /**
+   * Optional because the *type* was written before the list endpoint returned it.
+   * `tacticSummarySelect` does include the author, so it is present in practice —
+   * declared here so clients can read it without a cast.
+   *
+   * What that select genuinely omits is `players`, `animation` and `arrows`, so a
+   * list card cannot draw the tactic's real shape without fetching it by id.
+   */
+  author?: Author;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +39,14 @@ export type MarkerDesign = 'solid' | 'stripes' | 'diagonal-left' | 'diagonal-rig
 export interface Ball {
   x: number;
   y: number;
+  /**
+   * How far off the ground the ball is: 0 on the deck, 1 at the top of its arc.
+   *
+   * The pitch is drawn in plan view, so there is no "up" to move into — height is
+   * conveyed by the ball growing and its shadow separating beneath it. Lofted
+   * passes set this; everything else leaves it absent.
+   */
+  lift?: number;
 }
 
 // Arrow annotation types
@@ -207,6 +224,8 @@ export interface PassNode {
   receiver?: { team: 'home' | 'away'; playerId: number };
   /** 'dribble' only: who carries the ball along this leg. */
   carrier?: { team: 'home' | 'away'; playerId: number };
+  /** The ball leaves the ground on this leg — a lofted pass or cross. */
+  lofted?: boolean;
   /**
    * How long the ball waits here, and how long it took to get here, both in
    * milliseconds as actually drawn.
@@ -413,11 +432,24 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+/** The role a user picks during onboarding. Mirrors the Prisma `UserProfile` enum. */
+export type UserProfile = "COACH" | "MANAGER" | "PLAYER" | "FAN" | "ENTHUSIAST";
+
+export const USER_PROFILES: readonly UserProfile[] = [
+  "COACH",
+  "MANAGER",
+  "PLAYER",
+  "FAN",
+  "ENTHUSIAST",
+] as const;
+
 export interface User {
   id: string;
   username: string;
   email: string;
   avatar?: string | null;
+  /** null until the user completes the onboarding profile picker. */
+  profile?: UserProfile | null;
 }
 
 export type TabValue = "trending" | "featured" | "latest";
@@ -433,3 +465,17 @@ export * from "./pitch-geometry";
 export * from "./tactic-v2";
 export * from "./compile-tactic";
 export * from "./migrate-v1";
+
+// ---------------------------------------------------------------------------
+// Rendering helpers.
+//
+// Pure logic extracted so it can be shared rather than living inside a
+// component: the pitch's view geometry and its markings-as-data, the arrow path
+// maths, keyframe interpolation and the default rosters. apps/web still has its
+// own copies of these inside components — folding those into these modules is
+// the de-duplication step, and is what these exist for.
+// ---------------------------------------------------------------------------
+export * from "./pitch-view";
+export * from "./arrow-geometry";
+export * from "./interpolate";
+export * from "./lineups";

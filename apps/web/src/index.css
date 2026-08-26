@@ -1141,3 +1141,103 @@ p {
 @keyframes shimmer {
   to { background-position: -200% 0; }
 }
+
+/* ── Auth screens (login / onboarding) ──────────────────────────────
+   Hover / focus / active states the inline-styled auth pages can't express. */
+.auth-input {
+  width: 100%;
+  background: var(--surface-high);
+  border: var(--border-w) solid var(--ink);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  outline: none;
+  box-shadow: 3px 3px 0 var(--hairline);
+  transition: box-shadow 0.12s ease;
+}
+
+.auth-input:focus {
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.auth-input::placeholder {
+  color: var(--outline);
+}
+
+.auth-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.auth-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--primary);
+  color: var(--ink);
+  border: var(--border-w) solid var(--ink);
+  border-radius: 999px;
+  padding: 13px 24px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s;
+}
+
+.auth-submit:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+.auth-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.auth-spinner {
+  width: 16px;
+  height: 16px;
+  border: var(--border-w) solid var(--ink);
+  border-top-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: auth-spin 0.7s linear infinite;
+}
+
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}
+
+.auth-textlink {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-weight: 800;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.auth-textlink:hover {
+  color: var(--playmaker-purple);
+}

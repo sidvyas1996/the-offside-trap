@@ -1,5 +1,6 @@
 // apps/backend/src/controllers/users.controller.ts
 import { Request, Response } from 'express';
+import { UserProfile } from '@prisma/client';
 import { usersService } from '../services/users.service';
 import { AuthedRequest } from '../middlewares/auth.middleware';
 
@@ -99,6 +100,48 @@ export class UsersController {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       res.status(500).json({ success: false, error: errorMessage });
+    }
+  }
+
+  // Update the signed-in user (onboarding: username + profile)
+  async updateMe(req: AuthedRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const { username, profile } = req.body as {
+        username?: string;
+        profile?: UserProfile;
+      };
+
+      const updated = await usersService.updateMe(userId, { username, profile });
+
+      if (!updated) {
+        res.status(404).json({ success: false, error: 'User not found' });
+        return;
+      }
+
+      res.json({ success: true, data: updated });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+
+      if (message.includes('already in use')) {
+        res.status(409).json({ success: false, error: 'Username already taken' });
+        return;
+      }
+
+      res.status(500).json({ success: false, error: message });
+    }
+  }
+
+  // Check whether a username is free — used by the onboarding form
+  async checkUsername(req: AuthedRequest, res: Response): Promise<void> {
+    try {
+      const username = String(req.query.username);
+      const available = await usersService.isUsernameAvailable(username, req.user?.id);
+
+      res.json({ success: true, data: { username, available } });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      res.status(500).json({ success: false, error: message });
     }
   }
 

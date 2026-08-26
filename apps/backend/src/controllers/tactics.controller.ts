@@ -3,6 +3,7 @@ import { TacticFormData } from '@the-offside-trap/shared';
 import { tacticsService } from '../services/tactics.service';
 import { commentsService } from '../services/comments.service';
 import { AuthedRequest } from '../middlewares/auth.middleware';
+import { AppError } from '../middlewares/error.middleware';
 import { prisma } from '../services/db.service';
 
 export class TacticsController {
@@ -77,6 +78,12 @@ export class TacticsController {
       res.json({ success: true, data: tactics });
     } catch (error) {
       console.error(error);
+      // Previously this only logged, so a bad id left the request open until the
+      // client timed out rather than returning an error. The service throws via
+      // createError, which carries the intended status.
+      const status = (error as AppError)?.statusCode ?? 500;
+      const message = error instanceof Error ? error.message : 'An unknown error occurred';
+      res.status(status).json({ success: false, error: message });
     }
   }
   async getTacticLikes(req: Request, res: Response) {

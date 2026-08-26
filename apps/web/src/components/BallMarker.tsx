@@ -19,6 +19,16 @@ const BallMarker: React.FC<BallMarkerProps> = ({
   editable = false,
   onMouseDown,
 }) => {
+  /**
+   * Height, conveyed the only way a plan view can: the ball grows as it rises,
+   * and its shadow stays on the ground and drifts, so the gap between them reads
+   * as elevation. 0 leaves everything exactly as it was on the deck.
+   */
+  const lift = Math.max(0, Math.min(1, ball.lift ?? 0));
+  const liftScale = 1 + lift * 0.45;
+  // Shadow slides down-right of the ball, as if lit from up-field.
+  const shadowOffset = lift * 9;
+
   return (
     <div
       className={`absolute select-none ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
@@ -26,8 +36,8 @@ const BallMarker: React.FC<BallMarkerProps> = ({
       style={{
         left: `${ball.x}%`,
         top: `${ball.y}%`,
-        zIndex: isDragged ? 50 : 12,
-        transform: `translate(-50%, -50%) scale(${scale * (isDragged ? 1.15 : 1)})`,
+        zIndex: isDragged ? 50 : lift > 0 ? 30 : 12,
+        transform: `translate(-50%, -50%) scale(${scale * liftScale * (isDragged ? 1.15 : 1)})`,
         transformOrigin: "center",
         // See PlayerMarker: easing left/top while a per-frame loop drives them
         // makes the ball trail its own position.
@@ -42,16 +52,40 @@ const BallMarker: React.FC<BallMarkerProps> = ({
         onMouseDown();
       }}
     >
+      {/* Ground shadow. Separate from the ball so the two can come apart — that
+          gap is what actually communicates height. Absent when flat, so nothing
+          about the existing look changes. */}
+      {lift > 0 && (
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: 16,
+            height: 8,
+            marginLeft: -8,
+            marginTop: -4,
+            transform: `translate(${shadowOffset}px, ${shadowOffset}px) scale(${1 - lift * 0.25})`,
+            borderRadius: '50%',
+            background: 'rgba(21,20,15,0.42)',
+            filter: `blur(${1 + lift * 2}px)`,
+            zIndex: -1,
+          }}
+        />
+      )}
+
       <svg
         width="20"
         height="20"
         viewBox="0 0 24 24"
         style={{
           borderRadius: "50%",
-          // Brutalist shell to match player markers: hard outline + offset shadow
+          // Brutalist shell to match player markers: hard outline + offset shadow.
+          // The offset grows with height so the ball lifts off its own shadow.
           boxShadow: isDragged
             ? '0 0 0 2px #15140f, 3px 3px 0 #15140f'
-            : '0 0 0 2px #15140f, 2px 2px 0 #15140f',
+            : `0 0 0 2px #15140f, ${2 + lift * 3}px ${2 + lift * 3}px 0 #15140f`,
         }}
       >
         <BallGlyph />

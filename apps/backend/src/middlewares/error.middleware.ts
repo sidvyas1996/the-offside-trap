@@ -9,8 +9,16 @@ export interface AppError extends Error {
 // Define a type for Express request handler functions
 type ExpressHandler = (req: Request, res: Response, next: NextFunction) => Promise<any> | any;
 
-// Error handler middleware
-export const errorHandler = (error: AppError, req: Request, res: Response) => {
+// Error handler middleware.
+//
+// The unused `next` is load-bearing: Express identifies an error handler purely
+// by `fn.length === 4`. With three parameters this was registered as ordinary
+// middleware and never ran, so anything reaching `next(createError(...))` — an
+// expired token from requireAuth, most often — fell through to Express's default
+// handler and came back as an **HTML** page. Clients parsing JSON saw a syntax
+// error instead of a 401.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const errorHandler = (error: AppError, req: Request, res: Response, next: NextFunction) => {
   const statusCode = error.statusCode || 500;
   const message = error.message || 'Internal server error';
 

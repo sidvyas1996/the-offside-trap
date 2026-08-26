@@ -125,6 +125,8 @@ const passNodeSchema = z.object({
   bend: z.array(pitchPoint).max(32).optional(),
   receiver: playerRef.optional(),
   carrier: playerRef.optional(),
+  /** The ball leaves the ground on this leg. */
+  lofted: z.boolean().optional(),
   // Durations as drawn, in ms. The compiler treats them as relative weights and
   // rescales to fill the loop, so they are deliberately not loop fractions.
   holdMs: z.number().min(0).max(120000).optional(),

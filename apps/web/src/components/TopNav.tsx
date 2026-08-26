@@ -1,12 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-
-/* Logo flag glyph (design-language mark) */
-const FlagGlyph = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="#15140F">
-    <path d="M6 3v18l5-4 4 3 4-4V3l-4 4-4-3z" />
-  </svg>
-);
+import Logo from "./Logo";
 
 const NAV_LINKS = [
   { label: "Studio", to: "/create-tactics" },
@@ -47,12 +41,7 @@ const TopNav: React.FC<TopNavProps> = ({ actions, showLinks = true }) => {
     >
       {/* Logo */}
       <Link to="/" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none", flexShrink: 0 }}>
-        <span style={{
-          width: 34, height: 34, borderRadius: 9, background: "var(--pitch-lime)",
-          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-        }}>
-          <FlagGlyph />
-        </span>
+        <Logo size={34} />
         <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 16, letterSpacing: "0.02em", color: "#fff", lineHeight: 1 }}>
           OFFSIDE<br />TRAP
         </span>

@@ -83,9 +83,15 @@ function getInterpolatedFrame(
 
   const fs1 = before.fieldSettings;
   const fs2 = after.fieldSettings;
+  // Mirrors the client interpolator: `lift` carries the ball's height on a lofted
+  // pass, so dropping it here would make exported clips flatter than playback.
   const ball =
     fs1.ball && fs2.ball
-      ? { x: lerp(fs1.ball.x, fs2.ball.x, t), y: lerp(fs1.ball.y, fs2.ball.y, t) }
+      ? {
+          x: lerp(fs1.ball.x, fs2.ball.x, t),
+          y: lerp(fs1.ball.y, fs2.ball.y, t),
+          lift: lerp(fs1.ball.lift ?? 0, fs2.ball.lift ?? 0, t),
+        }
       : (fs1.ball || fs2.ball);
   const fieldSettings: FieldSettings = {
     fieldColor: lerpHex(fs1.fieldColor, fs2.fieldColor, t),

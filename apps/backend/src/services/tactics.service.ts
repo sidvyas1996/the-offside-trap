@@ -15,9 +15,16 @@ export class TacticsService {
       search,
       sortBy = 'recent',
       timeRange,
-      page = 1,
-      limit = 12,
+      page: rawPage = 1,
+      limit: rawLimit = 12,
     } = filters || {};
+
+    // `filters` comes straight off `req.query`, so these arrive as **strings**
+    // however they are typed. `skip` coerced silently but Prisma's `take` throws
+    // on a string, which meant any request that passed ?page= or ?limit= failed.
+    // Clamped as well, so a caller cannot ask for the whole table in one page.
+    const page = Math.max(1, Number(rawPage) || 1);
+    const limit = Math.min(100, Math.max(1, Number(rawLimit) || 12));
 
     // Calculate pagination
     const skip = (page - 1) * limit;

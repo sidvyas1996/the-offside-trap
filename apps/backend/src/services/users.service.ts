@@ -1,9 +1,11 @@
+import { UserProfile } from '@prisma/client';
 import { prisma } from './db.service';
 interface User {
   id?: string;
   username: string;
   email: string;
   avatar?: string | null;
+  profile?: UserProfile | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -17,6 +19,7 @@ export class UsersService {
         username: true,
         email: true,
         avatar: true,
+        profile: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -31,6 +34,7 @@ export class UsersService {
         username: true,
         avatar: true,
         email: true,
+        profile: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -120,6 +124,41 @@ export class UsersService {
       orderBy: { username: 'asc' },
       take: 10,
     });
+  }
+
+  // Update the signed-in user's own profile fields (onboarding + settings)
+  async updateMe(id: string, updateData: { username?: string; profile?: UserProfile }) {
+    try {
+      return await prisma.user.update({
+        where: { id },
+        data: updateData,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          avatar: true,
+          profile: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+    } catch (error: any) {
+      if (error.code === 'P2025') return null;
+      if (error.code === 'P2002') {
+        const field = error.meta?.target?.[0] || 'field';
+        throw new Error(`${field} already in use`);
+      }
+      throw error;
+    }
+  }
+
+  // True when the username is free (or already owned by `excludeUserId`)
+  async isUsernameAvailable(username: string, excludeUserId?: string): Promise<boolean> {
+    const existing = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    });
+    return !existing || existing.id === excludeUserId;
   }
 }
 
