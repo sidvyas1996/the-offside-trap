@@ -121,13 +121,13 @@ const Preview: React.FC<PreviewProps> = ({
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: "var(--surface-container)", border: "2px solid var(--ink)", boxShadow: "var(--card-shadow)" }}
+      style={{ background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)" }}
     >
       <h2 className="panel-title mb-4">
         <span className="icon-chip"><Target size={14} /></span>
         Preview
       </h2>
-      <div className="rounded-xl overflow-hidden" style={{ border: "2px solid var(--ink)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ border: "var(--border-w) solid var(--ink)" }}>
         <MiniTacticCard />
       </div>
 

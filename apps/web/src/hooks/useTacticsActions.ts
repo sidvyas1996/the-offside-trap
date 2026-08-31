@@ -40,22 +40,22 @@ export const useTacticsActions = (
   // Set up home actions
   useEffect(() => {
     setActions({
-      onMouseDown: (player: Player) => {
-        drag.handleMouseDown(player);
+      onPointerDown: (player: Player) => {
+        drag.handlePointerDown(player);
         setDraggedPlayer(player);
       },
-      onMouseMove: drag.handleMouseMove,
-      onMouseUp: () => {
-        drag.handleMouseUp();
+      onPointerMove: drag.handlePointerMove,
+      onPointerUp: () => {
+        drag.handlePointerUp();
         setDraggedPlayer(null);
       },
       onPlayerNameChange: handlePlayerNameChange,
       onUpdatePlayer: handleUpdatePlayer,
     });
   }, [
-    drag.handleMouseDown,
-    drag.handleMouseMove,
-    drag.handleMouseUp,
+    drag.handlePointerDown,
+    drag.handlePointerMove,
+    drag.handlePointerUp,
     setActions,
     setDraggedPlayer,
     handlePlayerNameChange,
@@ -65,22 +65,22 @@ export const useTacticsActions = (
   // Set up opposition actions
   useEffect(() => {
     setOppositionActions({
-      onMouseDown: (player: Player) => {
-        oppDrag.handleMouseDown(player);
+      onPointerDown: (player: Player) => {
+        oppDrag.handlePointerDown(player);
         setDraggedOppositionPlayer(player);
       },
-      onMouseMove: oppDrag.handleMouseMove,
-      onMouseUp: () => {
-        oppDrag.handleMouseUp();
+      onPointerMove: oppDrag.handlePointerMove,
+      onPointerUp: () => {
+        oppDrag.handlePointerUp();
         setDraggedOppositionPlayer(null);
       },
       onPlayerNameChange: handleOppPlayerNameChange,
       onUpdatePlayer: handleUpdateOppositionPlayer,
     });
   }, [
-    oppDrag.handleMouseDown,
-    oppDrag.handleMouseMove,
-    oppDrag.handleMouseUp,
+    oppDrag.handlePointerDown,
+    oppDrag.handlePointerMove,
+    oppDrag.handlePointerUp,
     setOppositionActions,
     setDraggedOppositionPlayer,
     handleOppPlayerNameChange,

@@ -6,12 +6,15 @@
 
 /* CSS Variables — Neo-brutalist Sports design system ("Bold · Popping · Playful · Fast · Loud") */
 :root {
-  /* ── Surface hierarchy (warm cream paper) ── */
-  --surface:              #efe7d6;  /* page paper */
-  --surface-low:          #e6ddca;  /* inset/recessed */
-  --surface-container:    #fbf5e9;  /* raised card */
-  --surface-high:         #ffffff;  /* brightest card */
-  --surface-highest:      #fbf5e9;
+  /* ── Surface hierarchy ──
+     Dark scheme, per the Mobile v2 design. Elevation now reads *lighter*: the
+     page is the darkest surface and cards lift away from it, which is the
+     inverse of the cream build this replaced. */
+  --surface:              #191a14;  /* page */
+  --surface-low:          #15140f;  /* inset/recessed — below the page */
+  --surface-container:    #23251c;  /* raised card */
+  --surface-high:         #2b2d22;  /* chips, inputs */
+  --surface-highest:      #3a3d2e;  /* brightest lift */
 
   /* ── Accent / primary (Pitch Lime) ── */
   --primary:              #c6f24e;
@@ -19,18 +22,23 @@
   --on-primary:           #15140f;  /* black ink sits on lime */
   --primary-hover:        #b6e835;
 
-  /* ── Ink ── */
+  /* ── Ink ──
+     Still the border and hard-shadow colour. On a dark scheme it reads as a
+     crisp seam between surfaces rather than a heavy outline, which is why the
+     design also dropped the border from 2.5px to 1px. */
   --ink:                  #15140f;  /* Kit Black */
 
   /* ── Popping accent family (named in the design language) ── */
   --pitch-lime:           #c6f24e;
   --kit-black:            #15140f;
-  --playmaker-purple:     #7c6bf5;
+  --playmaker-purple:     #5c5794;
   --whistle-orange:       #ff6b3d;
   --card-yellow:          #ffc83d;
   --keeper-blue:          #4d7cff;
   --striker-pink:         #ff6fae;
   --grass-green:          #19a974;
+  --deep-purple:          #211F2A;  /* feature-card container */
+  --deep-purple-high:     #2C2939;  /* raised surface inside a purple card */
 
   /* Back-compat aliases (older components referenced these names) */
   --pastel-pink:          #ffd7e9;
@@ -39,51 +47,60 @@
   --pastel-mint:          #c9f0db;
   --pastel-yellow:        #ffe9b0;
   --accent-pink:          #ff6fae;
-  --accent-lavender:      #7c6bf5;
+  --accent-lavender:      #5c5794;
   --accent-mint:          #19a974;
 
-  /* ── Text ── */
-  --on-surface:           #15140f;
-  --on-surface-variant:   #6f6857;
-  --outline:              #8a8270;
+  /* ── Text ──
+     Secondary type runs warm rather than grey, tying the copy to the orange
+     accent instead of sitting neutral against it. Three steps, darkening as the
+     text gets smaller and less important — each still well clear of 4.5:1 on
+     the dark surfaces. Headings stay near-white so the hierarchy still reads. */
+  --on-surface:           #f3f0e4;  /* headings, primary type */
+  --on-surface-variant:   #f0c69a;  /* body copy — soft peach */
+  --caption:              #F6754D;  /* captions, kickers — amber */
+  --outline:              #F2A58D;  /* small hints, unit labels — deeper orange */
+  --on-surface-dim:       #e9e6d8;  /* labels on raised chips */
 
   /* ── Semantic aliases ── */
-  --background:           #efe7d6;
-  --foreground:           #15140f;
-  --card:                 #fbf5e9;
-  --card-foreground:      #15140f;
+  --background: #201d29;
+  --foreground:           #f3f0e4;
+  --card:                 #2C2939;
+  --card-foreground:      #f3f0e4;
   --border:               #15140f;
-  --input:                #ffffff;
-  --text-primary:         #15140f;
-  --text-secondary:       #6f6857;
+  --input:                #2b2d22;
+  --text-primary:         #f3f0e4;
+  --text-secondary:       #f0c69a;
   --hero-overlay:         rgba(21,20,15,0.85);
 
   /* ── Studio theme aliases ── */
-  --theme-bg:             #efe7d6;
-  --theme-card:           #fbf5e9;
-  --theme-stage:          #e6ddca;
-  --theme-panel:          #fbf5e9;
-  --theme-border:         rgba(21,20,15,0.16);
-  --theme-border-btn:     rgba(21,20,15,0.30);
-  --theme-muted:          #8a8270;
-  --theme-secondary-text: #4d4838;
-  --theme-bright-text:    #15140f;
-  --theme-badge-bg:       #efe7d6;
+  --theme-bg:             #191a14;
+  --theme-card:           #23251c;
+  --theme-stage:          #15140f;
+  --theme-panel:          #23251c;
+  --theme-border:         rgba(243,240,228,0.16);
+  --theme-border-btn:     rgba(243,240,228,0.30);
+  --theme-muted:          #d89a62;
+  --theme-secondary-text: #f0c69a;
+  --theme-bright-text:    #f3f0e4;
+  --theme-badge-bg:       #2b2d22;
 
   /* ── Brutalist layer ── */
-  --hairline:             rgba(21,20,15,0.14);
-  --hairline-strong:      rgba(21,20,15,0.28);
+  --hairline:             rgba(243,240,228,0.14);
+  --hairline-strong:      rgba(243,240,228,0.28);
   --primary-glow:         0 0 0 rgba(0,0,0,0);
-  /* Hard offset shadows — NO blur, this is the signature look */
-  --card-shadow:          4px 4px 0 var(--ink);
-  --card-shadow-hover:    7px 7px 0 var(--ink);
-  --shadow-sm:            3px 3px 0 var(--ink);
-  --border-w:             2.5px;            /* standard chunky border */
-  --dot-grid:             radial-gradient(#d8cdb6 1.4px, transparent 1.4px);
+  /* Hard offset shadows — NO blur, this is the signature look. Tighter than the
+     cream build: ink-on-dark needs less throw to read as depth. */
+  --card-shadow:          2px 2px 0 var(--ink);
+  --card-shadow-hover:    4px 4px 0 var(--ink);
+  --shadow-sm:            1.5px 1.5px 0 var(--ink);
+  --border-w:             1px;              /* standard border */
+  --dot-grid:             radial-gradient(#2b2d22 1.4px, transparent 1.4px);
 
-  /* ── Typography ── */
-  --font-display:         'Archivo', 'Hanken Grotesk', sans-serif;
-  --font-body:            'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* ── Typography ──
+     Geist Pixel carries display type (titles, numerals, the pill labels); Geist
+     carries everything you actually read. */
+  --font-display:         'Geist Pixel', 'Geist', ui-monospace, monospace;
+  --font-body:            'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Base styles */
@@ -610,7 +627,7 @@ p {
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--outline);
+  color: var(--caption);
 }
 
 /* Display title — heavy black Archivo */
@@ -743,7 +760,7 @@ p {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  border: 2px solid var(--ink);
+  border: var(--border-w) solid var(--ink);
   background: var(--surface-high);
   color: var(--ink);
   cursor: pointer;
@@ -778,7 +795,7 @@ p {
   outline: none;
   padding: 2px 0;
   width: 240px;
-  border-bottom: 2.5px solid transparent;
+  border-bottom: var(--border-w) solid transparent;
   transition: border-color 0.15s;
 }
 
@@ -794,7 +811,7 @@ p {
   letter-spacing: 0.02em;
   color: var(--ink);
   background: var(--card-yellow);
-  border: 2px solid var(--ink);
+  border: var(--border-w) solid var(--ink);
   border-radius: 999px;
   padding: 4px 12px;
 }
@@ -809,7 +826,7 @@ p {
   letter-spacing: 0.02em;
   color: var(--ink);
   background: var(--primary);
-  border: 2px solid var(--ink);
+  border: var(--border-w) solid var(--ink);
   border-radius: 999px;
   padding: 3px 11px;
 }
@@ -835,7 +852,7 @@ p {
   height: 28px;
   border-radius: 9px;
   background: var(--primary);
-  border: 2px solid var(--ink);
+  border: var(--border-w) solid var(--ink);
   color: var(--ink);
   flex-shrink: 0;
 }
@@ -905,7 +922,7 @@ p {
   font-weight: 700;
   color: var(--ink);
   background: var(--surface-high);
-  border: 2px solid var(--ink);
+  border: var(--border-w) solid var(--ink);
   box-shadow: var(--shadow-sm);
   pointer-events: none;
   z-index: 2;
@@ -1035,9 +1052,9 @@ p {
   background: linear-gradient(
     90deg,
     var(--surface) 0%,
-    rgba(239,231,214,0.92) 20%,
-    rgba(239,231,214,0.55) 36%,
-    rgba(239,231,214,0) 52%
+    rgba(25,26,20,0.92) 20%,
+    rgba(25,26,20,0.55) 36%,
+    rgba(25,26,20,0) 52%
   );
 }
 
@@ -1055,15 +1072,21 @@ p {
   .hero-scrim {
     background: linear-gradient(
       180deg,
-      rgba(239,231,214,0.94) 0%,
-      rgba(239,231,214,0.6) 38%,
-      rgba(239,231,214,0) 60%
+      rgba(25,26,20,0.94) 0%,
+      rgba(25,26,20,0.6) 38%,
+      rgba(25,26,20,0) 60%
     );
   }
 }
 
 /* Editor bar title input (on dark pill) */
 .editor-title-input::placeholder { color: rgba(255,255,255,0.4); }
+/* The phone header drops the black pill, so the placeholder needs ink-on-cream
+   contrast instead of white-on-black. */
+.editor-title-input--bare::placeholder { color: rgba(243,240,228,0.38); }
+.editor-subtitle-input--bare::placeholder { color: rgba(243,240,228,0.35); }
+.editor-subtitle-input--bare:hover { border-bottom-color: rgba(243,240,228,0.2) !important; }
+.editor-subtitle-input--bare:focus { border-bottom-color: rgba(243,240,228,0.45) !important; }
 
 /* Description line under the editor-bar title. Reads as a subtitle at rest and
    only shows its edges on hover/focus, so the header stays a header. */
@@ -1133,7 +1156,7 @@ p {
   height: 200px;
   border-radius: 22px;
   border: var(--border-w) solid var(--ink);
-  background: linear-gradient(100deg, var(--surface-low) 40%, var(--surface-container) 50%, var(--surface-low) 60%);
+  background: linear-gradient(100deg, var(--deep-purple) 40%, var(--deep-purple-high) 50%, var(--deep-purple) 60%);
   background-size: 200% 100%;
   animation: shimmer 1.4s linear infinite;
 }
@@ -1160,7 +1183,7 @@ p {
 }
 
 .auth-input:focus {
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: var(--card-shadow);
 }
 
 .auth-input::placeholder {
@@ -1199,7 +1222,7 @@ p {
 .auth-submit:hover:not(:disabled) {
   background: var(--primary-hover);
   transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: var(--card-shadow);
 }
 
 .auth-submit:active:not(:disabled) {

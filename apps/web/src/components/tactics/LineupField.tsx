@@ -10,6 +10,16 @@ import {
 const FIELD_RATIO = 7 / 11;
 
 interface LineupFieldProps {
+  /**
+   * Quarter-turn the lineup board for phones.
+   *
+   * This board keeps its own 550x350 space rather than the shared 622x350 one,
+   * so it is transposed to 350x550 here instead of going through
+   * packages/shared's projection. That is deliberate: switching it to the shared
+   * pitch would change its proportions, and every saved lineup was authored
+   * against these.
+   */
+  portrait?: boolean;
   waypointsMode: boolean;
   horizontalZonesMode: boolean;
   verticalSpacesMode: boolean;
@@ -48,6 +58,7 @@ interface LineupFieldProps {
 }
 
 const LineupField: React.FC<LineupFieldProps> = ({
+  portrait = false,
   waypointsMode,
   horizontalZonesMode,
   verticalSpacesMode,
@@ -272,7 +283,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
 
   const fieldStyle = {
     backgroundColor: options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR,
-    aspectRatio: "11/7",
+    aspectRatio: portrait ? "7/11" : "11/7",
     width: "100%",
     maxWidth: "100%",
     margin: "0 auto",
@@ -280,10 +291,17 @@ const LineupField: React.FC<LineupFieldProps> = ({
 
   return (
     <div
-      className="rounded-2xl p-6"
-      style={{ background: "var(--surface-container)", border: "2px solid var(--ink)", boxShadow: "var(--card-shadow)" }}
+      className={portrait ? "rounded-2xl p-2" : "rounded-2xl p-6"}
+      style={{
+        background: "var(--surface-container)",
+        border: "var(--border-w) solid var(--ink)",
+        boxShadow: "var(--card-shadow)",
+        // On a phone the card is the stage, so it takes the height it is given
+        // instead of wrapping a fixed-height box with dead space around it.
+        ...(portrait ? { height: "100%", display: "flex", flexDirection: "column" as const } : {}),
+      }}
     >
-      <div className="w-full flex justify-center relative">
+      <div className="w-full flex justify-center relative" style={portrait ? { flex: 1, minHeight: 0 } : undefined}>
         {/* 3D Perspective Container */}
         <div
           className="overflow-hidden mb-0"
@@ -298,7 +316,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
             justifyContent: "center",
             // Fixed stage: the box never resizes — the field auto-fits
             // inside it at any rotation/tilt/zoom (see fittedScale).
-            height: "clamp(420px, 62vh, 680px)",
+            height: portrait ? "100%" : "clamp(420px, 62vh, 680px)",
             margin: "32px 0",
           }}
         >
@@ -313,19 +331,24 @@ const LineupField: React.FC<LineupFieldProps> = ({
               transition: "transform 0.45s cubic-bezier(0.22, 0.8, 0.25, 1)",
               willChange: "transform",
             }}
-            onMouseMove={actions.onMouseMove}
-            onMouseUp={actions.onMouseUp}
-            onMouseLeave={actions.onMouseUp}
+            onPointerMove={actions.onPointerMove}
+            onPointerUp={actions.onPointerUp}
+            onPointerCancel={actions.onPointerUp}
           >
             {/* 3D Field Markings */}
             <svg
               className="absolute inset-0 w-full h-full opacity-30"
-              viewBox="0 0 550 350"
+              viewBox={portrait ? "0 0 350 550" : "0 0 550 350"}
               style={{
                 transform: "translateZ(0)",
                 transformStyle: "preserve-3d",
               }}
             >
+            {/* A quarter turn applied once, rather than transposing 25 shapes by
+                hand. It is a rotation (determinant +1), so arcs and handedness
+                come through untouched — the bug that flipping sweep flags caused
+                on the tactics board. */}
+            <g transform={portrait ? "matrix(0,-1,1,0,0,550)" : undefined}>
             {/* Field outline with isometric effect */}
             <rect
               x="20"
@@ -453,6 +476,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   strokeDasharray="5.5"
                 />
                 <text
+                  transform={portrait ? "rotate(90 275 340)" : undefined}
                   x="93.75"
                   y="340"
                   textAnchor="middle"
@@ -476,6 +500,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   strokeDasharray="5.5"
                 />
                 <text
+                  transform={portrait ? "rotate(90 275 340)" : undefined}
                   x="275"
                   y="340"
                   textAnchor="middle"
@@ -499,6 +524,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   strokeDasharray="5.5"
                 />
                 <text
+                  transform={portrait ? "rotate(90 275 340)" : undefined}
                   x="456.25"
                   y="340"
                   textAnchor="middle"
@@ -526,6 +552,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   strokeDasharray="5.5"
                 />
                 <text
+                  transform={portrait ? "rotate(90 275 340)" : undefined}
                   x="105"
                   y="340"
                   textAnchor="middle"
@@ -549,6 +576,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   strokeDasharray="5.5"
                 />
                 <text
+                  transform={portrait ? "rotate(90 275 340)" : undefined}
                   x="275"
                   y="340"
                   textAnchor="middle"
@@ -572,6 +600,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   strokeDasharray="5.5"
                 />
                 <text
+                  transform={portrait ? "rotate(90 275 340)" : undefined}
                   x="445"
                   y="340"
                   textAnchor="middle"
@@ -605,7 +634,8 @@ const LineupField: React.FC<LineupFieldProps> = ({
                 />
               );
             })}
-          </svg>
+            </g>
+            </svg>
 
           {/* Player Markers with 3D Transform */}
           <div
@@ -623,8 +653,9 @@ const LineupField: React.FC<LineupFieldProps> = ({
                 data-player-id={player.id}
                 style={{
                   position: "absolute",
-                  left: `${player.x}%`,
-                  top: `${player.y}%`,
+                  // Same quarter turn as the markings, in percentage space.
+                  left: `${portrait ? player.y : player.x}%`,
+                  top: `${portrait ? 100 - player.x : player.y}%`,
                   transform: "translate(-50%, -50%)",
                   pointerEvents: "auto"
                 }}
@@ -634,7 +665,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   player={player}
                   scale={scale}
                   isDragged={draggedPlayer?.id === player.id}
-                  onMouseDown={() => actions.onMouseDown && actions.onMouseDown(player)}
+                  onPointerDown={() => actions.onPointerDown && actions.onPointerDown(player)}
                   editable={options.editable}
                   onNameChange={onPlayerNameChange}
                   onPositionChange={
@@ -658,6 +689,8 @@ const LineupField: React.FC<LineupFieldProps> = ({
                   markerSecondaryColor={options.markerSecondaryColor}
                   markerDesign={options.markerDesign}
                   shirtTextureUrl={options.shirtTextureUrl}
+                  shirtKitId={options.shirtKitId}
+                  showShirtNumbers={options.showShirtNumbers}
                   onPlayerSelect={onPlayerSelect}
                 />
               </div>

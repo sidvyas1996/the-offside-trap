@@ -19,10 +19,16 @@ import {
   PITCH_VIEWBOX,
   PITCH_X_SCALE,
   PITCH_STRIPE_PCT,
-  pctToSvgX,
-  pctToSvgY,
+  PITCH_PORTRAIT_ASPECT,
+  PITCH_PORTRAIT_STRIPE_COUNT,
+  PITCH_MARKINGS,
+  LANDSCAPE,
+  PORTRAIT,
+  projectMarking,
+  arcPath,
   clientToPitchPct,
   pitchDistance,
+  PITCH_ORIENTATION_ATTR,
 } from "../utils/pitch.ts";
 import MovementOverlay from "./MovementOverlay";
 import { useMovementCapture, type PlayerRef } from "../hooks/useMovementCapture";
@@ -31,6 +37,24 @@ import type { Player, TacticArrow, Movement } from "../../../../packages/shared"
 
 interface FootballFieldProps {
   editable?: boolean;
+  /**
+   * Draw the board rotated a quarter turn, pitch length running up the screen.
+   *
+   * Render-time only: stored coordinates are untouched, so the same tactic is
+   * the same data either way (see packages/shared/src/pitch-view.ts). Defaults
+   * to false, which is what keeps the headless export routes on the landscape
+   * board without them having to opt out.
+   */
+  portrait?: boolean;
+  /**
+   * Size the board from the height it is given rather than the width.
+   *
+   * A portrait board is ~1.78x taller than it is wide, so on a phone the
+   * width-driven default overflows the viewport as soon as a header and a dock
+   * take their share. Here the container owns the height and the board takes
+   * whatever width its aspect ratio allows.
+   */
+  fitHeight?: boolean;
   size?: "default" | "fullscreen";
   waypointsMode?: boolean;
   horizontalZonesMode?: boolean;
@@ -47,6 +71,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
   horizontalZonesMode = false,
   verticalSpacesMode = false,
   isFullScreen = false,
+  portrait = false,
+  fitHeight = false,
   fieldOfViewMode = false,
   onPlayerSelect,
 }) => {
@@ -58,6 +84,23 @@ const FootballField: React.FC<FootballFieldProps> = ({
     arrows, setArrows, arrowTool, arrowBallColor, arrowRunColor,
     currentBeat, showAllBeats, previewingPhase,
   } = useFootballField();
+
+  // One object decides which way up everything below draws, so the orientation
+  // is chosen once rather than branched on at every coordinate. Declared before
+  // the callbacks because several of them close over it *and* list it as a
+  // dependency, which is evaluated during render.
+  const projection = portrait ? PORTRAIT : LANDSCAPE;
+
+  /**
+   * Player markers run 10% larger on the phone board.
+   *
+   * The portrait board is far narrower than the desktop one, so a marker that
+   * reads comfortably at 900px is a small target under a thumb. Deliberately
+   * scoped to players on the portrait board: the ball keeps the shared scale so
+   * it stays the smaller object, and the desktop studio and the export frame are
+   * both untouched.
+   */
+  const MOBILE_MARKER_BOOST = 1.1;
 
   /**
    * Which player a point landed on, or null for empty space. A pass that finds
@@ -108,11 +151,11 @@ const FootballField: React.FC<FootballFieldProps> = ({
     }
   }, [movementMode, capture]);
 
-  const handleCaptureMove = useCallback((e: React.MouseEvent) => {
+  const handleCaptureMove = useCallback((e: React.PointerEvent) => {
     if (!capture.isCapturing() || !fieldRef.current) return;
-    const pt = clientToPitchPct(fieldRef.current, e.clientX, e.clientY);
+    const pt = clientToPitchPct(fieldRef.current, e.clientX, e.clientY, projection);
     if (pt) capture.sample(pt);
-  }, [capture, fieldRef]);
+  }, [capture, fieldRef, projection]);
 
   /**
    * Continue the passing move from where it ended.
@@ -171,11 +214,11 @@ const FootballField: React.FC<FootballFieldProps> = ({
 
   // Same viewport→field mapping as usePlayerDrag: invert the live CSS
   // transform so dragging works when the field is 3D-tilted in fullscreen
-  const handleBallMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleBallPointerMove = useCallback((e: React.PointerEvent) => {
     if (!isDraggingBall || !fieldRef.current) return;
-    const pt = clientToPitchPct(fieldRef.current, e.clientX, e.clientY);
+    const pt = clientToPitchPct(fieldRef.current, e.clientX, e.clientY, projection);
     if (pt) setBall(pt);
-  }, [isDraggingBall, fieldRef, setBall]);
+  }, [isDraggingBall, fieldRef, setBall, projection]);
 
   // Arrow drawing state
   const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
@@ -183,14 +226,20 @@ const FootballField: React.FC<FootballFieldProps> = ({
   // ID of the player the cursor is snapping to (for visual feedback)
   const [arrowSnapId, setArrowSnapId] = useState<number | null>(null);
 
+  /**
+   * Arrow drawing's cursor mapping.
+   *
+   * Was a hand-rolled getBoundingClientRect copy, which is exactly the drift
+   * `clientToPitchPct` warns about: it ignored the board's CSS transform, so
+   * arrows landed off-cursor on the 3D-tilted fullscreen board, and it would
+   * have needed its own portrait handling. Delegating means one mapping, and
+   * both problems go away at once. Centre is the fallback for an unlaid-out
+   * board, as before.
+   */
   const toFieldPct = useCallback((clientX: number, clientY: number) => {
     if (!fieldRef.current) return { x: 50, y: 50 };
-    const rect = fieldRef.current.getBoundingClientRect();
-    return {
-      x: Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)),
-      y: Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)),
-    };
-  }, [fieldRef]);
+    return clientToPitchPct(fieldRef.current, clientX, clientY, projection) ?? { x: 50, y: 50 };
+  }, [fieldRef, projection]);
 
   // Find the nearest player within a snap threshold (8 percentage units, aspect-ratio corrected)
   const findNearestPlayer = useCallback((pt: { x: number; y: number }) => {
@@ -208,7 +257,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
     return nearest;
   }, [players, oppositionPlayers, showOpposition]);
 
-  const handleArrowMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleArrowPointerDown = useCallback((e: React.PointerEvent) => {
     if (!arrowTool) return;
     e.preventDefault();
     const pt = toFieldPct(e.clientX, e.clientY);
@@ -225,7 +274,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
     }
   }, [arrowTool, arrowBallColor, arrowRunColor, toFieldPct, findNearestPlayer, setArrows]);
 
-  const handleArrowMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleArrowPointerMove = useCallback((e: React.PointerEvent) => {
     const pt = toFieldPct(e.clientX, e.clientY);
     if (drawingStart) {
       setDrawingCurrent(pt);
@@ -236,7 +285,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
     }
   }, [drawingStart, toFieldPct, findNearestPlayer]);
 
-  const handleArrowMouseUp = useCallback((e: React.MouseEvent) => {
+  const handleArrowPointerUp = useCallback((e: React.PointerEvent) => {
     if (!arrowTool || !drawingStart) return;
     const end = toFieldPct(e.clientX, e.clientY);
     const dx = end.x - drawingStart.x;
@@ -293,14 +342,17 @@ const FootballField: React.FC<FootballFieldProps> = ({
     if (rotatingPlayerId === null) return;
     rotatingPlayerIdRef.current = rotatingPlayerId;
 
-    const onMove = (e: MouseEvent) => {
+    const onMove = (e: PointerEvent) => {
       const pid = rotatingPlayerIdRef.current;
       if (pid === null || !fieldRef.current) return;
       const player = playersRef.current.find((p: any) => p.id === pid);
       if (!player) return;
       const rect = fieldRef.current.getBoundingClientRect();
-      const cx = (player.x / 100) * rect.width + rect.left;
-      const cy = (player.y / 100) * rect.height + rect.top;
+      // Screen position, so the projected point — a portrait board puts the
+      // player somewhere the stored coords alone would not predict.
+      const at = projection.toPct(player);
+      const cx = (at.x / 100) * rect.width + rect.left;
+      const cy = (at.y / 100) * rect.height + rect.top;
       const angle = (Math.atan2(e.clientY - cy, e.clientX - cx) * 180) / Math.PI;
       setFovAngles(prev => ({ ...prev, [pid]: (angle + 360) % 360 }));
     };
@@ -310,13 +362,15 @@ const FootballField: React.FC<FootballFieldProps> = ({
       rotatingPlayerIdRef.current = null;
     };
 
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
     return () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
     };
-  }, [rotatingPlayerId]);
+  }, [rotatingPlayerId, projection]);
 
   // Context menu clamping and close-on-click
   const onShowContextMenu = (playerId: number, x: number, y: number) => {
@@ -340,18 +394,22 @@ const FootballField: React.FC<FootballFieldProps> = ({
     if (!fieldRef.current) return;
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
-        const fieldWidth = entry.contentRect.width;
+        // Scale off the axis the pitch's *length* runs along, not off the
+        // element's width. The two are the same thing in landscape, but on the
+        // portrait board width is the pitch's short side, and dividing by it
+        // would shrink every marker by the 622:350 ratio for no reason.
+        const pitchLengthPx = portrait ? entry.contentRect.height : entry.contentRect.width;
         // Markers scale with the board, so this divisor sets how much room the
         // pitch has in marker-widths. It was tuned up alongside the longer 16:9
         // pitch: the extra length only buys space to manoeuvre (notably with a
         // full opposition team) if markers shrink relative to the surface.
-        const newScale = Math.max(0.7, Math.min(1.5, fieldWidth / 1150));
+        const newScale = Math.max(0.7, Math.min(1.5, pitchLengthPx / 1150));
         setScale(newScale);
       }
     });
     observer.observe(fieldRef.current);
     return () => observer.disconnect();
-  }, [fieldRef]);
+  }, [fieldRef, portrait]);
 
   const handlePlayerAction = (action: string) => {
     if (!contextMenu.playerId || !onUpdatePlayer) return;
@@ -397,152 +455,124 @@ const FootballField: React.FC<FootballFieldProps> = ({
   const fieldColor = options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR;
   // Subtle alternating stripe — slightly lighter than base color
   const stripeColor = 'rgba(255,255,255,0.04)';
+  // Stripes are mown along the pitch's *length*, so the gradient angle follows
+  // the projection rather than being pinned to the screen's horizontal.
+  const stripePct = portrait ? 100 / PITCH_PORTRAIT_STRIPE_COUNT : PITCH_STRIPE_PCT;
+  const stripeAngle = portrait ? '0deg' : '90deg';
   const pitchBackground = `repeating-linear-gradient(
-    90deg,
+    ${stripeAngle},
     transparent 0%,
-    transparent ${PITCH_STRIPE_PCT}%,
-    ${stripeColor} ${PITCH_STRIPE_PCT}%,
-    ${stripeColor} ${PITCH_STRIPE_PCT * 2}%
+    transparent ${stripePct}%,
+    ${stripeColor} ${stripePct}%,
+    ${stripeColor} ${stripePct * 2}%
   ), ${fieldColor}`;
 
-  const fieldStyle =
-    size === "fullscreen" || options.size === "fullscreen" || isFullScreen
+  const wideStage = size === "fullscreen" || options.size === "fullscreen" || isFullScreen;
+
+  /**
+   * Which dimension drives the board.
+   *
+   * Exactly one dimension is ever set; the other falls out of `aspect-ratio`.
+   * That is not a style preference — markers are positioned in percentages of
+   * this element while the markings are an SVG that letterboxes inside it, so
+   * the moment the box stops matching 350:622 the two disagree and every marker
+   * drifts off the pitch it is supposed to sit on.
+   *
+   * Setting height *and* max-width (the obvious way to fit a portrait board into
+   * a bounded stage) does exactly that: max-width clamps the width, the explicit
+   * height stays, and the ratio is silently violated. So width always drives,
+   * and `fitHeight` only means "no desktop width cap — take the stage".
+   */
+  /**
+   * Contain-fit for the phone stage: as wide as the container allows, but never
+   * wider than its *height* permits at this aspect ratio.
+   *
+   * `cqh` is the container's height, which is the one thing plain CSS cannot
+   * otherwise reference from a width. Without it there is no way to honour both
+   * axes at once: width-driven overflows a short stage, height-driven overflows
+   * a narrow one, and setting both dimensions is what broke the ratio before.
+   * Requires `container-type: size` on the wrapper — see TacticalField.
+   */
+  const containWidth = `min(100%, calc(100cqh * ${portrait ? PITCH_WIDTH : PITCH_LENGTH} / ${portrait ? PITCH_LENGTH : PITCH_WIDTH}))`;
+
+  const sizeStyle = fitHeight
+    ? { width: containWidth, height: "auto", margin: "0 auto" }
+    : wideStage
+      ? { width: "100%", maxWidth: "100%", height: "auto", margin: "0 auto" }
+      : { width: "100%", maxWidth: "900px", margin: "0 auto" };
+
+  const fieldStyle = {
+    background: pitchBackground,
+    aspectRatio: portrait ? PITCH_PORTRAIT_ASPECT : PITCH_ASPECT,
+    ...sizeStyle,
+    // The portrait board carries the full neo-brutalist chrome the mobile design
+    // draws: ink border, 20px radius and a hard offset shadow. Landscape is left
+    // as it was so the desktop studio and the export frame are untouched.
+    ...(portrait
       ? {
-          background: pitchBackground,
-          aspectRatio: PITCH_ASPECT,
-          width: "100%",
-          maxWidth: "100%",
-          height: "auto",
-          margin: "0 auto",
+          border: 'var(--border-w) solid var(--ink)',
+          borderRadius: 20,
+          boxShadow: 'var(--card-shadow)',
         }
-      : {
-          background: pitchBackground,
-          aspectRatio: PITCH_ASPECT,
-          width: "100%",
-          maxWidth: "900px",
-          margin: "0 auto",
-        };
+      : {}),
+  };
+
+  /**
+   * Release every drag this board owns.
+   *
+   * Bound to pointerup, pointerleave and pointercancel. Leave is what the mouse
+   * build already used, and it is kept so behaviour is unchanged there. Cancel
+   * is the new one that matters on touch: the OS can revoke a pointer mid-drag
+   * (a system edge gesture, an incoming call), and without it `isDraggingBall`
+   * would stay true and a half-captured movement would never be committed.
+   *
+   * Deliberately *not* using setPointerCapture on this container — capture
+   * retargets every subsequent pointer event to the capturing element, which
+   * would starve the arrow overlay's own pointer handlers one layer down.
+   */
+  const endAllDrags = useCallback(() => {
+    actions.onPointerUp?.();
+    oppositionActions.onPointerUp?.();
+    setIsDraggingBall(false);
+    handleCaptureEnd();
+  }, [actions, oppositionActions, handleCaptureEnd]);
 
   return (
     <div
       ref={fieldRef}
+      // Read back by clientToPitchPct so every pointer mapping — including the
+      // ones in hooks that never see this component — un-rotates correctly.
+      {...{ [PITCH_ORIENTATION_ATTR]: String(projection.portrait) }}
       className={`relative rounded-xl overflow-hidden cursor-move ${isFullScreen ? '' : 'mb-6'}`}
-      style={fieldStyle}
-      onMouseMove={(e) => { actions.onMouseMove?.(e); oppositionActions.onMouseMove?.(e); handleBallMouseMove(e); handleCaptureMove(e); }}
-      onMouseUp={() => { actions.onMouseUp?.(); oppositionActions.onMouseUp?.(); setIsDraggingBall(false); handleCaptureEnd(); }}
-      onMouseLeave={() => { actions.onMouseUp?.(); oppositionActions.onMouseUp?.(); setIsDraggingBall(false); handleCaptureEnd(); }}
+      style={{ ...fieldStyle, touchAction: 'none' }}
+      onPointerMove={(e) => { actions.onPointerMove?.(e); oppositionActions.onPointerMove?.(e); handleBallPointerMove(e); handleCaptureMove(e); }}
+      onPointerUp={endAllDrags}
+      onPointerLeave={endAllDrags}
+      onPointerCancel={endAllDrags}
     >
-      {/* Field Markings */}
+      {/* Field Markings — drawn from the shared PITCH_MARKINGS data rather than
+          inline JSX, so the landscape and portrait boards cannot drift apart and
+          the lines can be tested without rendering a component. */}
       <svg
         className="absolute inset-0 w-full h-full opacity-55"
-        viewBox={PITCH_VIEWBOX}
+        viewBox={projection.viewBox}
       >
-        <rect
-          x={PITCH_MARGIN}
-          y={PITCH_MARGIN}
-          width={PITCH_INNER_LENGTH}
-          height={PITCH_WIDTH - PITCH_MARGIN * 2}
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <line
-          x1={PITCH_CENTRE_X}
-          y1={PITCH_MARGIN}
-          x2={PITCH_CENTRE_X}
-          y2={PITCH_WIDTH - PITCH_MARGIN}
-          stroke="white"
-          strokeWidth="2.5"
-        />
-        <circle
-          cx={PITCH_CENTRE_X}
-          cy={PITCH_CENTRE_Y}
-          r="40"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <circle cx={PITCH_CENTRE_X} cy={PITCH_CENTRE_Y} r="3" fill="white" />
-
-        {/* Goal and Box Markings — fixed real-world sizes, independent of pitch length */}
-        <rect
-          x={PITCH_MARGIN}
-          y="90"
-          width="70"
-          height="170"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <rect
-          x={PITCH_LENGTH - PITCH_MARGIN - 70}
-          y="90"
-          width="70"
-          height="170"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <rect
-          x={PITCH_MARGIN}
-          y="135"
-          width="30"
-          height="80"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <rect
-          x={PITCH_LENGTH - PITCH_MARGIN - 30}
-          y="135"
-          width="30"
-          height="80"
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <circle cx={PITCH_MARGIN + 45} cy={PITCH_CENTRE_Y} r="3" fill="white" />
-        <circle cx={PITCH_LENGTH - PITCH_MARGIN - 45} cy={PITCH_CENTRE_Y} r="3" fill="white" />
-
-        {/* Penalty Arcs */}
-        <path
-          d={`M ${PITCH_MARGIN + 70} 155 A 30 30 0 0 1 ${PITCH_MARGIN + 70} 195`}
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <path
-          d={`M ${PITCH_LENGTH - PITCH_MARGIN - 70} 155 A 30 30 0 0 0 ${PITCH_LENGTH - PITCH_MARGIN - 70} 195`}
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-
-        {/* Corner Arcs */}
-        <path
-          d={`M ${PITCH_MARGIN} ${PITCH_MARGIN + 10} A 10 10 0 0 0 ${PITCH_MARGIN + 10} ${PITCH_MARGIN}`}
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <path
-          d={`M ${PITCH_LENGTH - PITCH_MARGIN - 10} ${PITCH_MARGIN} A 10 10 0 0 0 ${PITCH_LENGTH - PITCH_MARGIN} ${PITCH_MARGIN + 10}`}
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <path
-          d={`M ${PITCH_MARGIN + 10} ${PITCH_WIDTH - PITCH_MARGIN} A 10 10 0 0 0 ${PITCH_MARGIN} ${PITCH_WIDTH - PITCH_MARGIN - 10}`}
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
-        <path
-          d={`M ${PITCH_LENGTH - PITCH_MARGIN} ${PITCH_WIDTH - PITCH_MARGIN - 10} A 10 10 0 0 0 ${PITCH_LENGTH - PITCH_MARGIN - 10} ${PITCH_WIDTH - PITCH_MARGIN}`}
-          stroke="white"
-          strokeWidth="2.5"
-          fill="none"
-        />
+        {PITCH_MARKINGS.map((marking, i) => {
+          const m = projectMarking(marking, projection.portrait);
+          const stroke = { stroke: "white", strokeWidth: 2.5, fill: "none" } as const;
+          switch (m.kind) {
+            case "rect":
+              return <rect key={i} x={m.x} y={m.y} width={m.w} height={m.h} {...stroke} />;
+            case "line":
+              return <line key={i} x1={m.x1} y1={m.y1} x2={m.x2} y2={m.y2} stroke="white" strokeWidth={2.5} />;
+            case "circle":
+              return <circle key={i} cx={m.cx} cy={m.cy} r={m.r} {...stroke} />;
+            case "dot":
+              return <circle key={i} cx={m.cx} cy={m.cy} r={m.r} fill="white" />;
+            case "arc":
+              return <path key={i} d={arcPath(m)} {...stroke} />;
+          }
+        })}
 
         {/* Tactical Overlay */}
         {horizontalZonesMode && (
@@ -782,8 +812,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
               </radialGradient>
             </defs>
             {players.map((player: any) => {
-              const px = pctToSvgX(player.x);
-              const py = pctToSvgY(player.y);
+              const px = projection.toX(player);
+              const py = projection.toY(player);
               const r = 45;
               const angle = fovAngles[player.id] ?? 0;
               const sx = r * 0.5;
@@ -803,7 +833,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
             return (
               <button
                 key={player.id}
-                onMouseDown={e => {
+                onPointerDown={e => {
                   e.preventDefault();
                   e.stopPropagation();
                   setRotatingPlayerId(player.id);
@@ -814,8 +844,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
                 title="Drag to rotate player's field of view"
                 style={{
                   position: "absolute",
-                  left: `calc(${player.x}% + 22px)`,
-                  top: `calc(${player.y}% - 22px)`,
+                  left: `calc(${projection.toPct(player).x}% + 22px)`,
+                  top: `calc(${projection.toPct(player).y}% - 22px)`,
                   transform: "translate(-50%, -50%)",
                   zIndex: 30,
                   width: 22,
@@ -843,16 +873,17 @@ const FootballField: React.FC<FootballFieldProps> = ({
         <PlayerMarker
           key={player.id}
           player={player}
-          scale={scale}
+          pos={projection.toPct(player)}
+          scale={portrait ? scale * MOBILE_MARKER_BOOST : scale}
           isDragged={draggedPlayer?.id === player.id}
           isAnimating={isAnimating}
           dwellMs={draggedPlayer?.id === player.id ? capture.liveDwellMs : 0}
-          onMouseDown={() => {
+          onPointerDown={() => {
             // While a later beat is on screen the positions are a computed preview,
             // so a drag has nowhere legitimate to land: committing it would write a
             // mid-move pose back into the tactic's starting board.
             if (previewingPhase) return;
-            actions.onMouseDown?.(player);
+            actions.onPointerDown?.(player);
             beginCapture({ kind: 'player', team: 'home', playerId: player.id }, { x: player.x, y: player.y });
           }}
           editable={typeof editable === "boolean" ? editable : options.editable}
@@ -881,6 +912,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
           markerSecondaryColor={options.markerSecondaryColor}
           markerDesign={options.markerDesign}
           shirtTextureUrl={options.shirtTextureUrl}
+          shirtKitId={options.shirtKitId}
+          showShirtNumbers={options.showShirtNumbers}
           onPlayerSelect={onPlayerSelect}
         />
       ))}
@@ -890,13 +923,14 @@ const FootballField: React.FC<FootballFieldProps> = ({
         <PlayerMarker
           key={`opp-${player.id}`}
           player={player}
-          scale={scale}
+          pos={projection.toPct(player)}
+          scale={portrait ? scale * MOBILE_MARKER_BOOST : scale}
           isDragged={draggedOppositionPlayer?.id === player.id}
           isAnimating={isAnimating}
           dwellMs={draggedOppositionPlayer?.id === player.id ? capture.liveDwellMs : 0}
-          onMouseDown={() => {
+          onPointerDown={() => {
             if (previewingPhase) return;
-            oppositionActions.onMouseDown?.(player);
+            oppositionActions.onPointerDown?.(player);
             beginCapture({ kind: 'player', team: 'away', playerId: player.id }, { x: player.x, y: player.y });
           }}
           editable={typeof editable === "boolean" ? editable : oppositionOptions.editable}
@@ -921,17 +955,20 @@ const FootballField: React.FC<FootballFieldProps> = ({
           markerSecondaryColor={oppositionOptions.markerSecondaryColor}
           markerDesign={oppositionOptions.markerDesign}
           shirtTextureUrl={oppositionOptions.shirtTextureUrl}
+          shirtKitId={oppositionOptions.shirtKitId}
+          showShirtNumbers={oppositionOptions.showShirtNumbers}
         />
       ))}
 
       {/* Ball marker */}
       <BallMarker
         ball={ball}
+        pos={projection.toPct(ball)}
         scale={scale}
         isDragged={isDraggingBall}
         isAnimating={isAnimating}
         editable={typeof editable === "boolean" ? editable : options.editable}
-        onMouseDown={() => {
+        onPointerDown={() => {
           if (previewingPhase) return;
           setIsDraggingBall(true);
           beginCapture({ kind: 'ball' }, { x: ball.x, y: ball.y });
@@ -947,6 +984,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
         liveTrail={capture.liveTrail}
         visible={!isAnimating}
         onExtendFrom={movementMode ? handleExtendPass : undefined}
+        projection={projection}
       />
 
       {/* Arrow annotations */}
@@ -958,6 +996,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
         // Ghost the beats you are not authoring, so the board shows what happens
         // *now* without throwing away the context of what led here.
         activeBeat={showBeats && !isAnimating && !showAllBeats ? currentBeat : undefined}
+        projection={projection}
       />
 
       {/* Arrow drawing overlay — transparent full-field capture layer */}
@@ -965,10 +1004,10 @@ const FootballField: React.FC<FootballFieldProps> = ({
         <div
           className="absolute inset-0"
           style={{ zIndex: 45, cursor: 'crosshair' }}
-          onMouseDown={handleArrowMouseDown}
-          onMouseMove={handleArrowMouseMove}
-          onMouseUp={handleArrowMouseUp}
-          onMouseLeave={handleArrowOverlayLeave}
+          onPointerDown={handleArrowPointerDown}
+          onPointerMove={handleArrowPointerMove}
+          onPointerUp={handleArrowPointerUp}
+          onPointerLeave={handleArrowOverlayLeave}
         />
       )}
 
@@ -977,8 +1016,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
         <div
           style={{
             position: 'absolute',
-            left: `${snapPlayer.x}%`,
-            top: `${snapPlayer.y}%`,
+            left: `${projection.toPct(snapPlayer).x}%`,
+            top: `${projection.toPct(snapPlayer).y}%`,
             transform: 'translate(-50%, -50%)',
             zIndex: 46,
             pointerEvents: 'none',

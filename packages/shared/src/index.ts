@@ -99,6 +99,10 @@ export interface FieldSettings {
   markerTextColor?: string;
   markerSecondaryColor?: string;
   markerDesign?: MarkerDesign;
+  /** Kit chosen for shirt markers; ids come from the web app's kit catalog. */
+  shirtKitId?: string;
+  /** Draw squad numbers over shirt markers; off by default. */
+  showShirtNumbers?: boolean;
   // View settings
   fieldOfViewMode?: boolean;
   // Ball marker position; rides in fieldSettings so it persists and animates with keyframes

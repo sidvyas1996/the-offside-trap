@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="pl-18-gold">
+<defs><clipPath id="sil"><path d="M196 36 Q256 92 316 36 L366 46 L478 122 L444 198 L384 152 L392 486 Q392 496 382 496 L130 496 Q120 496 120 486 L128 152 L68 198 L34 122 L146 46 Z"></path></clipPath></defs>
+<g clip-path="url(#sil)"><rect x="-8" y="-8" width="528" height="528" fill="#f2b706"></rect><path d="M34 122 L68 198" stroke="#17181c" stroke-width="46"></path><path d="M478 122 L444 198" stroke="#17181c" stroke-width="46"></path><path d="M196 36 Q256 92 316 36" fill="none" stroke="#17181c" stroke-width="38"></path></g>
+<path d="M196 36 Q256 92 316 36 L366 46 L478 122 L444 198 L384 152 L392 486 Q392 496 382 496 L130 496 Q120 496 120 486 L128 152 L68 198 L34 122 L146 46 Z" fill="none" stroke="#17181c" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"></path>
+</svg>

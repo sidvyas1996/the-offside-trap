@@ -22,12 +22,16 @@ interface FieldOptions {
     markerType?: 'circle' | 'shirt';
     /** Kit atlas applied to 3D shirt markers (octa layout); plain grey when unset */
     shirtTextureUrl?: string;
+    /** Chosen kit from the shirt catalog (see data/kits.ts); plain shirt when unset */
+    shirtKitId?: string;
+    /** Draw squad numbers over shirt markers; off by default */
+    showShirtNumbers?: boolean;
 }
 
 interface FieldActions {
-    onMouseDown?: (player: Player) => void;
-    onMouseMove?: (e: React.MouseEvent) => void;
-    onMouseUp?: () => void;
+    onPointerDown?: (player: Player) => void;
+    onPointerMove?: (e: React.PointerEvent) => void;
+    onPointerUp?: () => void;
     onPlayerNameChange?: (id: number, name: string) => void;
     onUpdatePlayer?: (id: number, updates: Partial<Player>) => void;
 }
@@ -142,9 +146,12 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
         editable: true,
         fieldColor: DEFAULT_FOOTBALL_FIELD_COLOUR,
         playerColor: DEFAULT_PLAYER_COLOUR,
-        markerBgColor: '#fbf5e9',     // cream fill
-        markerBorderColor: '#c6f24e', // Pitch Lime ring
-        markerTextColor: '#15140f',   // Kit Black number
+        // Mobile v2 palette: a dark kit with a white ring reads on the green at
+        // any board size, where the old cream fill competed with the pitch lines.
+        // Defaults only — saved tactics carry their own colours.
+        markerBgColor: '#111827',     // dark kit
+        markerBorderColor: '#ffffff', // white ring
+        markerTextColor: '#ffffff',   // white number
         markerSecondaryColor: '#c6f24e',
         markerDesign: 'solid',
         enableContextMenu: true,
@@ -159,9 +166,9 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
     const [draggedOppositionPlayer, setDraggedOppositionPlayer] = useState<Player | null>(null);
     const [oppositionOptions, setOppositionOptions] = useState<FieldOptions>({
         editable: true,
-        markerBgColor: '#fbf5e9',     // cream fill
-        markerBorderColor: '#ff6fae', // Striker Pink ring
-        markerTextColor: '#15140f',   // Kit Black number
+        markerBgColor: '#111827',     // dark kit
+        markerBorderColor: '#ff6fae', // Striker Pink ring keeps the teams apart
+        markerTextColor: '#ffffff',   // white number
         markerSecondaryColor: '#ff6fae',
         markerDesign: 'solid',
         enableContextMenu: true,

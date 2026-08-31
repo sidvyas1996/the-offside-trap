@@ -26,8 +26,9 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
 
     return (
         <motion.div
-            whileHover={{ y: -4, background: "var(--surface-highest)" }}
-            style={{ background: "var(--surface-high)", borderRadius: 14, overflow: "hidden", transition: "all 0.2s" }}
+            className="tactic-card"
+            whileHover={{ y: -4, background: "var(--deep-purple-high)" }}
+            style={{ background: "var(--deep-purple)", borderRadius: 14, overflow: "hidden", transition: "all 0.2s" }}
         >
             <Link to={`/tactics/${tactic.id}`}>
                 <div className="aspect-video relative overflow-hidden">
@@ -55,7 +56,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
                         <span
                             key={index}
                             style={{
-                                background: "var(--surface-highest)",
+                                background: "var(--deep-purple-high)",
                                 color: "var(--on-surface-variant)",
                                 fontSize: 10,
                                 fontWeight: 600,

@@ -2,7 +2,7 @@ import React from "react";
 import type { MarkerDesign } from "../../contexts/FootballFieldContext";
 import type { ArrowType } from "../../../../../packages/shared/src";
 
-import { Users, Circle, CaseSensitive, Waypoints, Eye, Sun, Moon, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2, RotateCw, RotateCcw, ChevronUp, ChevronDown, ZoomIn, ZoomOut, Trash2 } from "lucide-react";
+import { Users, Circle, CaseSensitive, Waypoints, Eye, Sun, Moon, SplitSquareVertical, SplitSquareHorizontal, Maximize2, Minimize2, RotateCw, RotateCcw, ChevronUp, ChevronDown, ZoomIn, ZoomOut, Trash2, Hash } from "lucide-react";
 
 const HangerIcon = ({ size = 18 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 -960 960 960" fill="currentColor">
@@ -29,6 +29,8 @@ interface CreatorsMenuProps {
     showPlayerLabels?: boolean;
     onToggleMarkerType?: () => void;
     markerType?: 'circle' | 'shirt';
+    onToggleShirtNumbers?: () => void;
+    showShirtNumbers?: boolean;
     onToggleWaypoints?: () => void;
     waypointsMode?: boolean;
     onToggleMovementMode?: () => void;
@@ -81,6 +83,8 @@ interface CreatorsMenuProps {
     oppShowPlayerLabels?: boolean;
     onOppToggleMarkerType?: () => void;
     oppMarkerType?: 'circle' | 'shirt';
+    onOppToggleShirtNumbers?: () => void;
+    oppShowShirtNumbers?: boolean;
 }
 
 const COLORS = {
@@ -152,6 +156,8 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
     showPlayerLabels = true,
     onToggleMarkerType,
     markerType = 'circle',
+    onToggleShirtNumbers,
+    showShirtNumbers = false,
     markerBgColor = '#111827',
     markerBorderColor = '#ffffff',
     markerTextColor = '#ffffff',
@@ -208,6 +214,8 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
     oppShowPlayerLabels = true,
     onOppToggleMarkerType,
     oppMarkerType = 'circle',
+    onOppToggleShirtNumbers,
+    oppShowShirtNumbers = false,
 }) => {
     const [isDark, setIsDark] = React.useState(false);
     const handleToggleFieldColor = (e: React.MouseEvent) => {
@@ -233,11 +241,16 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
     const activeOnChangeDesign = isAway ? onChangeOppMarkerDesign : onChangeMarkerDesign;
     const activeOnToggleLabels = isAway ? onOppTogglePlayerLabels : onTogglePlayerLabels;
     const activeOnToggleMarkerType = isAway ? onOppToggleMarkerType : onToggleMarkerType;
+    const activeShowShirtNumbers = isAway ? oppShowShirtNumbers : showShirtNumbers;
+    const activeOnToggleShirtNumbers = isAway ? onOppToggleShirtNumbers : onToggleShirtNumbers;
 
     return (
         <div
-            className="w-full rounded-2xl px-5 py-4 flex flex-row items-stretch gap-0"
-            style={{ background: 'var(--surface-container)', border: '2px solid var(--ink)', boxShadow: 'var(--card-shadow)' }}
+            /* Stacks below md: the three sections are a horizontal toolbar with
+               vertical rules on desktop, which cannot fit a phone's width side by
+               side. md matches MOBILE_BREAKPOINT in hooks/useMediaQuery.ts. */
+            className="w-full rounded-2xl px-5 py-4 flex flex-col md:flex-row items-stretch gap-4 md:gap-0"
+            style={{ background: 'var(--surface-container)', border: 'var(--border-w) solid var(--ink)', boxShadow: 'var(--card-shadow)' }}
         >
 
             {/* Section 1 — Pitch Properties */}
@@ -373,7 +386,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
             </div>
 
             {/* Vertical divider */}
-            <div className="self-stretch w-px bg-[var(--theme-border)] mx-4" />
+            <div className="self-stretch h-px w-full md:h-auto md:w-px bg-[var(--theme-border)] md:mx-4" />
 
             {/* Section 2 — Player Properties */}
             <div className="flex flex-col flex-1 min-w-0">
@@ -548,6 +561,19 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             {activeMarkerType === 'circle' ? <HangerIcon size={18} /> : <Circle size={18} />}
                         </Button>
                     )}
+                    {/* Circle markers always carry their number, so this only
+                        applies once the markers are shirts. */}
+                    {activeMarkerType === 'shirt' && activeOnToggleShirtNumbers && (
+                        <Button
+                            onClick={(e) => { e.preventDefault(); activeOnToggleShirtNumbers(); }}
+                            className="!p-2"
+                            style={btnStyle(activeShowShirtNumbers)}
+                            variant="outline" type="button"
+                            title={activeShowShirtNumbers ? "Hide Numbers On Shirts" : "Show Numbers On Shirts"}
+                        >
+                            <Hash size={18} />
+                        </Button>
+                    )}
                     {activeOnToggleLabels && (
                         <Button
                             onClick={(e) => { e.preventDefault(); activeOnToggleLabels(); }}
@@ -576,7 +602,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
             {/* Section 3 — Arrows */}
             {onSetArrowTool && (
                 <>
-                    <div className="self-stretch w-px bg-[var(--theme-border)] mx-4" />
+                    <div className="self-stretch h-px w-full md:h-auto md:w-px bg-[var(--theme-border)] md:mx-4" />
                     <div className="flex flex-col flex-1 min-w-0">
                         <div className="flex flex-row items-center justify-between mb-2">
                             <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Arrows</span>

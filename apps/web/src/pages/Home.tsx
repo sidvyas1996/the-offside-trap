@@ -72,20 +72,20 @@ const Home: React.FC = () => {
             <h1 style={{
               fontFamily: "var(--font-display)", fontWeight: 900,
               fontSize: "clamp(48px, 7vw, 104px)", lineHeight: 0.9, letterSpacing: "-0.035em",
-              maxWidth: 720, margin: 0, color: "var(--ink)", textWrap: "balance" as React.CSSProperties["textWrap"],
+              maxWidth: 720, margin: 0, color: 'var(--on-surface)', textWrap: "balance" as React.CSSProperties["textWrap"],
             }}>
               Out‑coach every opponent.
             </h1>
-            <p style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 17, lineHeight: 1.5, color: "#3f3b30", margin: "20px 0 0", maxWidth: 420 }}>
+            <p style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 17, lineHeight: 1.5, color: "var(--on-surface-variant)", margin: "20px 0 0", maxWidth: 420 }}>
               Build animated tactical breakdowns, craft 3D lineups, and export match‑ready visuals — all in one place.
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 26 }}>
               <button
                 onClick={() => navigate("/create-tactics")}
                 style={{
-                  background: "var(--ink)", color: "#fff", fontFamily: "var(--font-display)",
-                  fontWeight: 800, fontSize: 15, border: "none", padding: "14px 22px",
-                  borderRadius: 13, cursor: "pointer",
+                  background: "var(--primary)", color: "var(--on-primary)", fontFamily: "var(--font-display)",
+                  fontWeight: 800, fontSize: 15, border: "var(--border-w) solid var(--ink)", padding: "14px 22px",
+                  borderRadius: 13, cursor: "pointer", boxShadow: "var(--card-shadow)",
                 }}
               >
                 Open Tactics Studio
@@ -94,12 +94,13 @@ const Home: React.FC = () => {
                 onClick={() => navigate("/create-tactics")}
                 aria-label="Open Tactics Studio"
                 style={{
-                  width: 50, height: 50, borderRadius: 13, background: "var(--surface)",
-                  border: "1.5px solid var(--ink)", cursor: "pointer",
+                  width: 50, height: 50, borderRadius: 13, background: "var(--surface-container)",
+                  border: "var(--border-w) solid var(--ink)", cursor: "pointer",
+                  boxShadow: "var(--card-shadow)",
                   display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}
               >
-                <ArrowRight size={20} strokeWidth={2.2} color="var(--ink)" />
+                <ArrowRight size={20} strokeWidth={2.2} color="var(--on-surface)" />
               </button>
             </div>
           </div>
@@ -109,7 +110,7 @@ const Home: React.FC = () => {
         <section className="lp-features" style={{ marginTop: 46 }}>
           {FEATURES.map(({ icon: Icon, bg, title, body, to }) => (
             <Link key={title} to={to} className="sleek-card" style={{
-              background: "var(--surface-high)", border: "1.5px solid var(--ink)",
+              background: "var(--deep-purple)", border: "1.5px solid var(--ink)",
               borderRadius: 18, padding: 24, textDecoration: "none", display: "block",
             }}>
               <div style={{
@@ -118,10 +119,10 @@ const Home: React.FC = () => {
               }}>
                 <Icon size={24} color="var(--ink)" strokeWidth={2.2} />
               </div>
-              <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 19, marginBottom: 6, color: "var(--ink)" }}>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 19, marginBottom: 6, color: 'var(--on-surface)' }}>
                 {title}
               </div>
-              <p style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 15, lineHeight: 1.5, color: "#56503f", margin: 0 }}>
+              <p style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 15, lineHeight: 1.5, color: "var(--on-surface-variant)", margin: 0 }}>
                 {body}
               </p>
             </Link>
@@ -135,7 +136,7 @@ const Home: React.FC = () => {
               <div className="kicker" style={{ marginBottom: 6 }}>Library</div>
               <h2 style={{
                 fontFamily: "var(--font-display)", fontSize: "1.6rem", fontWeight: 900,
-                color: "var(--ink)", margin: 0, letterSpacing: "-0.02em",
+                color: 'var(--on-surface)', margin: 0, letterSpacing: "-0.02em",
               }}>
                 Tactics Library
               </h2>
@@ -170,7 +171,7 @@ const Home: React.FC = () => {
                 </g>
                 <circle cx="28" cy="20" r="1.5" fill="var(--ink)" />
               </svg>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: "var(--ink)", marginBottom: 6 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 800, color: 'var(--on-surface)', marginBottom: 6 }}>
                 No tactics yet
               </div>
               <p style={{ fontSize: 13, color: "var(--on-surface-variant)", marginBottom: 24 }}>

@@ -16,11 +16,40 @@ const playerSchema = z.object({
 // 3- or 6-digit hex — the dark-field preset uses "#222"
 const hexColor = z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
 
+/**
+ * Mirrors the shared FieldSettings type. Every optional field below has to be
+ * declared even though the column is a JSON blob: zod strips keys it does not
+ * know about, so anything missing here is silently dropped on save and comes
+ * back absent on the next edit.
+ */
 const fieldSettingsObject = z.object({
   fieldColor: hexColor,
   playerColor: hexColor,
   showPlayerLabels: z.boolean(),
   markerType: z.enum(['circle', 'shirt']),
+  // Marker colour/design customization
+  markerBgColor: hexColor.optional(),
+  markerBorderColor: hexColor.optional(),
+  markerTextColor: hexColor.optional(),
+  markerSecondaryColor: hexColor.optional(),
+  markerDesign: z
+    .enum(['solid', 'stripes', 'diagonal-left', 'diagonal-right', 'horizontal-split', 'vertical-split'])
+    .optional(),
+  /** Kit slug from the web app's catalog, e.g. "09-black-white-stripes". */
+  shirtKitId: z
+    .string()
+    .regex(/^[a-z0-9-]{1,64}$/)
+    .optional(),
+  showShirtNumbers: z.boolean().optional(),
+  // View settings
+  fieldOfViewMode: z.boolean().optional(),
+  // Ball rides in fieldSettings so it persists and animates with keyframes
+  ball: z
+    .object({
+      x: z.number().min(0).max(100),
+      y: z.number().min(0).max(100),
+    })
+    .optional(),
 });
 
 const fieldSettingsSchema = fieldSettingsObject.optional();

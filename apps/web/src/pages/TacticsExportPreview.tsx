@@ -141,6 +141,13 @@ const TacticsExportPreviewContent: React.FC = () => {
           waypointsMode={false}
           horizontalZonesMode={false}
           verticalSpacesMode={false}
+          // Pinned landscape, never derived from viewport width. This route is
+          // rendered by the MP4/PNG exporter in headless Chromium at a fixed
+          // 1920x1080 (apps/backend/src/services/video.export.service.ts), and the
+          // output frame is 16:9 regardless of what the *client* is showing. It
+          // is already the default; stating it stops a later responsive sweep
+          // from quietly rotating every exported video.
+          portrait={false}
         />
       </div>
     </div>

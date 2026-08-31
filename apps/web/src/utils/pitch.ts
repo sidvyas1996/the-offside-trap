@@ -24,6 +24,42 @@ export {
   mpsToPctPerSecond,
 } from "../../../../packages/shared/src/pitch-geometry";
 import { PITCH_LENGTH, PITCH_WIDTH } from "../../../../packages/shared/src/pitch-geometry";
+import { LANDSCAPE, PORTRAIT, type PitchProjection } from "../../../../packages/shared/src/pitch-view";
+
+/**
+ * Marks a board element as portrait-projected, so the pointer mapping can ask
+ * the element which way up it is drawn instead of being told.
+ *
+ * The board is rendered in one place but its coordinates are read from several
+ * (player drag, ball drag, gesture capture, arrow drawing), and those live in
+ * hooks several layers away from the component that decides the orientation.
+ * Threading a projection down every one of those chains means each is a place
+ * to forget it — which is exactly what happened. Hanging it on the element
+ * makes the rendered board the single source of truth.
+ */
+export const PITCH_ORIENTATION_ATTR = 'data-pitch-portrait';
+
+/** Which projection a board element is currently drawn with. */
+export function projectionOf(el: HTMLElement): PitchProjection {
+  return el.getAttribute(PITCH_ORIENTATION_ATTR) === 'true' ? PORTRAIT : LANDSCAPE;
+}
+
+// The portrait board's projection lives in packages/shared so the compiler and
+// the exporter can see it too; re-exported here for the same reason as above.
+export {
+  LANDSCAPE,
+  PORTRAIT,
+  PITCH_MARKINGS,
+  PITCH_PORTRAIT_ASPECT,
+  PITCH_PORTRAIT_VIEWBOX,
+  PITCH_PORTRAIT_STRIPE_COUNT,
+  projectMarking,
+  arcPath,
+  toPortraitPct,
+  fromPortraitPct,
+  type PitchProjection,
+  type Marking,
+} from "../../../../packages/shared/src/pitch-view";
 
 /** Touchline inset inside the viewBox — the pitch surface bleeds past the lines. */
 export const PITCH_MARGIN = 20;
@@ -55,12 +91,23 @@ export const pctToSvgY = (y: number) => (y / 100) * PITCH_WIDTH;
  * ball drag, gesture capture — must go through here; hand-rolling it means three
  * copies that drift apart the moment the board's transform changes.
  *
+ * On the portrait board the element's own percentage space is *rotated* relative
+ * to stored coordinates, so the projection's `fromPct` is applied on the way
+ * out. Every caller therefore receives stored coords whichever way the board is
+ * drawn, and nothing downstream — drag, gesture capture, save — has to know the
+ * orientation.
+ *
+ * The projection defaults to whatever the board element says it is drawn with,
+ * so callers get this right by doing nothing. Pass one explicitly only to
+ * override that.
+ *
  * Returns null when the element isn't laid out yet.
  */
 export function clientToPitchPct(
   el: HTMLElement,
   clientX: number,
   clientY: number,
+  projection: PitchProjection = projectionOf(el),
 ): { x: number; y: number } | null {
   const parent = el.parentElement;
   if (!parent) return null;
@@ -88,10 +135,13 @@ export function clientToPitchPct(
   // A non-invertible transform yields NaN, which Math.min/max would pass through.
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
-  return {
+  // Clamp in the *board's* space, before un-rotating: the clamp is what keeps a
+  // drag inside the visible pitch, and the visible pitch is the element. Doing
+  // it after the projection would clamp the wrong pair of axes in portrait.
+  return projection.fromPct({
     x: Math.max(0, Math.min(100, x)),
     y: Math.max(0, Math.min(100, y)),
-  };
+  });
 }
 
 /**

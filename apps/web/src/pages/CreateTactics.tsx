@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, Loader2, UserPlus } from "lucide-react";
+import { Save, Loader2, UserPlus, SlidersHorizontal } from "lucide-react";
 import EditorBar from "../components/EditorBar";
 import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
 import { useTacticsForm } from "../hooks/useTacticsForm";
@@ -12,8 +12,12 @@ import TacticalField from "../components/tactics/TacticalField";
 import Preview from "../components/tactics/Preview";
 import AnimationTimeline from "../components/tactics/AnimationTimeline";
 import CreatorsMenu from "../components/ui/creators-menu";
+import KitPicker from "../components/tactics/KitPicker";
 import PhaseStrip from "../components/tactics/PhaseStrip";
 import PlayerEditorPanel from "../components/ui/PlayerEditorPanel";
+import BottomSheet from "../components/ui/bottom-sheet";
+import MobileArrowDock from "../components/tactics/MobileArrowDock";
+import { useIsMobile } from "../hooks/useMediaQuery";
 import { TacticEntity } from "../entities/TacticEntity";
 import { ANIMATION_PRESETS, buildPresetAnimation } from "../utils/animation-presets";
 import { compileMovements } from "../utils/movement-compiler";
@@ -31,6 +35,15 @@ import type { TacticFormData, FieldSettings, Player, AnimationData, Movement, Mo
  * reads too fast or too slow.
  */
 const PLAYBACK_TIME_SCALE = 2;
+
+/**
+ * Phone sheets.
+ *
+ * The arrow palette and playback live permanently in the dock, so what is left
+ * behind a sheet is the board/marker styling and the export panel — things you
+ * set occasionally rather than while drawing.
+ */
+type MobileSheetId = 'design' | 'motion';
 
 const CreateTacticsContent: React.FC = () => {
   const navigate = useNavigate();
@@ -51,6 +64,15 @@ const CreateTacticsContent: React.FC = () => {
   const state = useTacticsState();
   const [fieldOfViewMode, setFieldOfViewMode] = React.useState(false);
   const [selectedPlayer, setSelectedPlayer] = React.useState<Player | null>(null);
+  const isMobile = useIsMobile();
+  const [mobileSheet, setMobileSheet] = React.useState<MobileSheetId | null>(null);
+  /**
+   * Collapsed tools = "show me the pitch". The stage then runs the board
+   * edge-to-edge, which is the only way it actually gets bigger: a portrait
+   * board is width-limited on a phone, so the gutters are the constraint, not
+   * the dock's height.
+   */
+  const [toolsCollapsed, setToolsCollapsed] = React.useState(false);
   const [activeTeam, setActiveTeam] = React.useState<'home' | 'away'>('home');
 
   const actions = useTacticsActions(
@@ -80,6 +102,8 @@ const CreateTacticsContent: React.FC = () => {
     markerTextColor: options.markerTextColor,
     markerSecondaryColor: options.markerSecondaryColor,
     markerDesign: options.markerDesign,
+    shirtKitId: options.shirtKitId,
+    showShirtNumbers: state.showShirtNumbers,
     fieldOfViewMode,
     ball,
   });
@@ -94,6 +118,8 @@ const CreateTacticsContent: React.FC = () => {
     markerTextColor: oppositionOptions.markerTextColor,
     markerSecondaryColor: oppositionOptions.markerSecondaryColor,
     markerDesign: oppositionOptions.markerDesign,
+    shirtKitId: oppositionOptions.shirtKitId,
+    showShirtNumbers: state.oppShowShirtNumbers,
   });
 
   // Tracks the visual settings last pushed to the field during playback, so a
@@ -119,6 +145,8 @@ const CreateTacticsContent: React.FC = () => {
         ...(frameFieldSettings.markerTextColor && { markerTextColor: frameFieldSettings.markerTextColor }),
         ...(frameFieldSettings.markerSecondaryColor && { markerSecondaryColor: frameFieldSettings.markerSecondaryColor }),
         ...(frameFieldSettings.markerDesign && { markerDesign: frameFieldSettings.markerDesign }),
+        ...(frameFieldSettings.shirtKitId && { shirtKitId: frameFieldSettings.shirtKitId }),
+        ...(frameFieldSettings.showShirtNumbers !== undefined && { showShirtNumbers: frameFieldSettings.showShirtNumbers }),
       };
       const fingerprint = JSON.stringify(visuals);
       if (fingerprint === lastPushedVisualsRef.current) return;
@@ -404,9 +432,12 @@ const CreateTacticsContent: React.FC = () => {
           ...(fs.markerTextColor && { markerTextColor: fs.markerTextColor }),
           ...(fs.markerSecondaryColor && { markerSecondaryColor: fs.markerSecondaryColor }),
           ...(fs.markerDesign && { markerDesign: fs.markerDesign }),
+          ...(fs.shirtKitId && { shirtKitId: fs.shirtKitId }),
+          ...(fs.showShirtNumbers !== undefined && { showShirtNumbers: fs.showShirtNumbers }),
         }));
         state.setShowPlayerLabels(fs.showPlayerLabels ?? true);
         if (fs.markerType) state.setMarkerType(fs.markerType);
+        if (fs.showShirtNumbers !== undefined) state.setShowShirtNumbers(fs.showShirtNumbers);
         if (fs.fieldOfViewMode !== undefined) setFieldOfViewMode(fs.fieldOfViewMode);
         if (fs.ball) setBall(fs.ball);
       }
@@ -425,9 +456,12 @@ const CreateTacticsContent: React.FC = () => {
           ...(fs.markerTextColor && { markerTextColor: fs.markerTextColor }),
           ...(fs.markerSecondaryColor && { markerSecondaryColor: fs.markerSecondaryColor }),
           ...(fs.markerDesign && { markerDesign: fs.markerDesign }),
+          ...(fs.shirtKitId && { shirtKitId: fs.shirtKitId }),
+          ...(fs.showShirtNumbers !== undefined && { showShirtNumbers: fs.showShirtNumbers }),
         }));
         state.setOppShowPlayerLabels(fs.showPlayerLabels ?? true);
         if (fs.markerType) state.setOppMarkerType(fs.markerType);
+        if (fs.showShirtNumbers !== undefined) state.setOppShowShirtNumbers(fs.showShirtNumbers);
       }
       if (tactic.arrows && tactic.arrows.length > 0) setArrows(tactic.arrows);
       if (tactic.animation) {
@@ -590,9 +624,65 @@ const CreateTacticsContent: React.FC = () => {
         outline: 'none',
         padding: 0,
         marginTop: 1,
-        width: 'min(46vw, 420px)',
+        width: isMobile ? '100%' : 'min(46vw, 420px)',
       }}
     />
+  );
+
+  /**
+   * Phone header controls: formation pill + settings + save, per the design.
+   *
+   * The desktop bar's wordy "Add Opposition" / "Save Tactic" buttons are icons
+   * here. Settings is an addition to the design board — the board shows only
+   * the pill and save, but dropping every pitch and marker control from the
+   * phone build would remove real function, so it gets the quietest treatment
+   * of the three.
+   */
+  const mobileStudioActions = (
+    <>
+      <input
+        value={form.formation}
+        onChange={e => form.setFormation(e.target.value)}
+        aria-label="Formation"
+        placeholder="4-3-3"
+        style={{
+          width: 58, textAlign: 'center', flexShrink: 0,
+          background: 'var(--playmaker-purple)',
+          border: `2px solid ${/^\d+-\d+(-\d+)*$/.test(form.formation) ? 'var(--ink)' : 'var(--whistle-orange)'}`,
+          borderRadius: 9, padding: '6px 4px',
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12,
+          color: '#ffffff', outline: 'none',
+          boxShadow: 'var(--card-shadow)',
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => setMobileSheet('design')}
+        aria-label="Board settings"
+        style={{
+          width: 40, height: 40, borderRadius: 11, flexShrink: 0, cursor: 'pointer',
+          background: 'var(--surface-container)', border: 'var(--border-w) solid var(--ink)',
+          boxShadow: 'var(--card-shadow)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <SlidersHorizontal size={18} strokeWidth={2.4} />
+      </button>
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={form.loading}
+        aria-label={editId ? 'Update tactic' : 'Save tactic'}
+        style={{
+          width: 40, height: 40, borderRadius: 11, flexShrink: 0, cursor: 'pointer',
+          background: 'var(--primary)', border: 'var(--border-w) solid var(--ink)',
+          boxShadow: 'var(--card-shadow)', opacity: form.loading ? 0.7 : 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        {form.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={18} strokeWidth={2.4} />}
+      </button>
+    </>
   );
 
   const studioActions = (
@@ -625,7 +715,7 @@ const CreateTacticsContent: React.FC = () => {
         title={showOpposition ? "Remove opposition team" : "Add opposition team"}
       >
         <UserPlus size={15} />
-        {showOpposition ? 'vs Opposition' : 'Add Opposition'}
+        {isMobile ? 'Opposition' : (showOpposition ? 'vs Opposition' : 'Add Opposition')}
       </button>
       <button
         onClick={handleSubmit}
@@ -634,23 +724,202 @@ const CreateTacticsContent: React.FC = () => {
         style={{ background: 'var(--primary)', color: 'var(--ink)', border: 'none', opacity: form.loading ? 0.7 : 1 }}
       >
         {form.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={15} />}
-        {form.loading ? 'Saving…' : (editId ? 'Update Tactic' : 'Save Tactic')}
+        {form.loading ? 'Saving…' : (isMobile ? 'Save' : (editId ? 'Update Tactic' : 'Save Tactic'))}
       </button>
     </>
   );
 
+  // ---------------------------------------------------------------------------
+  // Studio surfaces, declared once and placed differently per layout.
+  //
+  // The desktop studio is a two-column stage + 400px rail; the phone studio is a
+  // full-bleed board with the same panels behind two bottom sheets. Hoisting the
+  // JSX rather than forking the page is what keeps that a *placement* difference:
+  // CreatorsMenu alone takes ~45 props, and a second copy of that call is a
+  // second thing to keep in step every time a handler is added.
+  // ---------------------------------------------------------------------------
+  const fieldStage = (
+      <TacticalField
+        studioMode
+        waypointsMode={state.waypointsMode}
+        horizontalZonesMode={state.horizontalZonesMode}
+        verticalSpacesMode={state.verticalSpacesMode}
+        isFullScreen={state.isFullScreen}
+        onChangeFieldColor={state.handleFieldColorChange}
+        onChangePlayerColor={state.handlePlayerColorChange}
+        onChangeMarkerBgColor={state.handleMarkerBgColorChange}
+        onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
+        onChangeMarkerTextColor={state.handleMarkerTextColorChange}
+        onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
+        onChangeMarkerDesign={state.handleMarkerDesignChange}
+        onTogglePlayerLabels={state.handleTogglePlayerLabels}
+        showPlayerLabels={state.showPlayerLabels}
+        onToggleMarkerType={state.handleToggleMarkerType}
+        markerType={state.markerType}
+        onToggleShirtNumbers={state.handleToggleShirtNumbers}
+        showShirtNumbers={state.showShirtNumbers}
+        onToggleWaypoints={state.handleToggleWaypoints}
+        onToggleHorizontalZones={state.handleToggleHorizontalZones}
+        onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
+        onToggleFullScreen={state.handleToggleFullScreen}
+        fieldOfViewMode={fieldOfViewMode}
+        onToggleFieldOfView={() => setFieldOfViewMode(prev => !prev)}
+        onPlayerSelect={setSelectedPlayer}
+        portrait={isMobile}
+        fitHeight={isMobile}
+      />
+  );
+
+  const creatorsMenu = (
+      <CreatorsMenu
+        onChangeFieldColor={state.handleFieldColorChange}
+        onChangePlayerColor={state.handlePlayerColorChange}
+        // Home team marker props
+        markerBgColor={options.markerBgColor}
+        markerBorderColor={options.markerBorderColor}
+        markerTextColor={options.markerTextColor}
+        markerSecondaryColor={options.markerSecondaryColor}
+        markerDesign={options.markerDesign}
+        onChangeMarkerBgColor={state.handleMarkerBgColorChange}
+        onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
+        onChangeMarkerTextColor={state.handleMarkerTextColorChange}
+        onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
+        onChangeMarkerDesign={state.handleMarkerDesignChange}
+        onTogglePlayerLabels={state.handleTogglePlayerLabels}
+        showPlayerLabels={state.showPlayerLabels}
+        onToggleMarkerType={state.handleToggleMarkerType}
+        markerType={state.markerType}
+        onToggleShirtNumbers={state.handleToggleShirtNumbers}
+        showShirtNumbers={state.showShirtNumbers}
+        onToggleWaypoints={state.handleToggleWaypoints}
+        waypointsMode={state.waypointsMode}
+        onToggleHorizontalZones={state.handleToggleHorizontalZones}
+        horizontalZonesMode={state.horizontalZonesMode}
+        onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
+        verticalSpacesMode={state.verticalSpacesMode}
+        onToggleFullScreen={state.handleToggleFullScreen}
+        isFullScreen={state.isFullScreen}
+        onToggleFieldOfView={() => setFieldOfViewMode(prev => !prev)}
+        fieldOfViewMode={fieldOfViewMode}
+          // Arrow tools
+        arrowTool={arrowTool}
+        onSetArrowTool={setArrowTool}
+        arrowBallColor={arrowBallColor}
+        onChangeArrowBallColor={setArrowBallColor}
+        arrowRunColor={arrowRunColor}
+        onChangeArrowRunColor={setArrowRunColor}
+        onClearArrows={() => setArrows([])}
+        // Team tabs
+        showOpposition={showOpposition}
+        activeTeam={activeTeam}
+        onSetActiveTeam={setActiveTeam}
+        // Away team marker props
+        oppMarkerBgColor={oppositionOptions.markerBgColor}
+        oppMarkerBorderColor={oppositionOptions.markerBorderColor}
+        oppMarkerTextColor={oppositionOptions.markerTextColor}
+        oppMarkerSecondaryColor={oppositionOptions.markerSecondaryColor}
+        oppMarkerDesign={oppositionOptions.markerDesign}
+        onChangeOppMarkerBgColor={state.handleOppMarkerBgColorChange}
+        onChangeOppMarkerBorderColor={state.handleOppMarkerBorderColorChange}
+        onChangeOppMarkerTextColor={state.handleOppMarkerTextColorChange}
+        onChangeOppMarkerSecondaryColor={state.handleOppMarkerSecondaryColorChange}
+        onChangeOppMarkerDesign={state.handleOppMarkerDesignChange}
+        onOppTogglePlayerLabels={state.handleOppTogglePlayerLabels}
+        oppShowPlayerLabels={state.oppShowPlayerLabels}
+        onOppToggleMarkerType={state.handleOppToggleMarkerType}
+        oppMarkerType={state.oppMarkerType}
+        onOppToggleShirtNumbers={state.handleOppToggleShirtNumbers}
+        oppShowShirtNumbers={state.oppShowShirtNumbers}
+      />
+  );
+
+  // The kit only applies to shirt markers, and each team picks its own — so the
+  // panel follows the team tab the toolbar is currently on.
+  const activeIsAway = showOpposition && activeTeam === 'away';
+  const kitPanel = (activeIsAway ? state.oppMarkerType : state.markerType) === 'shirt' ? (
+    <KitPicker
+      team={activeIsAway ? 'away' : 'home'}
+      value={activeIsAway ? oppositionOptions.shirtKitId : options.shirtKitId}
+      onChange={activeIsAway ? state.handleOppShirtKitChange : state.handleShirtKitChange}
+    />
+  ) : null;
+
+  const motionPanels = (
+    <>
+      {kitPanel}
+      {fromArrows && (
+        <PhaseStrip
+          current={currentBeat}
+          count={v2.phaseCount}
+          onSetPhase={handleSetPhase}
+          onStep={handleStep}
+          showAll={showAllBeats}
+          onToggleShowAll={() => setShowAllBeats(prev => !prev)}
+          warnings={v2.warnings}
+          durationMs={v2.durationMs}
+          disabled={animation.isPlaying}
+        />
+      )}
+
+      <AnimationTimeline
+        arrows={arrows}
+        fromArrows={fromArrows}
+        currentBeat={currentBeat}
+        derivedDurationMs={legacyGestures ? undefined : v2.durationMs}
+        onToggleFromArrows={() => setFromArrows(prev => !prev)}
+        onSetBeat={handleSetArrowBeat}
+        onSetTempo={handleSetArrowTempo}
+        onRemoveArrow={handleRemoveArrow}
+        players={players}
+        oppositionPlayers={oppositionPlayers}
+        keyframeCount={animation.keyframes.length}
+        isPlaying={animation.isPlaying}
+        durationMs={animation.durationMs}
+        fps={animation.fps}
+        onPlay={animation.play}
+        onPause={animation.pause}
+        onSetDuration={animation.setDuration}
+        onSetFps={animation.setFps}
+        onApplyPreset={handleApplyPreset}
+      />
+
+      <Preview animation={animation.getAnimation()} />
+    </>
+  );
+
   return (
-    <div className="dot-bg" style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div
+      className="dot-bg"
+      style={
+        isMobile
+          // One screen, no page scroll: header, board and dock each take their
+          // share of the viewport. dvh rather than vh so the browser's collapsing
+          // URL bar does not push the dock off the bottom.
+          // `relative` so the dock can anchor to the studio rather than the viewport.
+          ? { height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' as const }
+          : { height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }
+      }
+    >
 
       {/* Contextual editor bar */}
-      <div style={{ padding: '14px 16px 0', flexShrink: 0 }}>
+      <div
+        style={{
+          flexShrink: 0,
+          padding: isMobile ? '12px 14px 10px' : '14px 16px 0',
+          paddingTop: isMobile ? 'calc(12px + env(safe-area-inset-top, 0px))' : undefined,
+        }}
+      >
         <EditorBar
           kicker="Tactics Studio"
           title={form.title}
           onTitleChange={form.setTitle}
           placeholder="Untitled Tactic"
-          subtitle={studioSubtitle}
-          actions={studioActions}
+          // The description lives in the Design sheet on a phone; the header has
+          // room for one line, and the title is the one that identifies the doc.
+          subtitle={isMobile ? undefined : studioSubtitle}
+          actions={isMobile ? mobileStudioActions : studioActions}
+          compact={isMobile}
+          bare={isMobile}
         />
       </div>
 
@@ -669,12 +938,28 @@ const CreateTacticsContent: React.FC = () => {
           showPlayerLabels={state.showPlayerLabels}
           onToggleMarkerType={state.handleToggleMarkerType}
           markerType={state.markerType}
+          onToggleShirtNumbers={state.handleToggleShirtNumbers}
+          showShirtNumbers={state.showShirtNumbers}
           onToggleWaypoints={state.handleToggleWaypoints}
           onToggleHorizontalZones={state.handleToggleHorizontalZones}
           onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
           onToggleFullScreen={state.handleToggleFullScreen}
           onPlayerSelect={setSelectedPlayer}
         />
+      ) : isMobile ? (
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            // Not transitioned: animating padding relayouts the board on every
+            // frame, which re-fires the ResizeObserver behind the marker scale
+            // for the whole duration. The swap should be instant anyway — the
+            // point of collapsing is to see the pitch now.
+            padding: toolsCollapsed ? '0 0 6px' : '0 16px 12px',
+          }}
+        >
+          {fieldStage}
+        </div>
       ) : (
         <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
 
@@ -683,90 +968,11 @@ const CreateTacticsContent: React.FC = () => {
 
             {/* Stage: field + toolbar + timeline, all in one scroll flow */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 24px', background: 'var(--theme-stage)' }}>
-              <TacticalField
-                studioMode
-                waypointsMode={state.waypointsMode}
-                horizontalZonesMode={state.horizontalZonesMode}
-                verticalSpacesMode={state.verticalSpacesMode}
-                isFullScreen={state.isFullScreen}
-                onChangeFieldColor={state.handleFieldColorChange}
-                onChangePlayerColor={state.handlePlayerColorChange}
-                onChangeMarkerBgColor={state.handleMarkerBgColorChange}
-                onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
-                onChangeMarkerTextColor={state.handleMarkerTextColorChange}
-                onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
-                onChangeMarkerDesign={state.handleMarkerDesignChange}
-                onTogglePlayerLabels={state.handleTogglePlayerLabels}
-                showPlayerLabels={state.showPlayerLabels}
-                onToggleMarkerType={state.handleToggleMarkerType}
-                markerType={state.markerType}
-                onToggleWaypoints={state.handleToggleWaypoints}
-                onToggleHorizontalZones={state.handleToggleHorizontalZones}
-                onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
-                onToggleFullScreen={state.handleToggleFullScreen}
-                fieldOfViewMode={fieldOfViewMode}
-                onToggleFieldOfView={() => setFieldOfViewMode(prev => !prev)}
-                onPlayerSelect={setSelectedPlayer}
-              />
+              {fieldStage}
 
               {/* Toolbar */}
               <div style={{ marginTop: 16 }}>
-                <CreatorsMenu
-                  onChangeFieldColor={state.handleFieldColorChange}
-                  onChangePlayerColor={state.handlePlayerColorChange}
-                  // Home team marker props
-                  markerBgColor={options.markerBgColor}
-                  markerBorderColor={options.markerBorderColor}
-                  markerTextColor={options.markerTextColor}
-                  markerSecondaryColor={options.markerSecondaryColor}
-                  markerDesign={options.markerDesign}
-                  onChangeMarkerBgColor={state.handleMarkerBgColorChange}
-                  onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
-                  onChangeMarkerTextColor={state.handleMarkerTextColorChange}
-                  onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
-                  onChangeMarkerDesign={state.handleMarkerDesignChange}
-                  onTogglePlayerLabels={state.handleTogglePlayerLabels}
-                  showPlayerLabels={state.showPlayerLabels}
-                  onToggleMarkerType={state.handleToggleMarkerType}
-                  markerType={state.markerType}
-                  onToggleWaypoints={state.handleToggleWaypoints}
-                  waypointsMode={state.waypointsMode}
-                  onToggleHorizontalZones={state.handleToggleHorizontalZones}
-                  horizontalZonesMode={state.horizontalZonesMode}
-                  onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
-                  verticalSpacesMode={state.verticalSpacesMode}
-                  onToggleFullScreen={state.handleToggleFullScreen}
-                  isFullScreen={state.isFullScreen}
-                  onToggleFieldOfView={() => setFieldOfViewMode(prev => !prev)}
-                  fieldOfViewMode={fieldOfViewMode}
-                    // Arrow tools
-                  arrowTool={arrowTool}
-                  onSetArrowTool={setArrowTool}
-                  arrowBallColor={arrowBallColor}
-                  onChangeArrowBallColor={setArrowBallColor}
-                  arrowRunColor={arrowRunColor}
-                  onChangeArrowRunColor={setArrowRunColor}
-                  onClearArrows={() => setArrows([])}
-                  // Team tabs
-                  showOpposition={showOpposition}
-                  activeTeam={activeTeam}
-                  onSetActiveTeam={setActiveTeam}
-                  // Away team marker props
-                  oppMarkerBgColor={oppositionOptions.markerBgColor}
-                  oppMarkerBorderColor={oppositionOptions.markerBorderColor}
-                  oppMarkerTextColor={oppositionOptions.markerTextColor}
-                  oppMarkerSecondaryColor={oppositionOptions.markerSecondaryColor}
-                  oppMarkerDesign={oppositionOptions.markerDesign}
-                  onChangeOppMarkerBgColor={state.handleOppMarkerBgColorChange}
-                  onChangeOppMarkerBorderColor={state.handleOppMarkerBorderColorChange}
-                  onChangeOppMarkerTextColor={state.handleOppMarkerTextColorChange}
-                  onChangeOppMarkerSecondaryColor={state.handleOppMarkerSecondaryColorChange}
-                  onChangeOppMarkerDesign={state.handleOppMarkerDesignChange}
-                  onOppTogglePlayerLabels={state.handleOppTogglePlayerLabels}
-                  oppShowPlayerLabels={state.oppShowPlayerLabels}
-                  onOppToggleMarkerType={state.handleOppToggleMarkerType}
-                  oppMarkerType={state.oppMarkerType}
-                />
+                {creatorsMenu}
               </div>
             </div>
           </div>
@@ -775,48 +981,61 @@ const CreateTacticsContent: React.FC = () => {
               all live in the header now, so what used to be a details card here
               (restating them) is gone; Movement used to sit under the pitch, where
               it squeezed the board into a letterbox. */}
-          <div style={{ width: 400, borderLeft: '2px solid var(--ink)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+          <div style={{ width: 400, borderLeft: 'var(--border-w) solid var(--ink)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {fromArrows && (
-                <PhaseStrip
-                  current={currentBeat}
-                  count={v2.phaseCount}
-                  onSetPhase={handleSetPhase}
-                  onStep={handleStep}
-                  showAll={showAllBeats}
-                  onToggleShowAll={() => setShowAllBeats(prev => !prev)}
-                  warnings={v2.warnings}
-                  durationMs={v2.durationMs}
-                  disabled={animation.isPlaying}
-                />
-              )}
-
-              <AnimationTimeline
-                arrows={arrows}
-                fromArrows={fromArrows}
-                currentBeat={currentBeat}
-                derivedDurationMs={legacyGestures ? undefined : v2.durationMs}
-                onToggleFromArrows={() => setFromArrows(prev => !prev)}
-                onSetBeat={handleSetArrowBeat}
-                onSetTempo={handleSetArrowTempo}
-                onRemoveArrow={handleRemoveArrow}
-                players={players}
-                oppositionPlayers={oppositionPlayers}
-                keyframeCount={animation.keyframes.length}
-                isPlaying={animation.isPlaying}
-                durationMs={animation.durationMs}
-                fps={animation.fps}
-                onPlay={animation.play}
-                onPause={animation.pause}
-                onSetDuration={animation.setDuration}
-                onSetFps={animation.setFps}
-                onApplyPreset={handleApplyPreset}
-              />
-
-              <Preview animation={animation.getAnimation()} />
+              {motionPanels}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Phone: the arrow palette and playback are permanent — drawing is the
+          job, and a tool picker you have to open first makes every arrow three
+          taps. Everything you set only occasionally stays behind a sheet. */}
+      {isMobile && !state.isFullScreen && (
+        <>
+          <MobileArrowDock
+            arrowTool={arrowTool}
+            onSetArrowTool={setArrowTool}
+            currentPhase={fromArrows ? currentBeat : 1}
+            phaseCount={fromArrows ? Math.max(1, v2.phaseCount) : 1}
+            onStep={handleStep}
+            isPlaying={animation.isPlaying}
+            onPlay={animation.play}
+            onPause={animation.pause}
+            currentTimeMs={animation.currentTimeMs}
+            durationMs={animation.durationMs}
+            collapsed={toolsCollapsed}
+            onToggleCollapsed={() => setToolsCollapsed(c => !c)}
+          />
+
+          <BottomSheet open={mobileSheet === 'design'} onClose={() => setMobileSheet(null)} title="Board & Motion">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {studioSubtitle && (
+                <div style={{ background: 'var(--surface-low)', border: 'var(--border-w) solid var(--ink)', borderRadius: 12, padding: '10px 12px' }}>
+                  <div className="kicker" style={{ marginBottom: 6 }}>Description</div>
+                  {studioSubtitle}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={state.handleToggleOpposition}
+                className="editorbar-btn"
+                style={{
+                  alignSelf: 'flex-start',
+                  background: showOpposition ? 'var(--whistle-orange)' : 'var(--surface-low)',
+                  color: 'var(--ink)',
+                  border: `2px solid ${showOpposition ? 'var(--whistle-orange)' : 'var(--ink)'}`,
+                }}
+              >
+                <UserPlus size={15} />
+                {showOpposition ? 'vs Opposition' : 'Add Opposition'}
+              </button>
+              {creatorsMenu}
+              {motionPanels}
+            </div>
+          </BottomSheet>
+        </>
       )}
 
       <PlayerEditorPanel
@@ -825,6 +1044,7 @@ const CreateTacticsContent: React.FC = () => {
         onClose={() => setSelectedPlayer(null)}
         onApply={state.handleUpdatePlayer}
         onNameChange={state.handlePlayerNameChange}
+        mobile={isMobile}
       />
     </div>
   );

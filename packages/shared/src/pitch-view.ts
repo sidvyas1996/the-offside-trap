@@ -15,8 +15,8 @@
  * coordinates are unchanged — portrait is purely a render-time projection, so the
  * same tactic renders correctly either way and nothing has to be migrated.
  *
- * Currently unused: it was written for a mobile client that has since been
- * removed, and is kept because a responsive web layout needs exactly this.
+ * Used by the responsive web studio: FootballField takes a `portrait` flag and
+ * picks LANDSCAPE or PORTRAIT below, so one renderer draws both orientations.
  */
 
 import { PITCH_LENGTH, PITCH_WIDTH } from './pitch-geometry';
@@ -79,6 +79,23 @@ export const toPortraitPct = (p: { x: number; y: number }): { x: number; y: numb
   y: 100 - p.x,
 });
 
+/**
+ * Inverse of `toPortraitPct` — portrait-canvas percentages back to stored coords.
+ *
+ * This is the half the render path never needs and the *input* path cannot work
+ * without: a drag on a portrait board yields a point in portrait space, and
+ * what gets written to the tactic has to be in the stored landscape space or the
+ * same tactic would come back rotated. Deriving it by hand at the call site is
+ * how the two directions drift, so it lives next to its forward twin.
+ *
+ * `toPortraitPct` maps (x, y) -> (y, 100 - x); undoing that is
+ * (px, py) -> (100 - py, px).
+ */
+export const fromPortraitPct = (p: { x: number; y: number }): { x: number; y: number } => ({
+  x: 100 - p.y,
+  y: p.x,
+});
+
 /** Portrait fewer, taller bands — matches the four the design draws. */
 export const PITCH_PORTRAIT_STRIPE_COUNT = 8;
 
@@ -96,6 +113,12 @@ export interface PitchProjection {
   stripesHorizontal: boolean;
   toX: (p: { x: number; y: number }) => number;
   toY: (p: { x: number; y: number }) => number;
+  /** Stored coords -> this projection's percentage space (for CSS left/top). */
+  toPct: (p: { x: number; y: number }) => { x: number; y: number };
+  /** This projection's percentage space -> stored coords (for pointer input). */
+  fromPct: (p: { x: number; y: number }) => { x: number; y: number };
+  /** True when this projection rotates the board; lets callers skip no-op work. */
+  portrait: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +148,10 @@ const BOX_DEPTH = 70;
 const BOX_WIDTH = 170;
 const GOAL_AREA_DEPTH = 30;
 const GOAL_AREA_WIDTH = 80;
+const CORNER_R = 10;
 const FAR = PITCH_LENGTH - PITCH_MARGIN;
+/** The touchline furthest down the landscape canvas. */
+const NEAR_SIDE = PITCH_WIDTH - PITCH_MARGIN;
 
 export const PITCH_MARKINGS: Marking[] = [
   // Touchlines and goal lines.
@@ -146,6 +172,11 @@ export const PITCH_MARKINGS: Marking[] = [
   // The D at the edge of each penalty area.
   { kind: 'arc', x1: PITCH_MARGIN + BOX_DEPTH, y1: 155, x2: PITCH_MARGIN + BOX_DEPTH, y2: 195, r: 30, sweep: 1 },
   { kind: 'arc', x1: FAR - BOX_DEPTH, y1: 155, x2: FAR - BOX_DEPTH, y2: 195, r: 30, sweep: 0 },
+  // Corner arcs, one per flag.
+  { kind: 'arc', x1: PITCH_MARGIN, y1: PITCH_MARGIN + CORNER_R, x2: PITCH_MARGIN + CORNER_R, y2: PITCH_MARGIN, r: CORNER_R, sweep: 0 },
+  { kind: 'arc', x1: FAR - CORNER_R, y1: PITCH_MARGIN, x2: FAR, y2: PITCH_MARGIN + CORNER_R, r: CORNER_R, sweep: 0 },
+  { kind: 'arc', x1: PITCH_MARGIN + CORNER_R, y1: NEAR_SIDE, x2: PITCH_MARGIN, y2: NEAR_SIDE - CORNER_R, r: CORNER_R, sweep: 0 },
+  { kind: 'arc', x1: FAR, y1: NEAR_SIDE - CORNER_R, x2: FAR - CORNER_R, y2: NEAR_SIDE, r: CORNER_R, sweep: 0 },
 ];
 
 /**
@@ -153,8 +184,13 @@ export const PITCH_MARKINGS: Marking[] = [
  *
  * The projection is a quarter turn: landscape `y` becomes portrait `x`, and
  * landscape `x` becomes portrait `y` measured from the far end. A rect therefore
- * swaps its width and height, and an arc reverses its sweep flag because the
- * turn mirrors the handedness.
+ * swaps its width and height.
+ *
+ * An arc keeps its sweep flag. The map (x, y) -> (y, L - x) sends e1 to (0, -1)
+ * and e2 to (1, 0), so its matrix is [[0, 1], [-1, 0]] with determinant **+1** —
+ * a rotation, not a reflection. Rotations preserve handedness, so flipping the
+ * sweep would mirror every arc: the penalty Ds would bulge back into their own
+ * boxes and the corner arcs would curl into the pitch.
  */
 export function projectMarking(m: Marking, portrait: boolean): Marking {
   if (!portrait) return m;
@@ -175,7 +211,7 @@ export function projectMarking(m: Marking, portrait: boolean): Marking {
         x2: m.y2,
         y2: L - m.x2,
         r: m.r,
-        sweep: m.sweep === 1 ? 0 : 1,
+        sweep: m.sweep,
       };
   }
 }
@@ -192,6 +228,9 @@ export const LANDSCAPE: PitchProjection = {
   stripesHorizontal: false,
   toX: (p) => pctToSvgX(p.x),
   toY: (p) => pctToSvgY(p.y),
+  toPct: (p) => p,
+  fromPct: (p) => p,
+  portrait: false,
 };
 
 export const PORTRAIT: PitchProjection = {
@@ -202,4 +241,7 @@ export const PORTRAIT: PitchProjection = {
   stripesHorizontal: true,
   toX: (p) => pctToPortraitX(p.y),
   toY: (p) => pctToPortraitY(p.x),
+  toPct: toPortraitPct,
+  fromPct: fromPortraitPct,
+  portrait: true,
 };

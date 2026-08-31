@@ -76,7 +76,7 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
   return (
     <div
       className="rounded-2xl p-5"
-      style={{ background: "var(--surface-container)", border: "2px solid var(--ink)", boxShadow: "var(--card-shadow)" }}
+      style={{ background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)" }}
     >
       <div className="flex items-center gap-2 mb-4">
         <h2 className="panel-title" style={{ margin: 0 }}>
@@ -110,7 +110,7 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
           className="gap-1.5 text-sm px-3 py-1.5"
           style={{
             borderRadius: 999,
-            border: '2px solid var(--ink)',
+            border: 'var(--border-w) solid var(--ink)',
             background: 'var(--primary)',
             color: 'var(--ink)',
             fontWeight: 700,
@@ -126,7 +126,7 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
           className="gap-1.5 text-sm px-3 py-1.5"
           style={{
             borderRadius: 999,
-            border: '2px solid var(--ink)',
+            border: 'var(--border-w) solid var(--ink)',
             background: fromArrows ? 'var(--primary)' : 'var(--surface-low)',
             color: 'var(--ink)',
             fontWeight: 700,
@@ -153,8 +153,8 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
               <select
                 value={durationMs}
                 onChange={e => onSetDuration(Number(e.target.value))}
-                className="text-xs px-2 py-1 text-[var(--ink)]"
-                style={{ background: 'var(--surface-low)', border: '2px solid var(--ink)', borderRadius: 8, fontWeight: 700 }}
+                className="text-xs px-2 py-1 text-[var(--on-surface)]"
+                style={{ background: 'var(--surface-low)', border: 'var(--border-w) solid var(--ink)', borderRadius: 8, fontWeight: 700 }}
               >
                 {DURATION_OPTIONS.map(d => (
                   <option key={d} value={d}>{d / 1000}s</option>
@@ -167,8 +167,8 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
           <select
             value={fps}
             onChange={e => onSetFps(Number(e.target.value))}
-            className="text-xs px-2 py-1 text-[var(--ink)]"
-            style={{ background: 'var(--surface-low)', border: '2px solid var(--ink)', borderRadius: 8, fontWeight: 700 }}
+            className="text-xs px-2 py-1 text-[var(--on-surface)]"
+            style={{ background: 'var(--surface-low)', border: 'var(--border-w) solid var(--ink)', borderRadius: 8, fontWeight: 700 }}
           >
             {FPS_OPTIONS.map(f => (
               <option key={f} value={f}>{f}</option>

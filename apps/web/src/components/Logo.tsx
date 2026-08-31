@@ -32,8 +32,8 @@ const Logo: React.FC<LogoProps> = ({ size = 40, bordered = false, style, alt = "
       width: size * ASPECT,
       // matches the artwork's own corners so the border traces its edge
       borderRadius: BAKED_RADIUS,
-      border: bordered ? "2.5px solid var(--ink)" : undefined,
-      boxShadow: bordered ? "3px 3px 0 var(--ink)" : undefined,
+      border: bordered ? "var(--border-w) solid var(--ink)" : undefined,
+      boxShadow: bordered ? "var(--card-shadow)" : undefined,
       ...style,
     }}
   />

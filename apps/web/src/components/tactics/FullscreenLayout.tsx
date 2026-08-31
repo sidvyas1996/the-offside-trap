@@ -24,6 +24,8 @@ interface FullscreenLayoutProps {
   showPlayerLabels: boolean;
   onToggleMarkerType: () => void;
   markerType: 'circle' | 'shirt';
+  onToggleShirtNumbers?: () => void;
+  showShirtNumbers?: boolean;
   onToggleWaypoints: () => void;
   onToggleHorizontalZones: () => void;
   onToggleVerticalSpaces: () => void;
@@ -55,6 +57,8 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
   showPlayerLabels,
   onToggleMarkerType,
   markerType,
+  onToggleShirtNumbers,
+  showShirtNumbers,
   onToggleWaypoints,
   onToggleHorizontalZones,
   onToggleVerticalSpaces,
@@ -95,6 +99,8 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
           showPlayerLabels={showPlayerLabels}
           onToggleMarkerType={onToggleMarkerType}
           markerType={markerType}
+          onToggleShirtNumbers={onToggleShirtNumbers}
+          showShirtNumbers={showShirtNumbers}
           onToggleWaypoints={onToggleWaypoints}
           onToggleHorizontalZones={onToggleHorizontalZones}
           onToggleVerticalSpaces={onToggleVerticalSpaces}

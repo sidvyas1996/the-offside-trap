@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="30-white-black-trim">
+<defs><clipPath id="s"><path d="M186 2 A71 71 0 0 0 326 2 L512 44 L494 160 L410 143 L410 512 L102 512 L102 143 L18 160 L0 44 Z"></path></clipPath></defs>
+<g clip-path="url(#s)"><rect x="-4" y="-4" width="520" height="520" fill="#ffffff"></rect><line x1="4" y1="164" x2="106" y2="142" stroke="#17181c" stroke-width="36"></line><line x1="508" y1="164" x2="406" y2="142" stroke="#17181c" stroke-width="36"></line><rect x="376" y="-4" width="34" height="520" fill="#000" opacity="0.10"></rect>
+<polygon points="0,44 34,36 52,153 18,160" fill="#000" opacity="0.12"></polygon>
+<polygon points="512,44 478,36 460,153 494,160" fill="#000" opacity="0.12"></polygon>
+<path d="M186 16 A71 71 0 0 0 326 16" fill="none" stroke="#17181c" stroke-width="30"></path></g>
+<rect x="164" y="160" width="46" height="15" rx="7" fill="#17181c"></rect>
+<path d="M313 156 Q310 156 310 160 L310 190 Q310 214 330 223 Q350 214 350 190 L350 160 Q350 156 347 156 Z" fill="#17181c"></path>
+<rect x="184" y="253" width="144" height="30" rx="10" fill="#17181c"></rect>
+</svg>

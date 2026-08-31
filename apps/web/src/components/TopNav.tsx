@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import Logo from "./Logo";
+import { useAuth } from "../contexts/AuthContext";
 
 const NAV_LINKS = [
   { label: "Studio", to: "/create-tactics" },
@@ -20,6 +21,57 @@ interface TopNavProps {
  * The global black-pill navigation bar — consistent across every screen.
  * Renders just the pill; the page owns the surrounding padding / max-width.
  */
+
+/**
+ * Right-hand nav action.
+ *
+ * Signed in this is the account entry point; signed out it still has to do
+ * something, so it falls back to sign-in rather than dead-ending on a profile
+ * page the gate would bounce straight back.
+ */
+const ProfileButton: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  if (!user) {
+    return (
+      <button
+        onClick={() => navigate("/login")}
+        style={{
+          background: "var(--whistle-orange)", color: "var(--ink)",
+          fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 14,
+          border: "var(--border-w) solid var(--ink)", padding: "11px 20px",
+          borderRadius: 12, cursor: "pointer",
+        }}
+      >
+        Sign in
+      </button>
+    );
+  }
+
+  const initials = (user.username || "?").trim().slice(0, 2).toUpperCase();
+
+  return (
+    <button
+      onClick={() => navigate("/profile")}
+      aria-label={`Open profile for ${user.username}`}
+      title={user.username}
+      style={{
+        width: 42, height: 42, borderRadius: 999, flexShrink: 0, cursor: "pointer",
+        padding: 0, overflow: "hidden",
+        background: "var(--primary)", color: "var(--on-primary)",
+        border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 14,
+      }}
+    >
+      {user.avatar
+        ? <img src={user.avatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        : initials}
+    </button>
+  );
+};
+
 const TopNav: React.FC<TopNavProps> = ({ actions, showLinks = true }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -65,18 +117,7 @@ const TopNav: React.FC<TopNavProps> = ({ actions, showLinks = true }) => {
 
       {/* Right actions */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-        {actions ?? (
-          <button
-            onClick={() => navigate("/create-tactics")}
-            style={{
-              background: "var(--whistle-orange)", color: "var(--ink)",
-              fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 14,
-              border: "none", padding: "11px 20px", borderRadius: 12, cursor: "pointer",
-            }}
-          >
-            Open App
-          </button>
-        )}
+        {actions ?? <ProfileButton />}
       </div>
     </nav>
   );

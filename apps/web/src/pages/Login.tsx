@@ -8,10 +8,10 @@ type Mode = "signin" | "signup";
 /* Decorative brutalist confetti behind the card */
 const Shapes: React.FC = () => (
   <>
-    <div style={{ position: "absolute", top: -70, left: -70, width: 230, height: 230, borderRadius: "50%", background: "var(--playmaker-purple)", border: "2.5px solid var(--ink)", opacity: 0.9 }} />
-    <div style={{ position: "absolute", bottom: -60, right: -40, width: 190, height: 190, borderRadius: "50%", background: "var(--card-yellow)", border: "2.5px solid var(--ink)" }} />
-    <div style={{ position: "absolute", top: "18%", right: "12%", width: 52, height: 52, background: "var(--striker-pink)", border: "2.5px solid var(--ink)", borderRadius: 14, transform: "rotate(14deg)", boxShadow: "3px 3px 0 var(--ink)" }} />
-    <div style={{ position: "absolute", bottom: "16%", left: "10%", width: 44, height: 44, background: "var(--pitch-lime)", border: "2.5px solid var(--ink)", borderRadius: "50%", boxShadow: "3px 3px 0 var(--ink)" }} />
+    <div style={{ position: "absolute", top: -70, left: -70, width: 230, height: 230, borderRadius: "50%", background: "var(--playmaker-purple)", border: "var(--border-w) solid var(--ink)", opacity: 0.9 }} />
+    <div style={{ position: "absolute", bottom: -60, right: -40, width: 190, height: 190, borderRadius: "50%", background: "var(--card-yellow)", border: "var(--border-w) solid var(--ink)" }} />
+    <div style={{ position: "absolute", top: "18%", right: "12%", width: 52, height: 52, background: "var(--striker-pink)", border: "var(--border-w) solid var(--ink)", borderRadius: 14, transform: "rotate(14deg)", boxShadow: "var(--card-shadow)" }} />
+    <div style={{ position: "absolute", bottom: "16%", left: "10%", width: 44, height: 44, background: "var(--pitch-lime)", border: "var(--border-w) solid var(--ink)", borderRadius: "50%", boxShadow: "var(--card-shadow)" }} />
   </>
 );
 
@@ -103,7 +103,7 @@ const Login: React.FC = () => {
               gap: 10,
               background: "var(--ink)",
               color: "var(--pitch-lime)",
-              border: "2.5px solid var(--ink)",
+              border: "var(--border-w) solid var(--ink)",
               borderRadius: 999,
               padding: "8px 20px",
               boxShadow: "4px 4px 0 rgba(21,20,15,0.25)",
@@ -121,9 +121,9 @@ const Login: React.FC = () => {
         <div
           style={{
             background: "var(--surface-container)",
-            border: "2.5px solid var(--ink)",
+            border: "var(--border-w) solid var(--ink)",
             borderRadius: 24,
-            boxShadow: "6px 6px 0 var(--ink)",
+            boxShadow: "var(--card-shadow-hover)",
             padding: "34px 32px",
             display: "flex",
             flexDirection: "column",
@@ -138,7 +138,7 @@ const Login: React.FC = () => {
                 fontWeight: 900,
                 fontSize: 28,
                 letterSpacing: "-0.03em",
-                color: "var(--ink)",
+                color: 'var(--on-surface)',
               }}
             >
               {isSignup ? "Join the squad." : "Back on the pitch."}
@@ -157,10 +157,10 @@ const Login: React.FC = () => {
                 alignItems: "center",
                 gap: 10,
                 background: "var(--pastel-pink)",
-                border: "2.5px solid var(--ink)",
+                border: "var(--border-w) solid var(--ink)",
                 borderRadius: 14,
                 padding: "10px 14px",
-                boxShadow: "3px 3px 0 var(--ink)",
+                boxShadow: "var(--card-shadow)",
               }}
             >
               <span
@@ -170,19 +170,19 @@ const Login: React.FC = () => {
                   height: 22,
                   borderRadius: "50%",
                   background: "var(--striker-pink)",
-                  border: "2px solid var(--ink)",
+                  border: "var(--border-w) solid var(--ink)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontFamily: "var(--font-display)",
                   fontWeight: 900,
                   fontSize: 13,
-                  color: "var(--ink)",
+                  color: 'var(--on-surface)',
                 }}
               >
                 !
               </span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink)" }}>{errorMsg}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-surface)' }}>{errorMsg}</span>
             </div>
           )}
 

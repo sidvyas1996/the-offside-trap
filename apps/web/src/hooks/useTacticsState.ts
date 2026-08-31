@@ -36,10 +36,14 @@ export const useTacticsState = () => {
   const [homeColor, setHomeColor] = useState("#16A34A");
   const [showPlayerLabels, setShowPlayerLabels] = useState(true);
   const [markerType, setMarkerType] = useState<'circle' | 'shirt'>('circle');
+  // Off by default: the kits carry their own chest detail, so a digit on top
+  // competes with it. Opt in per team.
+  const [showShirtNumbers, setShowShirtNumbers] = useState(false);
 
   // Opposition-specific UI state
   const [oppShowPlayerLabels, setOppShowPlayerLabels] = useState(true);
   const [oppMarkerType, setOppMarkerType] = useState<'circle' | 'shirt'>('circle');
+  const [oppShowShirtNumbers, setOppShowShirtNumbers] = useState(false);
 
   // Mode States
   const [waypointsMode, setWaypointsMode] = useState(false);
@@ -103,6 +107,15 @@ export const useTacticsState = () => {
   const handleMarkerDesignChange = (design: MarkerDesign) =>
     setOptions((prev) => ({ ...prev, markerDesign: design }));
 
+  const handleShirtKitChange = (kitId: string) =>
+    setOptions((prev) => ({ ...prev, shirtKitId: kitId }));
+
+  const handleToggleShirtNumbers = () => {
+    const next = !showShirtNumbers;
+    setShowShirtNumbers(next);
+    setOptions((prev) => ({ ...prev, showShirtNumbers: next }));
+  };
+
   const handleTogglePlayerLabels = () => {
     setShowPlayerLabels((prev) => !prev);
     setOptions((prev) => ({ ...prev, showPlayerLabels: !showPlayerLabels }));
@@ -138,6 +151,15 @@ export const useTacticsState = () => {
   const handleOppMarkerDesignChange = (design: MarkerDesign) =>
     setOppositionOptions((prev) => ({ ...prev, markerDesign: design }));
 
+  const handleOppShirtKitChange = (kitId: string) =>
+    setOppositionOptions((prev) => ({ ...prev, shirtKitId: kitId }));
+
+  const handleOppToggleShirtNumbers = () => {
+    const next = !oppShowShirtNumbers;
+    setOppShowShirtNumbers(next);
+    setOppositionOptions((prev) => ({ ...prev, showShirtNumbers: next }));
+  };
+
   const handleOppTogglePlayerLabels = () => {
     setOppShowPlayerLabels((prev) => !prev);
     setOppositionOptions((prev) => ({ ...prev, showPlayerLabels: !oppShowPlayerLabels }));
@@ -169,12 +191,14 @@ export const useTacticsState = () => {
     homeColor,
     showPlayerLabels,
     markerType,
+    showShirtNumbers,
     waypointsMode,
     horizontalZonesMode,
     verticalSpacesMode,
     showOpposition,
     oppShowPlayerLabels,
     oppMarkerType,
+    oppShowShirtNumbers,
     players,
     fieldRef,
 
@@ -183,6 +207,7 @@ export const useTacticsState = () => {
     setHomeColor,
     setShowPlayerLabels,
     setMarkerType,
+    setShowShirtNumbers,
     setWaypointsMode,
     setHorizontalZonesMode,
     setVerticalSpacesMode,
@@ -197,6 +222,7 @@ export const useTacticsState = () => {
     setShowOpposition,
     setOppShowPlayerLabels,
     setOppMarkerType,
+    setOppShowShirtNumbers,
 
     // Home handlers
     handlePlayerNameChange,
@@ -208,6 +234,8 @@ export const useTacticsState = () => {
     handleMarkerTextColorChange,
     handleMarkerSecondaryColorChange,
     handleMarkerDesignChange,
+    handleShirtKitChange,
+    handleToggleShirtNumbers,
     handleTogglePlayerLabels,
     handleToggleMarkerType,
 
@@ -219,6 +247,8 @@ export const useTacticsState = () => {
     handleOppMarkerTextColorChange,
     handleOppMarkerSecondaryColorChange,
     handleOppMarkerDesignChange,
+    handleOppShirtKitChange,
+    handleOppToggleShirtNumbers,
     handleOppTogglePlayerLabels,
     handleOppToggleMarkerType,
 

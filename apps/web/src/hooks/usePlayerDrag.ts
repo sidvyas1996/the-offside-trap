@@ -17,15 +17,15 @@ export const usePlayerDrag = (
     const draggedPlayerRef = useRef<Player | null>(null);
     const originalPositionRef = useRef<{ x: number; y: number } | null>(null);
 
-    const handleMouseDown = useCallback((player: Player) => {
+    const handlePointerDown = useCallback((player: Player) => {
         if (player && typeof player.x === 'number' && typeof player.y === 'number') {
             draggedPlayerRef.current = player;
             originalPositionRef.current = { x: player.x, y: player.y };
         }
     }, []);
 
-    const handleMouseMove = useCallback(
-        (e: React.MouseEvent) => {
+    const handlePointerMove = useCallback(
+        (e: React.PointerEvent) => {
             if (!draggedPlayerRef.current || !fieldRef.current) return;
 
             const mapped = clientToPitchPct(fieldRef.current, e.clientX, e.clientY);
@@ -50,7 +50,7 @@ export const usePlayerDrag = (
         [fieldRef, setPlayers]
     );
 
-    const handleMouseUp = useCallback(() => {
+    const handlePointerUp = useCallback(() => {
         if (options.sticky && draggedPlayerRef.current && originalPositionRef.current) {
             const draggedId = draggedPlayerRef.current.id;
             const originalPos = originalPositionRef.current;
@@ -71,8 +71,8 @@ export const usePlayerDrag = (
 
     return {
         draggedPlayer: draggedPlayerRef.current,
-        handleMouseDown,
-        handleMouseMove,
-        handleMouseUp,
+        handlePointerDown,
+        handlePointerMove,
+        handlePointerUp,
     };
 };

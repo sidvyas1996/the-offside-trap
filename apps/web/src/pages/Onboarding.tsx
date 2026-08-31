@@ -57,7 +57,7 @@ const ProfileAvatar: React.FC<{ slug: string; label: string; size: number }> = (
         height: size,
         borderRadius: "50%",
         background: "var(--surface-high)",
-        border: "2.5px solid var(--ink)",
+        border: "var(--border-w) solid var(--ink)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -94,7 +94,7 @@ const Pip: React.FC<{ selected: boolean; size?: number }> = ({ selected, size = 
       height: size,
       borderRadius: "50%",
       background: selected ? "var(--ink)" : "var(--surface-high)",
-      border: "2.5px solid var(--ink)",
+      border: "var(--border-w) solid var(--ink)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -185,12 +185,12 @@ const Onboarding: React.FC = () => {
   };
 
   const cardBase = (isSelected: boolean): React.CSSProperties => ({
-    border: "2.5px solid var(--ink)",
+    border: "var(--border-w) solid var(--ink)",
     borderRadius: 22,
     cursor: "pointer",
     textAlign: "left",
     fontFamily: "var(--font-body)",
-    boxShadow: isSelected ? "6px 6px 0 var(--ink)" : "3px 3px 0 var(--ink)",
+    boxShadow: isSelected ? "var(--card-shadow-hover)" : "var(--card-shadow)",
     transform: isSelected ? "translate(-3px, -3px)" : "none",
     transition: "box-shadow 0.12s, transform 0.12s",
   });
@@ -217,7 +217,7 @@ const Onboarding: React.FC = () => {
             fontSize: "clamp(38px, 11vw, 52px)",
             lineHeight: 0.98,
             letterSpacing: "-0.03em",
-            color: "var(--ink)",
+            color: 'var(--on-surface)',
             margin: "0 0 14px",
           }}
         >
@@ -341,10 +341,10 @@ const Onboarding: React.FC = () => {
               alignItems: "center",
               gap: 8,
               background: "var(--surface-high)",
-              border: "2.5px solid var(--ink)",
+              border: "var(--border-w) solid var(--ink)",
               borderRadius: 14,
               padding: "0 14px",
-              boxShadow: "3px 3px 0 var(--ink)",
+              boxShadow: "var(--card-shadow)",
             }}
           >
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 17, color: "var(--outline)" }}>
@@ -369,7 +369,7 @@ const Onboarding: React.FC = () => {
                 fontFamily: "var(--font-body)",
                 fontSize: 16,
                 fontWeight: 600,
-                color: "var(--ink)",
+                color: 'var(--on-surface)',
               }}
             />
             {availability === "free" && !formatError && (
@@ -400,11 +400,11 @@ const Onboarding: React.FC = () => {
               marginTop: 12,
               padding: "11px 14px",
               borderRadius: 12,
-              border: "2.5px solid var(--ink)",
+              border: "var(--border-w) solid var(--ink)",
               background: "var(--pastel-pink)",
               fontSize: 14,
               fontWeight: 600,
-              color: "var(--ink)",
+              color: 'var(--on-surface)',
             }}
           >
             {errorMsg}
@@ -421,7 +421,7 @@ const Onboarding: React.FC = () => {
             marginTop: 22,
             padding: "17px 22px",
             borderRadius: 999,
-            border: "2.5px solid var(--ink)",
+            border: "var(--border-w) solid var(--ink)",
             background: "var(--ink)",
             color: "#ffffff",
             fontFamily: "var(--font-display)",

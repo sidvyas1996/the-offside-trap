@@ -1,8 +1,12 @@
 import React from "react";
 import type { Movement, PassSequence } from "../../../../packages/shared";
-import { PITCH_VIEWBOX, pctToSvgX, pctToSvgY } from "../utils/pitch";
+import { LANDSCAPE, type PitchProjection } from "../utils/pitch";
 import { zigzagPath } from "./ArrowOverlay";
 import { BallGlyph } from "./BallMarker";
+
+/** Stored percentage point -> SVG coords in whichever orientation is drawn. */
+const toSvg = (p: { x: number; y: number }, projection: PitchProjection) =>
+  ({ x: projection.toX(p), y: projection.toY(p) });
 
 interface MovementOverlayProps {
   movements: Movement[];
@@ -14,14 +18,19 @@ interface MovementOverlayProps {
   visible?: boolean;
   /** Called with the last node's position so the caller can host a drag handle. */
   onExtendFrom?: (pt: { x: number; y: number }) => void;
+  /** Which way up the board is drawn. Defaults to landscape. */
+  projection?: PitchProjection;
 }
 
 const RUN_STROKE = 'var(--pitch-lime, #c6f24e)';
 const BALL_STROKE = 'var(--whistle-orange, #ff6b3d)';
 const LIVE_STROKE = '#ffffff';
 
-function toPoints(path: { x: number; y: number }[]): string {
-  return path.map(p => `${pctToSvgX(p.x)},${pctToSvgY(p.y)}`).join(' ');
+function toPoints(path: { x: number; y: number }[], projection: PitchProjection): string {
+  return path.map(p => {
+    const q = toSvg(p, projection);
+    return `${q.x},${q.y}`;
+  }).join(' ');
 }
 
 /**
@@ -40,6 +49,7 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
   liveTrail,
   visible = true,
   onExtendFrom,
+  projection = LANDSCAPE,
 }) => {
   if (!visible) return null;
 
@@ -50,7 +60,7 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
   return (
     <svg
       className="absolute inset-0 w-full h-full"
-      viewBox={PITCH_VIEWBOX}
+      viewBox={projection.viewBox}
       style={{ pointerEvents: 'none', zIndex: 14 }}
     >
       <defs>
@@ -77,7 +87,7 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
         return (
           <g key={m.id}>
             <polyline
-              points={toPoints(isCircuit ? [...m.path, m.path[0]] : m.path)}
+              points={toPoints(isCircuit ? [...m.path, m.path[0]] : m.path, projection)}
               fill="none"
               stroke={RUN_STROKE}
               strokeWidth={3}
@@ -90,8 +100,8 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
             />
             {m.repeats > 1 && (
               <text
-                x={pctToSvgX(m.path[m.path.length - 1].x)}
-                y={pctToSvgY(m.path[m.path.length - 1].y) - 8}
+                x={toSvg(m.path[m.path.length - 1], projection).x}
+                y={toSvg(m.path[m.path.length - 1], projection).y - 8}
                 textAnchor="middle" fontSize={13} fontWeight={800}
                 fill={RUN_STROKE} stroke="#15140f" strokeWidth={0.6}
                 style={{ fontFamily: 'var(--font-display)' }}
@@ -115,14 +125,14 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
             {isDribble ? (
               // Same zigzag as a dribble arrow — the ball is being carried.
               <path
-                d={zigzagPath(pctToSvgX(from.x), pctToSvgY(from.y), pctToSvgX(node.at.x), pctToSvgY(node.at.y), 6)}
+                d={zigzagPath(toSvg(from, projection).x, toSvg(from, projection).y, toSvg(node.at, projection).x, toSvg(node.at, projection).y, 6)}
                 fill="none" stroke={BALL_STROKE} strokeWidth={2.6}
                 strokeLinecap="round" opacity={0.9}
                 markerEnd="url(#pass-arrow)"
               />
             ) : (
               <polyline
-                points={toPoints(pts)}
+                points={toPoints(pts, projection)}
                 fill="none" stroke={BALL_STROKE} strokeWidth={2.6}
                 strokeDasharray="7 5" strokeLinecap="round" strokeLinejoin="round"
                 opacity={0.9}
@@ -133,7 +143,7 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
             {/* Order badge, so a chain reads as a sequence rather than a tangle.
                 Numbered to match the panel's rows, which count the start node. */}
             <text
-              x={pctToSvgX(node.at.x)} y={pctToSvgY(node.at.y) - 11}
+              x={toSvg(node.at, projection).x} y={toSvg(node.at, projection).y - 11}
               textAnchor="middle" fontSize={12} fontWeight={800}
               fill={BALL_STROKE} stroke="#15140f" strokeWidth={0.6}
               style={{ fontFamily: 'var(--font-display)' }}
@@ -144,7 +154,7 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
             {/* A hold reads as the ball being kept, so it gets a ring */}
             {node.holdMs ? (
               <circle
-                cx={pctToSvgX(node.at.x)} cy={pctToSvgY(node.at.y)} r={11}
+                cx={toSvg(node.at, projection).x} cy={toSvg(node.at, projection).y} r={11}
                 fill="none" stroke={BALL_STROKE} strokeWidth={1.6}
                 strokeDasharray="2 3" opacity={0.8}
               />
@@ -157,7 +167,7 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
           the reset rather than as another intentional pass. */}
       {closed && lastNode && (
         <polyline
-          points={toPoints([lastNode.at, nodes[0].at])}
+          points={toPoints([lastNode.at, nodes[0].at], projection)}
           fill="none" stroke={BALL_STROKE} strokeWidth={2}
           strokeDasharray="3 6" opacity={0.35} strokeLinecap="round"
         />
@@ -171,7 +181,7 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
         return (
           <g
             key={`ghost-${i}`}
-            transform={`translate(${pctToSvgX(node.at.x) - 10}, ${pctToSvgY(node.at.y) - 10}) scale(0.833)`}
+            transform={`translate(${toSvg(node.at, projection).x - 10}, ${toSvg(node.at, projection).y - 10}) scale(0.833)`}
             opacity={0.7}
           >
             <BallGlyph />
@@ -182,10 +192,10 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
       {/* ---- Extend handle ----------------------------------------------- */}
       {lastNode && onExtendFrom && (
         <circle
-          cx={pctToSvgX(lastNode.at.x)} cy={pctToSvgY(lastNode.at.y)} r={7}
+          cx={toSvg(lastNode.at, projection).x} cy={toSvg(lastNode.at, projection).y} r={7}
           fill="var(--surface-container, #fbf5e9)" stroke="#15140f" strokeWidth={2}
           style={{ pointerEvents: 'auto', cursor: 'grab' }}
-          onMouseDown={e => { e.preventDefault(); e.stopPropagation(); onExtendFrom(lastNode.at); }}
+          onPointerDown={e => { e.preventDefault(); e.stopPropagation(); onExtendFrom(lastNode.at); }}
         >
           <title>Drag to add the next pass</title>
         </circle>
@@ -193,7 +203,7 @@ const MovementOverlay: React.FC<MovementOverlayProps> = ({
 
       {liveTrail && liveTrail.length > 1 && (
         <polyline
-          points={toPoints(liveTrail)}
+          points={toPoints(liveTrail, projection)}
           fill="none" stroke={LIVE_STROKE} strokeWidth={2.5}
           strokeLinecap="round" strokeDasharray="5 4" opacity={0.9}
         />

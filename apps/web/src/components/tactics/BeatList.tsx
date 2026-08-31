@@ -111,18 +111,18 @@ const BeatList: React.FC<BeatListProps> = ({
         <div
           key={beat}
           style={{
-            border: '2px solid var(--ink)',
+            border: 'var(--border-w) solid var(--ink)',
             borderRadius: 12,
             // The beat you are standing on is the one a new arrow joins, so it reads
             // as active rather than being just another group in a list.
             background: beat === currentBeat ? 'var(--surface-container)' : 'var(--surface-low)',
             padding: '8px 10px',
-            boxShadow: beat === currentBeat ? '3px 3px 0 var(--primary)' : '2px 2px 0 var(--ink)',
+            boxShadow: beat === currentBeat ? '3px 3px 0 var(--primary)' : 'var(--card-shadow)',
           }}
         >
           <div className="flex items-center gap-1.5 mb-1.5">
             <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 800, color: 'var(--ink)',
+              fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 800, color: 'var(--on-surface)',
             }}>
               {circled(beat)} Beat {beat}
             </span>
@@ -141,7 +141,7 @@ const BeatList: React.FC<BeatListProps> = ({
               <div className="flex items-center gap-1.5">
                 <span
                   className="flex items-center gap-1"
-                  style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--ink)' }}
+                  style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--on-surface)' }}
                 >
                   {glyph(a)}
                   {describe(a)}

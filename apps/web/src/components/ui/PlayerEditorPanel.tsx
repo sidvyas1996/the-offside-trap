@@ -10,6 +10,14 @@ interface PlayerEditorPanelProps {
   onClose: () => void;
   onApply: (id: number, updates: Partial<Player>) => void;
   onNameChange?: (id: number, name: string) => void;
+  /**
+   * Dock to the bottom edge instead of the right one.
+   *
+   * A 300px drawer sliding in from the right covers most of a phone; the same
+   * content as a bottom sheet leaves the board visible above it, which matters
+   * because you are editing the very marker you are looking at.
+   */
+  mobile?: boolean;
 }
 
 interface StatusChipProps {
@@ -90,6 +98,7 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
   onClose,
   onApply,
   onNameChange,
+  mobile = false,
 }) => {
   const [draft, setDraft] = useState<Partial<Player>>({});
   const [snapshot, setSnapshot] = useState<Partial<Player>>({});
@@ -122,18 +131,33 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
       <div
         style={{
           position: 'fixed',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: 300,
-          background: 'var(--theme-card)',
-          borderLeft: '1px solid var(--theme-border)',
           zIndex: 100,
           display: 'flex',
           flexDirection: 'column',
-          transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+          background: 'var(--theme-card)',
           transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
-          boxShadow: '-12px 0 40px rgba(0,0,0,0.5)',
+          ...(mobile
+            ? {
+                left: 0,
+                right: 0,
+                bottom: 0,
+                maxHeight: '68vh',
+                borderTop: 'var(--border-w) solid var(--ink)',
+                borderTopLeftRadius: 18,
+                borderTopRightRadius: 18,
+                transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
+                boxShadow: '0 -12px 40px rgba(0,0,0,0.5)',
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+              }
+            : {
+                right: 0,
+                top: 0,
+                bottom: 0,
+                width: 300,
+                borderLeft: '1px solid var(--theme-border)',
+                transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+                boxShadow: '-12px 0 40px rgba(0,0,0,0.5)',
+              }),
         }}
       >
         {/* Header */}

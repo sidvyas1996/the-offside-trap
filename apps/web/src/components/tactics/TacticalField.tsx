@@ -24,12 +24,18 @@ interface TacticalFieldProps {
   showPlayerLabels: boolean;
   onToggleMarkerType: () => void;
   markerType: 'circle' | 'shirt';
+  onToggleShirtNumbers?: () => void;
+  showShirtNumbers?: boolean;
   onToggleWaypoints: () => void;
   onToggleHorizontalZones: () => void;
   onToggleVerticalSpaces: () => void;
   onToggleFullScreen: () => void;
   onToggleFieldOfView?: () => void;
   studioMode?: boolean;
+  /** Draw the board a quarter turn — see FootballField's `portrait`. */
+  portrait?: boolean;
+  /** Size the board from its container's height — see FootballField. */
+  fitHeight?: boolean;
   showSingleMarkerHint?: boolean;
   onPlayerSelect?: (player: import('../../../../../packages/shared').Player) => void;
 }
@@ -56,20 +62,46 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
   showPlayerLabels,
   onToggleMarkerType,
   markerType,
+  onToggleShirtNumbers,
+  showShirtNumbers,
   onToggleWaypoints,
   onToggleHorizontalZones,
   onToggleVerticalSpaces,
   onToggleFullScreen,
   onToggleFieldOfView,
   studioMode = false,
+  portrait = false,
+  fitHeight = false,
   showSingleMarkerHint = false,
   onPlayerSelect,
 }) => {
   if (studioMode) {
     // Wide cap: the 16:9 board is short enough to grow horizontally before it
-    // overflows the stage, so let big screens use the room they have.
+    // overflows the stage, so let big screens use the room they have. That is a
+    // landscape concern — a portrait board grows *taller* as it widens, so a much
+    // tighter cap is what keeps it on screen there.
     return (
-      <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%' }}>
+      <div
+        style={
+          fitHeight
+            // Height-driven: the wrapper fills the stage and the board centres
+            // inside whatever room is left between header and dock.
+            // Centres the board in whatever room the stage has. `overflow: hidden`
+            // is a guard, not a layout tool: on a viewport too short for the
+            // board the pitch is cropped rather than squashed, because a
+            // distorted board misplaces every marker.
+            ? {
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                // Lets the board size itself against this box's height via cqh.
+                containerType: 'size' as const,
+              }
+            : { maxWidth: portrait ? 520 : 1400, margin: '0 auto', width: '100%' }
+        }
+      >
         <FootballField
           waypointsMode={waypointsMode}
           horizontalZonesMode={horizontalZonesMode}
@@ -77,6 +109,8 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
           isFullScreen={isFullScreen}
           fieldOfViewMode={fieldOfViewMode}
           onPlayerSelect={onPlayerSelect}
+          portrait={portrait}
+          fitHeight={fitHeight}
         />
       </div>
     );
@@ -93,6 +127,7 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
           isFullScreen={isFullScreen}
           fieldOfViewMode={fieldOfViewMode}
           onPlayerSelect={onPlayerSelect}
+          portrait={portrait}
         />
       </div>
       <div className="mt-4">
@@ -113,6 +148,8 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
           showPlayerLabels={showPlayerLabels}
           onToggleMarkerType={onToggleMarkerType}
           markerType={markerType}
+          onToggleShirtNumbers={onToggleShirtNumbers}
+          showShirtNumbers={showShirtNumbers}
           onToggleWaypoints={onToggleWaypoints}
           waypointsMode={waypointsMode}
           onToggleHorizontalZones={onToggleHorizontalZones}

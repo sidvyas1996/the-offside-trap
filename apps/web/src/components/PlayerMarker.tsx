@@ -3,6 +3,7 @@ import type { Player } from "../../../../packages/shared";
 import type { MarkerDesign } from "../contexts/FootballFieldContext";
 import { Star } from "lucide-react";
 import { getShirtSprite, getTexturedShirtSprite } from "../utils/shirtSprite";
+import { getKitSrc, getKitScale } from "../data/kits";
 
 function getCircleBackground(design: MarkerDesign, primary: string, secondary: string): string {
   switch (design) {
@@ -32,11 +33,19 @@ interface PlayerMarkerProps {
    * shows a delay accumulating — a delay you can't see coming is a bug report.
    */
   dwellMs?: number;
-  onMouseDown: (player: Player) => void;
+  onPointerDown: (player: Player) => void;
   editable?: boolean;
   onNameChange?: (id: number, name: string) => void;
   onPositionChange?: (id: number, position: string) => void;
   onContextMenu?: (e: React.MouseEvent, player: Player) => void;
+  /**
+   * Where to draw, as a percentage of the board.
+   *
+   * Separate from `player.x/y` because on the portrait board the two differ:
+   * the stored coords stay landscape and the board is what rotates. Defaults to
+   * the player's own position, so landscape callers pass nothing.
+   */
+  pos?: { x: number; y: number };
   enableContextMenu?: boolean;
   showPlayerLabels?: boolean;
   markerType?: 'circle' | 'shirt';
@@ -54,6 +63,11 @@ interface PlayerMarkerProps {
   markerDesign?: MarkerDesign;
   /** Kit atlas texture for shirt markers; plain grey shirt when unset */
   shirtTextureUrl?: string;
+  /** Kit chosen from the shirt catalog; wins over the rendered sprite. */
+  shirtKitId?: string;
+  /** Draw the squad number over a shirt marker. Off by default — the kits
+   *  carry their own chest detail, so a digit on top competes with it. */
+  showShirtNumbers?: boolean;
   onPlayerSelect?: (player: Player) => void;
 }
 
@@ -63,11 +77,12 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   isDragged,
   isAnimating = false,
   dwellMs = 0,
-  onMouseDown,
+  onPointerDown,
   editable = false,
   onNameChange,
   onPositionChange,
   onContextMenu,
+  pos,
   enableContextMenu,
   showPlayerLabels = true,
   markerType = 'circle',
@@ -84,6 +99,8 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   markerSecondaryColor = '#ffffff',
   markerDesign = 'solid',
   shirtTextureUrl,
+  shirtKitId,
+  showShirtNumbers = false,
   onPlayerSelect,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -93,16 +110,36 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   const [isStarSpinning, setIsStarSpinning] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  // A kit picked from the catalog is a flat SVG served from /kits — no render
+  // pass, so it is the source we prefer whenever one is chosen.
+  const kitSrc = markerType === 'shirt' ? getKitSrc(shirtKitId) : undefined;
+  // Sets do not fill their canvas equally; this evens out their drawn size.
+  const kitScale = kitSrc ? getKitScale(shirtKitId) : 1;
+
+  /**
+   * How far out to push the name label, measured from the marker centre.
+   *
+   * A scaled-up kit grows about its centre, so its hem reaches
+   * `(scale - 1) × halfBox` further down than an unscaled one. Moving the label
+   * by the same amount keeps the gap between shirt and label constant instead of
+   * letting a larger set crowd it.
+   */
+  const SHIRT_HALF_BOX = 24; // half of the w-12 h-12 shirt box
+  const KIT_LABEL_CUSHION = 2; // breathing room between hem and label
+  const labelRadius = kitSrc
+    ? 35 + (kitScale - 1) * SHIRT_HALF_BOX + KIT_LABEL_CUSHION
+    : 35;
+
   // 3D-rendered grey half-sleeve shirt sprite (falls back to the flat png
   // when WebGL isn't available, e.g. some headless environments)
   const shirtSrc = useMemo(() => {
-    if (markerType !== 'shirt') return null;
+    if (markerType !== 'shirt' || kitSrc) return null;
     try {
       return getShirtSprite();
     } catch {
       return "/football-shirt.png";
     }
-  }, [markerType]);
+  }, [markerType, kitSrc]);
 
   // Kit-textured variant — async; grey shirt shows until the texture render
   // resolves, and stays if the texture fails to load
@@ -134,8 +171,8 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
     <div
       className="absolute cursor-grab active:cursor-grabbing select-none focus:outline-none"
       style={{
-        left: `${player.x}%`,
-        top: `${player.y}%`,
+        left: `${(pos ?? player).x}%`,
+        top: `${(pos ?? player).y}%`,
         zIndex: isDragged ? 50 : 10,
         transform: `translate(-50%, -50%) scale(${scale * 0.88 * (isHovered ? 1.1 : 1)})`,
         transformOrigin: "center",
@@ -150,20 +187,25 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
       }}
       onMouseEnter={() => { setIsHovered(true); if (onMouseEnter) onMouseEnter(); }}
       onMouseLeave={() => { setIsHovered(false); if (onMouseLeave) onMouseLeave(); }}
-      onMouseDown={(e) => {
+      onPointerDown={(e) => {
         e.preventDefault();
         const startX = e.clientX;
         const startY = e.clientY;
-        onMouseDown(player);
+        onPointerDown(player);
         if (onPlayerSelect) {
-          const handleUp = (upE: MouseEvent) => {
+          // Tap-vs-drag: a release within TAP_SLOP of the press is a selection,
+          // anything further was a drag. The threshold is larger for touch
+          // because a finger always wanders a few pixels on the way up.
+          const slop = e.pointerType === 'mouse' ? 6 : 12;
+          const handleUp = (upE: PointerEvent) => {
             const dx = upE.clientX - startX;
             const dy = upE.clientY - startY;
-            if (Math.sqrt(dx * dx + dy * dy) < 6) {
+            if (Math.sqrt(dx * dx + dy * dy) < slop) {
               onPlayerSelect(player);
             }
           };
-          window.addEventListener('mouseup', handleUp, { once: true });
+          window.addEventListener('pointerup', handleUp, { once: true });
+          window.addEventListener('pointercancel', handleUp, { once: true });
         }
       }}
       onDoubleClick={() => editable && setIsEditing(true)}
@@ -277,10 +319,13 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
             onDoubleClick={() => editable && setIsEditingPosition(true)}
           >
             <img
-              src={texturedSrc ?? shirtSrc ?? "/football-shirt.png"}
+              src={kitSrc ?? texturedSrc ?? shirtSrc ?? "/football-shirt.png"}
               alt="Player"
               className="w-full h-full object-contain"
-              style={{ filter: "drop-shadow(0 3px 5px rgba(0,0,0,0.35))" }}
+              style={{
+                filter: "drop-shadow(0 3px 5px rgba(0,0,0,0.35))",
+                ...(kitScale !== 1 && { transform: `scale(${kitScale})` }),
+              }}
               draggable={false}
             />
             {isEditingPosition ? (
@@ -308,7 +353,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
                 }}
                 maxLength={2}
               />
-            ) : (
+            ) : showShirtNumbers ? (
               <div
                 className="absolute text-white font-bold text-lg"
                 style={{
@@ -324,7 +369,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
               >
                 {position}
               </div>
-            )}
+            ) : null}
           </div>
         )}
 
@@ -381,7 +426,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
             top: '50%',
             transform: `
               translate(-50%, -50%) 
-              translate(${35 * Math.sin(rotationAngle * Math.PI / 180)}px, ${35 * Math.cos(rotationAngle * Math.PI / 180)}px)
+              translate(${labelRadius * Math.sin(rotationAngle * Math.PI / 180)}px, ${labelRadius * Math.cos(rotationAngle * Math.PI / 180)}px)
               rotate(${-rotationAngle}deg)
             `,
             transformOrigin: 'center',

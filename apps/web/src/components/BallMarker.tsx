@@ -8,7 +8,9 @@ interface BallMarkerProps {
   /** Set during animation playback so the positional CSS transition is dropped. */
   isAnimating?: boolean;
   editable?: boolean;
-  onMouseDown?: () => void;
+  onPointerDown?: () => void;
+  /** Where to draw, as a board percentage. See PlayerMarker's `pos`. */
+  pos?: { x: number; y: number };
 }
 
 const BallMarker: React.FC<BallMarkerProps> = ({
@@ -17,7 +19,8 @@ const BallMarker: React.FC<BallMarkerProps> = ({
   isDragged,
   isAnimating = false,
   editable = false,
-  onMouseDown,
+  onPointerDown,
+  pos,
 }) => {
   /**
    * Height, conveyed the only way a plan view can: the ball grows as it rises,
@@ -34,8 +37,8 @@ const BallMarker: React.FC<BallMarkerProps> = ({
       className={`absolute select-none ${editable ? 'cursor-grab active:cursor-grabbing' : ''}`}
       title="Ball"
       style={{
-        left: `${ball.x}%`,
-        top: `${ball.y}%`,
+        left: `${(pos ?? ball).x}%`,
+        top: `${(pos ?? ball).y}%`,
         zIndex: isDragged ? 50 : lift > 0 ? 30 : 12,
         transform: `translate(-50%, -50%) scale(${scale * liftScale * (isDragged ? 1.15 : 1)})`,
         transformOrigin: "center",
@@ -45,11 +48,11 @@ const BallMarker: React.FC<BallMarkerProps> = ({
           ? "none"
           : "left 0.2s cubic-bezier(0.4, 0, 0.2, 1), top 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
-      onMouseDown={(e) => {
-        if (!editable || !onMouseDown) return;
+      onPointerDown={(e) => {
+        if (!editable || !onPointerDown) return;
         e.preventDefault();
         e.stopPropagation();
-        onMouseDown();
+        onPointerDown();
       }}
     >
       {/* Ground shadow. Separate from the ball so the two can come apart — that

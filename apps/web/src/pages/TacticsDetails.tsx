@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MessageCircle, Loader2, Play, Pause, Film } from "lucide-react";
+import { MessageCircle, Loader2, Play, Pause, Film, ChevronLeft } from "lucide-react";
 import { TacticEntity } from "../entities/TacticEntity";
 import type { Tactic, Comment, AnimationData } from "../../../../packages/shared";
 import FootballField from "../components/FootballField.tsx";
@@ -11,6 +11,7 @@ import {
   useFootballField,
 } from "../contexts/FootballFieldContext.tsx";
 import { useAnimation } from "../hooks/useAnimation.ts";
+import { useIsMobile } from "../hooks/useMediaQuery.ts";
 
 function formatTime(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -154,6 +155,10 @@ const TacticsDetailsContent: React.FC = () => {
     setBall,
     setIsAnimating,
   } = useFootballField();
+
+  // Phone-width viewports get the portrait board: a 16:9 pitch letterboxed into
+  // a phone's width is a strip barely tall enough to tell the markers apart.
+  const isMobile = useIsMobile();
   const animation = useAnimation({
     onFrame: (framePlayers, frameFieldSettings) => {
       setPlayers(framePlayers);
@@ -176,9 +181,9 @@ const TacticsDetailsContent: React.FC = () => {
   // Disable movement completely for details page
   useEffect(() => {
     setActions({
-      onMouseDown: () => {},
-      onMouseMove: () => {},
-      onMouseUp: () => {},
+      onPointerDown: () => {},
+      onPointerMove: () => {},
+      onPointerUp: () => {},
     });
     setOptions((prev) => ({
       ...prev,
@@ -277,7 +282,7 @@ const TacticsDetailsContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-black text-white min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--surface)", color: "var(--on-surface)" }}>
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
@@ -285,7 +290,7 @@ const TacticsDetailsContent: React.FC = () => {
 
   if (error || !tactic) {
     return (
-      <div className="bg-black text-white min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--surface)", color: "var(--on-surface)" }}>
         <div className="text-center">
           <p className="text-xl text-red-500 mb-4">
             {error || "Tactic not found"}
@@ -302,16 +307,50 @@ const TacticsDetailsContent: React.FC = () => {
   }
 
   return (
-    <div className="bg-black text-white min-h-screen">
+    <div className="min-h-screen" style={{ background: "var(--surface)", color: "var(--on-surface)" }}>
       <div className="max-w-screen-xl mx-auto px-4 py-8">
-        <div className="flex">
+        <div className="flex flex-col lg:flex-row">
           {/* Left Content - Football Field */}
-          <div className="flex-1 pr-8">
-            <div className="flex items-center gap-4 mb-8">
-              {renderBackButton(() => navigate(-1))}
-              <h1 className="text-5xl font-bold ">{tactic.title}</h1>
+          <div className="flex-1 lg:pr-8 min-w-0">
+            {/* On a phone this reads as the studio header does: a bordered back
+                chip, a kicker, and the document title — so moving between the
+                two screens does not feel like moving between two apps. */}
+            <div className="flex items-center gap-3 lg:gap-4 mb-5 lg:mb-8">
+              {isMobile ? (
+                <button
+                  onClick={() => navigate(-1)}
+                  aria-label="Back"
+                  style={{
+                    width: 38, height: 38, borderRadius: 11, flexShrink: 0, cursor: 'pointer',
+                    background: 'var(--surface-container)',
+                    border: 'var(--border-w) solid var(--ink)',
+                    boxShadow: 'var(--card-shadow)',
+                    color: 'var(--on-surface)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <ChevronLeft size={18} strokeWidth={2.5} />
+                </button>
+              ) : (
+                renderBackButton(() => navigate(-1))
+              )}
+              <div style={{ minWidth: 0 }}>
+                {isMobile && (
+                  <div className="kicker" style={{ marginBottom: 1 }}>Tactic</div>
+                )}
+                <h1
+                  className={`font-bold min-w-0 break-words${isMobile ? '' : ' text-5xl'}`}
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: isMobile ? 16 : undefined,
+                    letterSpacing: isMobile ? '-0.02em' : undefined,
+                  }}
+                >
+                  {tactic.title}
+                </h1>
+              </div>
             </div>
-            <FootballField />
+            <FootballField portrait={isMobile} />
 
             {/* Animation Player — only shown if tactic has animation */}
             {animation.keyframes.length > 0 && (
@@ -326,14 +365,14 @@ const TacticsDetailsContent: React.FC = () => {
             )}
 
             {/* Formation & Tags */}
-            <div className="flex flex-wrap px-10 gap-3 mb-6 mt-6">
-              <span className="bg-[#1a1a1a] border border-[rgb(49,54,63)] px-4 py-2 rounded-full text-sm font-medium">
+            <div className="flex flex-wrap px-0 lg:px-10 gap-3 mb-6 mt-6">
+              <span className="px-4 py-2 rounded-full text-sm font-medium" style={{ background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)", color: "var(--on-surface)" }}>
                 {tactic.formation}
               </span>
               {tactic.tags?.map((tag, index) => (
                 <span
                   key={index}
-                  className="bg-[#1a1a1a] border border-[rgb(49,54,63)] px-4 py-2 rounded-full text-sm cursor-pointer hover:bg-gray-700 transition-colors"
+                  className="px-4 py-2 rounded-full text-sm cursor-pointer transition-colors" style={{ background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)", color: "var(--on-surface)" }}
                 >
                   {tag}
                 </span>
@@ -342,7 +381,7 @@ const TacticsDetailsContent: React.FC = () => {
             {/* Description */}
             <div className="mb-12 px-10">
               <h3 className="text-2xl font-bold mb-4">Description</h3>
-              <div className="text-gray-300 leading-relaxed">
+              <div className="leading-relaxed" style={{ color: "var(--on-surface-variant)" }}>
                 {tactic.description}
               </div>
             </div>
@@ -351,7 +390,7 @@ const TacticsDetailsContent: React.FC = () => {
               <h3 className="text-2xl px-10 font-bold mb-6">Comments</h3>
               {/* Add Comment */}
               <div className="flex gap-4 mb-6 px-10">
-                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0" style={{ background: "var(--grass-green)", color: "#fff", border: "var(--border-w) solid var(--ink)" }}>
                   U
                 </div>
                 <div className="flex-1 flex flex-col gap-3">
@@ -366,7 +405,7 @@ const TacticsDetailsContent: React.FC = () => {
                     <button
                       onClick={handleCommentSubmit}
                       disabled={!newComment.trim() || isSubmittingComment}
-                      className="flex items-center gap-2 px-6 py-2 bg-green-600 hover:bg-green-700 rounded-xl transition-colors text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-6 py-2 rounded-xl transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed" style={{ background: "var(--primary)", color: "var(--on-primary)", border: "var(--border-w) solid var(--ink)" }}
                     >
                       {isSubmittingComment ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -380,25 +419,25 @@ const TacticsDetailsContent: React.FC = () => {
               </div>
               {/* Comments List */}
               {comments.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-center py-8" style={{ color: "var(--outline)" }}>
                   No comments yet. Be the first to comment!
                 </p>
               ) : (
                 comments.map((comment) => (
                   <div key={comment.id} className="flex gap-4 mb-4 px-10">
-                    <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center text-white font-bold text-md flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-md flex-shrink-0" style={{ background: "var(--surface-high)", color: "var(--on-surface)", border: "var(--border-w) solid var(--ink)" }}>
                       {comment.user.username.charAt(0).toUpperCase()}
                     </div>
-                    <div className="flex-1 border border-[rgb(49,54,63)] rounded-xl p-4 flex flex-col gap-2">
+                    <div className="flex-1 rounded-xl p-4 flex flex-col gap-2" style={{ border: "var(--border-w) solid var(--ink)", background: "var(--surface-container)" }}>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-semibold">
                           {comment.user.username}
                         </span>
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm" style={{ color: "var(--outline)" }}>
                           {formatDate(comment.createdAt)}
                         </span>
                       </div>
-                      <p className="text-gray-300">{comment.content}</p>
+                      <p style={{ color: "var(--on-surface-variant)" }}>{comment.content}</p>
                     </div>
                   </div>
                 ))
@@ -406,25 +445,25 @@ const TacticsDetailsContent: React.FC = () => {
             </div>
           </div>
           {/* Right Sidebar */}
-          <div className="w-80 flex-shrink-2" style={{ marginTop: "5  rem" }}>
-            <div className="bg-[#1a1a1a] border border-[rgb(49,54,63)] rounded-xl p-6">
+          <div className="w-full lg:w-80 mt-8 lg:mt-20">
+            <div className="rounded-xl p-6" style={{ background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)" }}>
               <h3 className="text-xl font-bold mb-6">About the Creator</h3>
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg" style={{ background: "var(--grass-green)", color: "#fff", border: "var(--border-w) solid var(--ink)" }}>
                   {tactic.author.username.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-semibold text-white text-lg">
+                  <p className="font-semibold text-lg" style={{ color: "var(--on-surface)" }}>
                     {tactic.author.username}
                   </p>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-sm" style={{ color: "var(--outline)" }}>
                     Created on {formatDate(tactic.createdAt)}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => navigate("/create")}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl transition-colors font-medium"
+                className="w-full py-3 rounded-xl transition-colors font-medium" style={{ background: "var(--primary)", color: "var(--on-primary)", border: "var(--border-w) solid var(--ink)" }}
               >
                 Create Your Own Tactic
               </button>

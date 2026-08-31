@@ -92,16 +92,16 @@ const MovementList: React.FC<MovementListProps> = ({
       {passes.nodes.length > 1 && (
         <div
           style={{
-            border: '2px solid var(--ink)',
+            border: 'var(--border-w) solid var(--ink)',
             borderRadius: 12,
             background: 'var(--surface-low)',
             padding: '8px 10px',
-            boxShadow: '2px 2px 0 var(--ink)',
+            boxShadow: 'var(--card-shadow)',
           }}
         >
           <div className="flex items-center gap-1.5 mb-1.5">
             <span style={{
-              fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 800, color: 'var(--ink)',
+              fontFamily: 'var(--font-display)', fontSize: 12.5, fontWeight: 800, color: 'var(--on-surface)',
             }}>
               ⚽ Passing move
             </span>
@@ -128,7 +128,7 @@ const MovementList: React.FC<MovementListProps> = ({
               </span>
               <span
                 className="flex items-center gap-1"
-                style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--ink)' }}
+                style={{ fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--on-surface)' }}
               >
                 {i === 0 ? (
                   node.receiver ? <>starts at {nameOf(node.receiver)}</> : <>ball starts here</>
@@ -172,11 +172,11 @@ const MovementList: React.FC<MovementListProps> = ({
         <div
           key={m.id}
           style={{
-            border: '2px solid var(--ink)',
+            border: 'var(--border-w) solid var(--ink)',
             borderRadius: 12,
             background: 'var(--surface-low)',
             padding: '8px 10px',
-            boxShadow: '2px 2px 0 var(--ink)',
+            boxShadow: 'var(--card-shadow)',
           }}
         >
           {/* Title line, then a control line. Two lines rather than one because
@@ -189,7 +189,7 @@ const MovementList: React.FC<MovementListProps> = ({
                 fontFamily: 'var(--font-display)',
                 fontSize: 12.5,
                 fontWeight: 800,
-                color: 'var(--ink)',
+                color: 'var(--on-surface)',
               }}
             >
               {m.repeats > 1 || m.cycle === 'loop' ? <Repeat size={12} /> : <ArrowRight size={12} />}

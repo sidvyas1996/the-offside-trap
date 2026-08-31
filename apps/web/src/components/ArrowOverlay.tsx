@@ -1,12 +1,26 @@
 import React from "react";
 import type { TacticArrow, ArrowType } from "../../../../packages/shared";
-import { PITCH_VIEWBOX, pctToSvgX, pctToSvgY } from "../utils/pitch";
+import { LANDSCAPE, PITCH_X_SCALE, type PitchProjection } from "../utils/pitch";
 
 // SVG coordinate space matches the field markings — see utils/pitch.ts
-const toSvg = (p: { x: number; y: number }) => ({ x: pctToSvgX(p.x), y: pctToSvgY(p.y) });
+const toSvg = (p: { x: number; y: number }, projection: PitchProjection) =>
+  ({ x: projection.toX(p), y: projection.toY(p) });
 
 // Visual radius of a player marker in SVG units (~40px diameter, 0.88 scale, on ~800px field → ≈13 SVG units)
 const MARKER_RADIUS = 13;
+
+/**
+ * The same radius on the portrait board.
+ *
+ * Both viewBoxes are built from the same two constants, so 13 units is the same
+ * *pitch* distance either way — but not the same number of on-screen pixels: a
+ * portrait board maps its width to 350 units where a landscape one maps it to
+ * 622, so a unit is ~1.8x larger on screen. Since the marker itself is sized in
+ * pixels and does not change, the clip radius has to shrink by that same ratio
+ * or arrows get clipped well short of the marker they start from.
+ */
+const markerRadiusFor = (projection: PitchProjection) =>
+  projection.portrait ? MARKER_RADIUS * PITCH_X_SCALE : MARKER_RADIUS;
 
 // Offset a point along the direction (dx,dy) by r units
 function offsetAlongDir(x: number, y: number, dx: number, dy: number, r: number) {
@@ -16,18 +30,18 @@ function offsetAlongDir(x: number, y: number, dx: number, dy: number, r: number)
 }
 
 // Clip start/end of a straight line inward by MARKER_RADIUS
-function clipLine(ax: number, ay: number, bx: number, by: number, clipEnd = true) {
+function clipLine(ax: number, ay: number, bx: number, by: number, clipEnd = true, radius = MARKER_RADIUS) {
   const dx = bx - ax, dy = by - ay;
-  const s = offsetAlongDir(ax, ay, dx, dy, MARKER_RADIUS);
-  const e = clipEnd ? offsetAlongDir(bx, by, -dx, -dy, MARKER_RADIUS) : { x: bx, y: by };
+  const s = offsetAlongDir(ax, ay, dx, dy, radius);
+  const e = clipEnd ? offsetAlongDir(bx, by, -dx, -dy, radius) : { x: bx, y: by };
   return { sx: s.x, sy: s.y, ex: e.x, ey: e.y };
 }
 
 // Clip start/end of a quadratic bezier inward by MARKER_RADIUS
 // Start tangent: P0→ctrl, End tangent: ctrl→P2
-function clipCurve(ax: number, ay: number, cx: number, cy: number, bx: number, by: number, clipEnd = true) {
-  const s = offsetAlongDir(ax, ay, cx - ax, cy - ay, MARKER_RADIUS);
-  const e = clipEnd ? offsetAlongDir(bx, by, cx - bx, cy - by, MARKER_RADIUS) : { x: bx, y: by };
+function clipCurve(ax: number, ay: number, cx: number, cy: number, bx: number, by: number, clipEnd = true, radius = MARKER_RADIUS) {
+  const s = offsetAlongDir(ax, ay, cx - ax, cy - ay, radius);
+  const e = clipEnd ? offsetAlongDir(bx, by, cx - bx, cy - by, radius) : { x: bx, y: by };
   return { sx: s.x, sy: s.y, ex: e.x, ey: e.y };
 }
 
@@ -77,9 +91,11 @@ interface ArrowSvgProps {
   arrow: TacticArrow;
   onDelete?: (id: string) => void;
   isPreview?: boolean;
+  projection: PitchProjection;
 }
 
-const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
+const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, projection }) => {
+  const radius = markerRadiusFor(projection);
   const color = arrow.color || defaultColor(arrow.type);
   const markerId = `arrowhead-${arrow.id}`;
   const markerIdOpen = `arrowhead-open-${arrow.id}`;
@@ -88,7 +104,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
   // --- target-zone (1-point marker) ---
   if (arrow.type === 'target-zone') {
     if (!arrow.points[0]) return null;
-    const p = toSvg(arrow.points[0]);
+    const p = toSvg(arrow.points[0], projection);
     return (
       <g opacity={opacity} style={{ cursor: onDelete ? 'context-menu' : 'default' }}
          onContextMenu={onDelete ? (e) => { e.preventDefault(); onDelete(arrow.id); } : undefined}>
@@ -102,8 +118,8 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
   }
 
   if (!arrow.points[0] || !arrow.points[1]) return null;
-  const a = toSvg(arrow.points[0]);
-  const b = toSvg(arrow.points[1]);
+  const a = toSvg(arrow.points[0], projection);
+  const b = toSvg(arrow.points[1], projection);
   const hit = onDelete ? { cursor: 'context-menu' as const } : {};
 
   const renderPath = () => {
@@ -111,7 +127,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
 
       // — Ball: Pass — dashed + open arrowhead (sizes × 0.85)
       case 'pass': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, !arrow.endsAtPlayer);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, !arrow.endsAtPlayer, radius);
         return (
           <>
             <defs>
@@ -131,7 +147,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
 
       // — Ball: Dribble — zigzag (amplitude 6)
       case 'dribble': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, !arrow.endsAtPlayer);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, !arrow.endsAtPlayer, radius);
         const d = zigzagPath(sx, sy, ex, ey, 6);
         return (
           <>
@@ -145,7 +161,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
       // — Ball: Long ball — curve + open arrowhead
       case 'long-ball': {
         const { cx, cy } = curveControl(a.x, a.y, b.x, b.y);
-        const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, !arrow.endsAtPlayer);
+        const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, !arrow.endsAtPlayer, radius);
         const pathD = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
         return (
           <>
@@ -164,7 +180,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
 
       // — Player: Direct run — thick solid + filled arrowhead
       case 'direct-run': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, true, radius);
         return (
           <>
             <defs>
@@ -184,7 +200,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
 
       // — Player: Secondary run — dashed + filled arrowhead
       case 'secondary-run': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, true, radius);
         return (
           <>
             <defs>
@@ -205,7 +221,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
       // — Player: Curved run — bezier + filled arrowhead
       case 'curved-run': {
         const { cx, cy } = curveControl(a.x, a.y, b.x, b.y);
-        const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y);
+        const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, true, radius);
         const pathD = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
         return (
           <>
@@ -224,7 +240,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
 
       // — Player: Press run — zigzag (amplitude 7.6) + filled arrowhead
       case 'press-run': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, true, radius);
         const d = zigzagPath(sx, sy, ex, ey, 7.6, 20);
         return (
           <>
@@ -260,12 +276,11 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview }) => {
  * appearing on two arrows is the clearest possible statement that they happen
  * together — that is the whole notation.
  */
-const BeatBadge: React.FC<{ arrow: TacticArrow; color: string }> = ({ arrow, color }) => {
+const BeatBadge: React.FC<{ arrow: TacticArrow; color: string; projection: PitchProjection }> = ({ arrow, color, projection }) => {
   const beat = Math.max(1, Math.floor(arrow.beat ?? 1));
   const at = arrow.points[0];
   if (!at) return null;
-  const cx = pctToSvgX(at.x);
-  const cy = pctToSvgY(at.y);
+  const { x: cx, y: cy } = toSvg(at, projection);
   return (
     <g style={{ pointerEvents: 'none' }}>
       <circle cx={cx} cy={cy - 14} r={8} fill="#15140f" stroke={color} strokeWidth={1.5} />
@@ -295,6 +310,8 @@ interface ArrowOverlayProps {
    * current one make sense.
    */
   activeBeat?: number;
+  /** Which way up the board is drawn. Defaults to landscape. */
+  projection?: PitchProjection;
 }
 
 /** Matches the compiler and BeatList: an absent beat is beat 1. */
@@ -306,10 +323,11 @@ const ArrowOverlay: React.FC<ArrowOverlayProps> = ({
   previewArrow,
   showBeats,
   activeBeat,
+  projection = LANDSCAPE,
 }) => (
   <svg
     className="absolute inset-0 w-full h-full"
-    viewBox={PITCH_VIEWBOX}
+    viewBox={projection.viewBox}
     style={{ zIndex: 20, pointerEvents: 'none', overflow: 'visible' }}
   >
     {arrows.map(arrow => {
@@ -320,14 +338,14 @@ const ArrowOverlay: React.FC<ArrowOverlayProps> = ({
         beatOf(arrow) !== activeBeat;
       return (
         <g key={arrow.id} opacity={dimmed ? 0.28 : 1}>
-          <ArrowSvg arrow={arrow} onDelete={onDeleteArrow} />
+          <ArrowSvg arrow={arrow} onDelete={onDeleteArrow} projection={projection} />
           {showBeats && arrow.type !== 'target-zone' && arrow.points.length >= 2 && (
-            <BeatBadge arrow={arrow} color={arrow.color || defaultColor(arrow.type)} />
+            <BeatBadge arrow={arrow} color={arrow.color || defaultColor(arrow.type)} projection={projection} />
           )}
         </g>
       );
     })}
-    {previewArrow && <ArrowSvg key="preview" arrow={previewArrow} isPreview />}
+    {previewArrow && <ArrowSvg key="preview" arrow={previewArrow} isPreview projection={projection} />}
   </svg>
 );
 

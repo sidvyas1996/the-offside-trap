@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="pl-08-white-black-sleeves">
+<defs><clipPath id="sil"><path d="M196 36 Q256 92 316 36 L366 46 L478 122 L444 198 L384 152 L392 486 Q392 496 382 496 L130 496 Q120 496 120 486 L128 152 L68 198 L34 122 L146 46 Z"></path></clipPath></defs>
+<g clip-path="url(#sil)"><rect x="-8" y="-8" width="528" height="528" fill="#ffffff"></rect><path d="M152 -8 L128 152 L36 220 L-8 220 L-8 -8 Z" fill="#17181c"></path><path d="M360 -8 L384 152 L476 220 L520 220 L520 -8 Z" fill="#17181c"></path></g>
+<path d="M196 36 Q256 92 316 36 L366 46 L478 122 L444 198 L384 152 L392 486 Q392 496 382 496 L130 496 Q120 496 120 486 L128 152 L68 198 L34 122 L146 46 Z" fill="none" stroke="#17181c" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"></path>
+<path d="M180 44 Q256 -16 332 44 Q256 88 180 44 Z" fill="#17181c" stroke="#17181c" stroke-width="9" stroke-linejoin="round"></path><rect x="240" y="16" width="32" height="16" rx="3" fill="#ffffff" stroke="#17181c" stroke-width="5"></rect></svg>
