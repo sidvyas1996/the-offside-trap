@@ -43,7 +43,7 @@ async function main() {
         { id: 11, x: 50, y: 18, number: 9, name: 'ST', position: 'ST' },
       ],
       authorId: analyst.id,
-      fieldSettings: { fieldColor: '#166534', playerColor: '#1a1a1a', showPlayerLabels: true, markerType: 'circle' },
+      fieldSettings: { fieldColor: '#19a974', playerColor: '#1a1a1a', showPlayerLabels: true, markerType: 'circle' },
     },
     {
       title: 'Gegenpressing 4-2-3-1',
@@ -64,7 +64,7 @@ async function main() {
         { id: 11, x: 50, y: 16, number: 9, name: 'ST', position: 'ST' },
       ],
       authorId: coach.id,
-      fieldSettings: { fieldColor: '#0d2d4d', playerColor: '#e05c1a', showPlayerLabels: true, markerType: 'circle' },
+      fieldSettings: { fieldColor: '#19a974', playerColor: '#e05c1a', showPlayerLabels: true, markerType: 'circle' },
     },
     {
       title: 'Low Block Counter 5-4-1',
@@ -85,7 +85,7 @@ async function main() {
         { id: 11, x: 50, y: 20, number: 9, name: 'ST', position: 'ST' },
       ],
       authorId: coach.id,
-      fieldSettings: { fieldColor: '#166534', playerColor: '#1a1a1a', showPlayerLabels: true, markerType: 'circle' },
+      fieldSettings: { fieldColor: '#19a974', playerColor: '#1a1a1a', showPlayerLabels: true, markerType: 'circle' },
     },
     {
       title: 'Total Football 3-4-3',
@@ -106,7 +106,7 @@ async function main() {
         { id: 11, x: 78, y: 22, number: 11, name: 'LW', position: 'LW' },
       ],
       authorId: analyst.id,
-      fieldSettings: { fieldColor: '#166534', playerColor: '#c8a600', showPlayerLabels: true, markerType: 'circle' },
+      fieldSettings: { fieldColor: '#19a974', playerColor: '#c8a600', showPlayerLabels: true, markerType: 'circle' },
     },
     {
       title: 'High Press 4-3-3 Wide',
@@ -127,7 +127,7 @@ async function main() {
         { id: 11, x: 50, y: 16, number: 9, name: 'ST', position: 'ST' },
       ],
       authorId: analyst.id,
-      fieldSettings: { fieldColor: '#166534', playerColor: '#1a1a1a', showPlayerLabels: true, markerType: 'circle' },
+      fieldSettings: { fieldColor: '#19a974', playerColor: '#1a1a1a', showPlayerLabels: true, markerType: 'circle' },
     },
     {
       title: 'Catenaccio 5-3-2',
@@ -148,11 +148,11 @@ async function main() {
         { id: 11, x: 65, y: 20, number: 11, name: 'ST', position: 'ST' },
       ],
       authorId: coach.id,
-      fieldSettings: { fieldColor: '#1a0a3d', playerColor: '#c0c0c0', showPlayerLabels: true, markerType: 'circle' },
+      fieldSettings: { fieldColor: '#19a974', playerColor: '#c0c0c0', showPlayerLabels: true, markerType: 'circle' },
     },
   ];
 
-  const created = [];
+  const created: any[] = [];
   for (const t of tactics) {
     const tactic = await prisma.tactic.create({ data: t as any });
     created.push(tactic);

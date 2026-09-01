@@ -7,6 +7,7 @@ import ArrowOverlay, { BALL_ARROW_TYPES } from "./ArrowOverlay.tsx";
 import {
   DEFAULT_FOOTBALL_FIELD_COLOUR,
   CHARCOAL_GRAY,
+  normalizeFieldColor,
 } from "../utils/colors.ts";
 import {
   PITCH_LENGTH,
@@ -452,19 +453,20 @@ const FootballField: React.FC<FootballFieldProps> = ({
   };
 
   // Responsive field sizing
-  const fieldColor = options.fieldColor || DEFAULT_FOOTBALL_FIELD_COLOUR;
-  // Subtle alternating stripe — slightly lighter than base color
-  const stripeColor = 'rgba(255,255,255,0.04)';
+  const fieldColor = normalizeFieldColor(options.fieldColor);
+  // Dual alternating mown stripes matching landing hero pitch contrast
+  const lightStripe = 'rgba(255,255,255,0.05)';
+  const darkStripe = 'rgba(0,0,0,0.05)';
   // Stripes are mown along the pitch's *length*, so the gradient angle follows
   // the projection rather than being pinned to the screen's horizontal.
   const stripePct = portrait ? 100 / PITCH_PORTRAIT_STRIPE_COUNT : PITCH_STRIPE_PCT;
   const stripeAngle = portrait ? '0deg' : '90deg';
   const pitchBackground = `repeating-linear-gradient(
     ${stripeAngle},
-    transparent 0%,
-    transparent ${stripePct}%,
-    ${stripeColor} ${stripePct}%,
-    ${stripeColor} ${stripePct * 2}%
+    ${lightStripe} 0%,
+    ${lightStripe} ${stripePct}%,
+    ${darkStripe} ${stripePct}%,
+    ${darkStripe} ${stripePct * 2}%
   ), ${fieldColor}`;
 
   const wideStage = size === "fullscreen" || options.size === "fullscreen" || isFullScreen;
@@ -477,21 +479,6 @@ const FootballField: React.FC<FootballFieldProps> = ({
    * this element while the markings are an SVG that letterboxes inside it, so
    * the moment the box stops matching 350:622 the two disagree and every marker
    * drifts off the pitch it is supposed to sit on.
-   *
-   * Setting height *and* max-width (the obvious way to fit a portrait board into
-   * a bounded stage) does exactly that: max-width clamps the width, the explicit
-   * height stays, and the ratio is silently violated. So width always drives,
-   * and `fitHeight` only means "no desktop width cap — take the stage".
-   */
-  /**
-   * Contain-fit for the phone stage: as wide as the container allows, but never
-   * wider than its *height* permits at this aspect ratio.
-   *
-   * `cqh` is the container's height, which is the one thing plain CSS cannot
-   * otherwise reference from a width. Without it there is no way to honour both
-   * axes at once: width-driven overflows a short stage, height-driven overflows
-   * a narrow one, and setting both dimensions is what broke the ratio before.
-   * Requires `container-type: size` on the wrapper — see TacticalField.
    */
   const containWidth = `min(100%, calc(100cqh * ${portrait ? PITCH_WIDTH : PITCH_LENGTH} / ${portrait ? PITCH_LENGTH : PITCH_WIDTH}))`;
 
@@ -554,7 +541,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
           inline JSX, so the landscape and portrait boards cannot drift apart and
           the lines can be tested without rendering a component. */}
       <svg
-        className="absolute inset-0 w-full h-full opacity-55"
+        className="absolute inset-0 w-full h-full"
+        style={{ opacity: 0.32 }}
         viewBox={projection.viewBox}
       >
         {PITCH_MARKINGS.map((marking, i) => {
