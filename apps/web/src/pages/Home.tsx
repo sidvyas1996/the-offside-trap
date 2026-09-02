@@ -21,7 +21,6 @@ const Home: React.FC = () => {
   const [tactics, setTactics] = useState<TacticSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"trending" | "featured" | "latest">("latest");
-  const [heroActive, setHeroActive] = useState(false);
   const libraryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,30 +52,31 @@ const Home: React.FC = () => {
         {/* ── NAV ── */}
         <TopNav />
 
-        {/* ── HERO — perspective pitch as full-bleed background, copy on top ── */}
+        {/* ── HERO — side-by-side headline & 3D TacticsPitch animation ── */}
         <section
-          className="hero-stage"
-          onMouseEnter={() => setHeroActive(true)}
-          onMouseLeave={() => setHeroActive(false)}
+          style={{
+            position: "relative",
+            marginTop: 24,
+            padding: "12px 0",
+            display: "grid",
+            gap: "36px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            alignItems: "center",
+          }}
         >
-          {/* pitch background */}
-          <HeroPitch active={heroActive} />
-          {/* gentle left scrim for copy legibility */}
-          <div className="hero-scrim" />
-
           {/* copy */}
-          <div className="hero-copy">
+          <div>
             <div className="kicker" style={{ fontSize: 13, letterSpacing: "0.16em", marginBottom: 14 }}>
               The Offside Trap · Tactics, in motion
             </div>
             <h1 style={{
               fontFamily: "var(--font-display)", fontWeight: 900,
-              fontSize: "clamp(48px, 7vw, 104px)", lineHeight: 0.9, letterSpacing: "-0.035em",
-              maxWidth: 720, margin: 0, color: 'var(--on-surface)', textWrap: "balance" as React.CSSProperties["textWrap"],
+              fontSize: "clamp(42px, 5.5vw, 84px)", lineHeight: 0.95, letterSpacing: "-0.035em",
+              maxWidth: 640, margin: 0, color: 'var(--on-surface)', textWrap: "balance" as React.CSSProperties["textWrap"],
             }}>
               Out‑coach every opponent.
             </h1>
-            <p style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 17, lineHeight: 1.5, color: "var(--on-surface-variant)", margin: "20px 0 0", maxWidth: 420 }}>
+            <p style={{ fontFamily: "var(--font-body)", fontWeight: 500, fontSize: 16, lineHeight: 1.5, color: "var(--on-surface-variant)", margin: "20px 0 0", maxWidth: 440 }}>
               Build animated tactical breakdowns, craft 3D lineups, and export match‑ready visuals — all in one place.
             </p>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 26 }}>
@@ -103,6 +103,11 @@ const Home: React.FC = () => {
                 <ArrowRight size={20} strokeWidth={2.2} color="var(--on-surface)" />
               </button>
             </div>
+          </div>
+
+          {/* 3D Pitch Animation from A Fresh New Look */}
+          <div style={{ width: "100%", maxWidth: 640, justifySelf: "center" }}>
+            <HeroPitch />
           </div>
         </section>
 

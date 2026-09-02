@@ -38,7 +38,7 @@ const ExportPreviewContent: React.FC = () => {
         setExportState(state);
         
         // Update players in context
-        setPlayers(state.players.map(p => ({
+        setPlayers(state.players.map((p: any) => ({
           id: p.id,
           x: p.x,
           y: p.y,

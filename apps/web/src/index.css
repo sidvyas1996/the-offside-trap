@@ -28,6 +28,20 @@
      design also dropped the border from 2.5px to 1px. */
   --ink:                  #15140f;  /* Kit Black */
 
+  /* ── Pitch Animation Tokens (A Fresh New Look) ── */
+  --token-home:           oklch(0.72 0.13 245);
+  --color-token-home:     #4d7cff;
+  --color-token-home-ring: rgba(255, 255, 255, 0.7);
+  --color-token-home-ink:  #ffffff;
+
+  --token-away:           oklch(0.16 0.01 120);
+  --token-away-ring:      rgba(255, 255, 255, 0.25);
+
+  --token-key:            oklch(0.72 0.19 20);
+  --color-token-key:      #ff4d4d;
+  --color-token-key-ring: rgba(255, 255, 255, 0.8);
+  --color-token-key-ink:  #ffffff;
+
   /* ── Popping accent family (named in the design language) ── */
   --pitch-lime:           #c6f24e;
   --kit-black:            #15140f;
@@ -1269,3 +1283,262 @@ p {
 .auth-textlink:hover {
   color: var(--playmaker-purple);
 }
+
+/* ── Pitch Animation (A Fresh New Look) ── */
+.pitch-scene {
+  position: relative;
+  perspective: 1400px;
+  padding-block: 1.5rem;
+}
+
+.pitch-glow {
+  position: absolute;
+  inset: 12% 6% 4%;
+  border-radius: 999px;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in oklab, oklch(0.72 0.16 155) 26%, transparent),
+    transparent 70%
+  );
+  filter: blur(60px);
+}
+
+.pitch-tilt {
+  position: relative;
+  transform: rotateX(52deg) rotateZ(-24deg) scale(0.94);
+  transform-style: preserve-3d;
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pitch-scene:hover .pitch-tilt {
+  transform: rotateX(48deg) rotateZ(-22deg) scale(1.04);
+}
+
+.pitch-surface {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+  border-radius: 8px;
+  overflow: visible;
+  transform-style: preserve-3d;
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in oklab, oklch(0.62 0.14 158) 92%, black),
+      oklch(0.68 0.15 156) 55%,
+      color-mix(in oklab, oklch(0.55 0.13 160) 90%, black)
+    );
+  box-shadow:
+    0 40px 90px -30px oklch(0 0 0 / 70%),
+    inset 0 0 60px oklch(0 0 0 / 22%);
+}
+
+.pitch-stripes {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    90deg,
+    oklch(1 0 0 / 6%) 0 8.33%,
+    transparent 8.33% 16.66%
+  );
+}
+
+.pitch-lines {
+  position: absolute;
+  inset: 4%;
+  border: 2px solid oklch(1 0 0 / 45%);
+}
+
+.pitch-lines span {
+  position: absolute;
+  border: 2px solid oklch(1 0 0 / 40%);
+}
+
+.pitch-halfway {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-width: 0 0 0 2px;
+}
+
+.pitch-circle {
+  left: 50%;
+  top: 50%;
+  width: 22%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 999px;
+}
+
+.pitch-spot {
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  translate: -50% -50%;
+  border-radius: 999px;
+  background: oklch(1 0 0 / 55%);
+  border: none;
+}
+
+.pitch-box {
+  top: 50%;
+  height: 46%;
+  width: 15%;
+  translate: 0 -50%;
+}
+
+.pitch-box-left {
+  left: 0;
+}
+.pitch-box-right {
+  right: 0;
+}
+
+.pitch-six {
+  top: 50%;
+  height: 22%;
+  width: 6%;
+  translate: 0 -50%;
+}
+
+.pitch-six-left {
+  left: 0;
+}
+.pitch-six-right {
+  right: 0;
+}
+
+.pitch-tokens {
+  position: absolute;
+  inset: 0;
+  transform: translateZ(40px);
+  transform-style: preserve-3d;
+}
+
+.pitch-token {
+  position: absolute;
+  translate: -50% -50%;
+  transform: translateZ(14px) rotateZ(24deg) rotateX(-52deg);
+  transform-style: preserve-3d;
+  transition: translate 300ms ease;
+}
+
+.pitch-token:hover {
+  translate: -50% -70%;
+}
+
+.pitch-ball {
+  width: clamp(0.5rem, 0.9vw, 0.75rem);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, oklch(1 0 0), oklch(0.78 0 0));
+  box-shadow: 0 6px 10px -4px oklch(0 0 0 / 70%);
+}
+
+.pitch-offside-line {
+  position: absolute;
+  top: 2%;
+  bottom: 2%;
+  width: 2px;
+  translate: -50% 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--token-key) 30%, transparent),
+    var(--token-key),
+    color-mix(in oklab, var(--token-key) 30%, transparent)
+  );
+  box-shadow: 0 0 12px color-mix(in oklab, var(--token-key) 70%, transparent);
+  transition: left 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pitch-caption {
+  position: relative;
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--on-surface-variant, #f0c69a);
+}
+
+.pitch-caption-step {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  border: var(--border-w, 1px) solid var(--ink, #15140f);
+  background: var(--surface-container, #23251c);
+  color: var(--pitch-lime, #c6f24e);
+}
+
+.pitch-chip {
+  display: grid;
+  place-items: center;
+  width: clamp(1.35rem, 2.1vw, 1.75rem);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  line-height: 1;
+  box-shadow:
+    0 8px 14px -6px oklch(0 0 0 / 75%),
+    0 1px 0 oklch(1 0 0 / 15%) inset;
+}
+
+/* Jersey markers */
+.pitch-jersey {
+  display: block;
+  width: clamp(1.7rem, 2.7vw, 2.3rem);
+  height: auto;
+  transform-style: preserve-3d;
+  animation: jersey-sway 6s ease-in-out infinite;
+  filter: drop-shadow(0 8px 10px oklch(0 0 0 / 65%));
+}
+
+.pitch-jersey-num {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+@keyframes jersey-sway {
+  0%,
+  100% {
+    transform: rotateY(-18deg);
+  }
+  50% {
+    transform: rotateY(18deg);
+  }
+}
+
+.pitch-token-float {
+  animation: pitch-float 5.5s ease-in-out infinite;
+}
+
+@keyframes pitch-float {
+  0%,
+  100% {
+    translate: -50% -50%;
+  }
+  50% {
+    translate: -50% -62%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pitch-token-float,
+  .pitch-jersey {
+    animation: none;
+  }
+  .pitch-tilt,
+  .pitch-token {
+    transition: none;
+  }
+}
+
