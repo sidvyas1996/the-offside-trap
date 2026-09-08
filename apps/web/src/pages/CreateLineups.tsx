@@ -179,8 +179,6 @@ const CreateLineupsContent: React.FC = () => {
               {form.formation && (
                 <span style={
                   isMobile
-                    // Orange here, purple in the Tactics studio — the design uses
-                    // the pill colour to say which builder you are in.
                     ? {
                         fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 800,
                         color: '#ffffff', background: 'var(--whistle-orange)',
@@ -237,79 +235,75 @@ const CreateLineupsContent: React.FC = () => {
       </div>
 
       {/* Main area: stage left, options + preview right */}
-      {/* Board + toolbar declared once; the phone stacks them and moves the
-          details rail into a sheet, the desktop keeps its two columns. */}
       {(() => {
         const lineupBoard = (
-  <LineupField
-      waypointsMode={state.waypointsMode}
-      horizontalZonesMode={state.horizontalZonesMode}
-      verticalSpacesMode={state.verticalSpacesMode}
-      onChangeFieldColor={state.handleFieldColorChange}
-      onChangePlayerColor={state.handlePlayerColorChange}
-      onTogglePlayerLabels={state.handleTogglePlayerLabels}
-      showPlayerLabels={state.showPlayerLabels}
-      onToggleMarkerType={state.handleToggleMarkerType}
-      markerType={state.markerType}
-      onToggleWaypoints={state.handleToggleWaypoints}
-      onToggleHorizontalZones={state.handleToggleHorizontalZones}
-      onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
-      rotationAngle={rotationAngle}
-      tiltAngle={tiltAngle}
-      onRotationChange={setRotationAngle}
-      onTiltChange={setTiltAngle}
-      zoomLevel={zoomLevel}
-      onZoomChange={setZoomLevel}
-      onRotateLeft={handleRotateLeft}
-      onRotateRight={handleRotateRight}
-      onTiltUp={handleTiltUp}
-      onTiltDown={handleTiltDown}
-      onZoomIn={handleZoomIn}
-      onZoomOut={handleZoomOut}
-      onPlayerSelect={setSelectedPlayer}
-    portrait={isMobile}
-  />
+          <LineupField
+            waypointsMode={state.waypointsMode}
+            horizontalZonesMode={state.horizontalZonesMode}
+            verticalSpacesMode={state.verticalSpacesMode}
+            onChangeFieldColor={state.handleFieldColorChange}
+            onChangePlayerColor={state.handlePlayerColorChange}
+            onTogglePlayerLabels={state.handleTogglePlayerLabels}
+            showPlayerLabels={state.showPlayerLabels}
+            onToggleMarkerType={state.handleToggleMarkerType}
+            markerType={state.markerType}
+            onToggleWaypoints={state.handleToggleWaypoints}
+            onToggleHorizontalZones={state.handleToggleHorizontalZones}
+            onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
+            rotationAngle={rotationAngle}
+            tiltAngle={tiltAngle}
+            onRotationChange={setRotationAngle}
+            onTiltChange={setTiltAngle}
+            zoomLevel={zoomLevel}
+            onZoomChange={setZoomLevel}
+            onRotateLeft={handleRotateLeft}
+            onRotateRight={handleRotateRight}
+            onTiltUp={handleTiltUp}
+            onTiltDown={handleTiltDown}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onPlayerSelect={setSelectedPlayer}
+            portrait={isMobile}
+          />
         );
         const lineupToolbar = (
-  <CreatorsMenu
-      onChangeFieldColor={state.handleFieldColorChange}
-      onChangePlayerColor={state.handlePlayerColorChange}
-      onTogglePlayerLabels={state.handleTogglePlayerLabels}
-      showPlayerLabels={state.showPlayerLabels}
-      onToggleMarkerType={state.handleToggleMarkerType}
-      markerType={state.markerType}
-      onToggleShirtNumbers={state.handleToggleShirtNumbers}
-      showShirtNumbers={state.showShirtNumbers}
-      onToggleWaypoints={state.handleToggleWaypoints}
-      waypointsMode={state.waypointsMode}
-      onToggleHorizontalZones={state.handleToggleHorizontalZones}
-      horizontalZonesMode={state.horizontalZonesMode}
-      onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
-      verticalSpacesMode={state.verticalSpacesMode}
-      rotationAngle={rotationAngle}
-      tiltAngle={tiltAngle}
-      zoomLevel={zoomLevel}
-      onRotateLeft={handleRotateLeft}
-      onRotateRight={handleRotateRight}
-      onTiltUp={handleTiltUp}
-      onTiltDown={handleTiltDown}
-      onZoomIn={handleZoomIn}
-      onZoomOut={handleZoomOut}
-      markerBgColor={options.markerBgColor}
-      markerBorderColor={options.markerBorderColor}
-      markerTextColor={options.markerTextColor}
-      markerSecondaryColor={options.markerSecondaryColor}
-      markerDesign={options.markerDesign}
-      onChangeMarkerBgColor={state.handleMarkerBgColorChange}
-      onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
-      onChangeMarkerTextColor={state.handleMarkerTextColorChange}
-      onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
-      onChangeMarkerDesign={state.handleMarkerDesignChange}
-    />
+          <CreatorsMenu
+            onChangeFieldColor={state.handleFieldColorChange}
+            onChangePlayerColor={state.handlePlayerColorChange}
+            onTogglePlayerLabels={state.handleTogglePlayerLabels}
+            showPlayerLabels={state.showPlayerLabels}
+            onToggleMarkerType={state.handleToggleMarkerType}
+            markerType={state.markerType}
+            onToggleShirtNumbers={state.handleToggleShirtNumbers}
+            showShirtNumbers={state.showShirtNumbers}
+            onToggleWaypoints={state.handleToggleWaypoints}
+            waypointsMode={state.waypointsMode}
+            onToggleHorizontalZones={state.handleToggleHorizontalZones}
+            horizontalZonesMode={state.horizontalZonesMode}
+            onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
+            verticalSpacesMode={state.verticalSpacesMode}
+            rotationAngle={rotationAngle}
+            tiltAngle={tiltAngle}
+            zoomLevel={zoomLevel}
+            onRotateLeft={handleRotateLeft}
+            onRotateRight={handleRotateRight}
+            onTiltUp={handleTiltUp}
+            onTiltDown={handleTiltDown}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            markerBgColor={options.markerBgColor}
+            markerBorderColor={options.markerBorderColor}
+            markerTextColor={options.markerTextColor}
+            markerSecondaryColor={options.markerSecondaryColor}
+            markerDesign={options.markerDesign}
+            onChangeMarkerBgColor={state.handleMarkerBgColorChange}
+            onChangeMarkerBorderColor={state.handleMarkerBorderColorChange}
+            onChangeMarkerTextColor={state.handleMarkerTextColorChange}
+            onChangeMarkerSecondaryColor={state.handleMarkerSecondaryColorChange}
+            onChangeMarkerDesign={state.handleMarkerDesignChange}
+          />
         );
 
-        // Only meaningful once the markers are shirts — a kit has nothing to
-        // dress while they are circles.
         const kitPanel = state.markerType === 'shirt' ? (
           <KitPicker value={options.shirtKitId} onChange={state.handleShirtKitChange} />
         ) : null;
@@ -317,9 +311,6 @@ const CreateLineupsContent: React.FC = () => {
         if (isMobile) {
           return (
             <>
-              {/* Block, not flex: the LineupField root is a card that sizes to
-                  its content, so as a flex item it collapses instead of filling
-                  the stage. */}
               <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 12px 12px' }}>
                 {lineupBoard}
               </div>
@@ -341,58 +332,56 @@ const CreateLineupsContent: React.FC = () => {
                 {lineupToolbar}
               </div>
             </div>
-        <div style={{ width: 380, borderLeft: 'var(--border-w) solid var(--ink)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
-          <div style={{ padding: '16px 16px 0' }}>
-            <div className="rounded-2xl p-5" style={{ background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)" }}>
-              <h2 className="panel-title mb-4">
-                <span className="icon-chip"><Users size={14} /></span>
-                Lineup Details
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="field-label">Title</label>
-                  <Input
-                    value={form.title}
-                    onChange={e => form.setTitle(e.target.value)}
-                    placeholder="e.g. Matchday XI"
-                  />
-                </div>
-                <div>
-                  <label className="field-label">Description</label>
-                  <Textarea
-                    rows={3}
-                    value={form.description}
-                    onChange={e => form.setDescription(e.target.value)}
-                    placeholder="Describe this lineup…"
-                    className="!rounded-lg !p-3 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="field-label">Formation</label>
-                  <Input
-                    value={form.formation}
-                    onChange={e => form.setFormation(e.target.value)}
-                    placeholder="e.g. 4-3-3"
-                    style={{ fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", letterSpacing: "0.04em" }}
-                  />
+            <div style={{ width: 380, borderLeft: 'var(--border-w) solid var(--ink)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+              <div style={{ padding: '16px 16px 0' }}>
+                <div className="rounded-2xl p-5" style={{ background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)" }}>
+                  <h2 className="panel-title mb-4">
+                    <span className="icon-chip"><Users size={14} /></span>
+                    Lineup Details
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="field-label">Title</label>
+                      <Input
+                        value={form.title}
+                        onChange={e => form.setTitle(e.target.value)}
+                        placeholder="e.g. Matchday XI"
+                      />
+                    </div>
+                    <div>
+                      <label className="field-label">Description</label>
+                      <Textarea
+                        rows={3}
+                        value={form.description}
+                        onChange={e => form.setDescription(e.target.value)}
+                        placeholder="Describe this lineup…"
+                        className="!rounded-lg !p-3 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="field-label">Formation</label>
+                      <Input
+                        value={form.formation}
+                        onChange={e => form.setFormation(e.target.value)}
+                        placeholder="e.g. 4-3-3"
+                        style={{ fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", letterSpacing: "0.04em" }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
+              {kitPanel && <div style={{ padding: '16px 16px 0' }}>{kitPanel}</div>}
+              <div style={{ padding: 16 }}>
+                <LineupOptions />
+              </div>
+              <div style={{ padding: '0 16px 16px' }}>
+                <Preview
+                  rotationAngle={rotationAngle}
+                  tiltAngle={tiltAngle}
+                  zoomLevel={zoomLevel}
+                />
+              </div>
             </div>
-          </div>
-          {kitPanel && <div style={{ padding: '16px 16px 0' }}>{kitPanel}</div>}
-          <div style={{ padding: 16 }}>
-            <LineupOptions />
-          </div>
-          <div style={{ padding: '0 16px 16px' }}>
-            <Preview
-              rotationAngle={rotationAngle}
-              tiltAngle={tiltAngle}
-              zoomLevel={zoomLevel}
-            />
-          </div>
-      </div>
-
-
           </div>
         );
       })()}
@@ -414,4 +403,4 @@ export default function CreateLineups() {
       <CreateLineupsContent />
     </FootballFieldProvider>
   );
-} 
+}
