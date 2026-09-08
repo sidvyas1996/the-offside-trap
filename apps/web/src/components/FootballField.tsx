@@ -56,6 +56,12 @@ interface FootballFieldProps {
    * whatever width its aspect ratio allows.
    */
   fitHeight?: boolean;
+  /**
+   * Draw the landscape board as a card: ink border, 12px radius, hard shadow.
+   * Off by default so the export frame renders a bare pitch; the studio stage and
+   * the details page turn it on to match the rest of their chrome.
+   */
+  framed?: boolean;
   size?: "default" | "fullscreen";
   waypointsMode?: boolean;
   horizontalZonesMode?: boolean;
@@ -74,6 +80,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
   isFullScreen = false,
   portrait = false,
   fitHeight = false,
+  framed = false,
   fieldOfViewMode = false,
   onPlayerSelect,
 }) => {
@@ -493,15 +500,22 @@ const FootballField: React.FC<FootballFieldProps> = ({
     aspectRatio: portrait ? PITCH_PORTRAIT_ASPECT : PITCH_ASPECT,
     ...sizeStyle,
     // The portrait board carries the full neo-brutalist chrome the mobile design
-    // draws: ink border, 20px radius and a hard offset shadow. Landscape is left
-    // as it was so the desktop studio and the export frame are untouched.
+    // draws: ink border, 20px radius and a hard offset shadow. Landscape gets the
+    // same treatment (12px radius) only when the page asks for it, so the export
+    // frame stays a bare pitch.
     ...(portrait
       ? {
           border: 'var(--border-w) solid var(--ink)',
           borderRadius: 20,
           boxShadow: 'var(--card-shadow)',
         }
-      : {}),
+      : framed
+        ? {
+            border: 'var(--border-w) solid var(--ink)',
+            borderRadius: 12,
+            boxShadow: 'var(--card-shadow)',
+          }
+        : {}),
   };
 
   /**
@@ -1074,8 +1088,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
                   key={action}
                   className={`px-3 py-1 rounded ${
                     disabled
-                      ? "text-gray-500 cursor-not-allowed"
-                      : "cursor-pointer hover:bg-gray-700"
+                      ? "opacity-40 cursor-not-allowed"
+                      : "cursor-pointer hover:bg-[var(--surface-highest)]"
                   }`}
                   onClick={() => !disabled && handlePlayerAction(action)}
                 >

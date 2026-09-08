@@ -142,13 +142,21 @@ const PressRunIcon = () => (
     </svg>
 );
 
-const btnStyle = (active: boolean) => ({
-    borderColor: active ? 'rgba(15,164,95,0.5)' : 'var(--theme-border-btn)',
+/* Toolbar button: violet chip at rest, green with the hard shadow when active. */
+const btnStyle = (active: boolean): React.CSSProperties => ({
+    borderColor: 'var(--ink)',
     borderRadius: 10,
-    backgroundColor: active ? 'rgba(94,233,160,0.20)' : 'transparent',
-    color: active ? 'var(--accent-mint)' : 'var(--theme-secondary-text)',
-    boxShadow: active ? '0 0 12px rgba(94,233,160,0.25)' : 'none',
+    backgroundColor: active ? 'var(--primary)' : 'var(--surface-high)',
+    color: active ? 'var(--on-primary)' : 'var(--on-surface)',
+    boxShadow: active ? 'var(--shadow-sm)' : 'none',
 });
+
+/* Small select / swatch chrome inside the toolbar */
+const controlChrome: React.CSSProperties = {
+    background: 'var(--surface-high)',
+    border: 'var(--border-w) solid var(--ink)',
+    borderRadius: 6,
+};
 
 const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
     onChangeFieldColor,
@@ -255,7 +263,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
 
             {/* Section 1 — Pitch Properties */}
             <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)] mb-2">Pitch Properties</span>
+                <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)] mb-2">Pitch Properties</span>
                 <div className="flex flex-row items-center gap-1.5 flex-wrap">
                     {/* Field color toggle */}
                     <Button
@@ -306,7 +314,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                     {/* Rotate sub-group */}
                     {onRotateLeft && onRotateRight && (
                         <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Rotate</span>
+                            <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">Rotate</span>
                             <div className="flex flex-row items-center gap-1">
                                 <Button
                                     onClick={(e) => { e.preventDefault(); onRotateLeft!(); }}
@@ -332,7 +340,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                     {/* Tilt sub-group */}
                     {onTiltUp && onTiltDown && (
                         <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Tilt</span>
+                            <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">Tilt</span>
                             <div className="flex flex-row items-center gap-1">
                                 <Button
                                     onClick={(e) => { e.preventDefault(); onTiltUp!(); }}
@@ -358,7 +366,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                     {/* Zoom sub-group */}
                     {onZoomIn && onZoomOut && (
                         <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Zoom</span>
+                            <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">Zoom</span>
                             <div className="flex flex-row items-center gap-1">
                                 <Button
                                     onClick={(e) => { e.preventDefault(); onZoomOut!(); }}
@@ -386,23 +394,23 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
             </div>
 
             {/* Vertical divider */}
-            <div className="self-stretch h-px w-full md:h-auto md:w-px bg-[var(--theme-border)] md:mx-4" />
+            <div className="self-stretch h-px w-full md:h-auto md:w-px bg-[var(--ink)] md:mx-4" />
 
             {/* Section 2 — Player Properties */}
             <div className="flex flex-col flex-1 min-w-0">
                 <div className="flex flex-row items-center justify-between mb-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Player Properties</span>
+                    <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">Player Properties</span>
                     {/* Team tabs — only visible when opposition mode is on */}
                     {showOpposition && onSetActiveTeam && (
-                        <div className="flex flex-row items-center gap-0 rounded-md overflow-hidden border border-[var(--theme-border-btn)]">
+                        <div className="flex flex-row items-center gap-0 overflow-hidden" style={{ borderRadius: 8, border: 'var(--border-w) solid var(--ink)', background: 'var(--surface-low)' }}>
                             <button
                                 type="button"
                                 onClick={() => onSetActiveTeam('home')}
                                 style={{
-                                    fontSize: 10, fontWeight: 700, padding: '2px 8px',
-                                    background: activeTeam === 'home' ? 'rgba(94,233,160,0.22)' : 'transparent',
-                                    color: activeTeam === 'home' ? 'var(--accent-mint)' : 'var(--theme-muted)',
-                                    borderRight: '1px solid var(--theme-border-btn)',
+                                    fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 800, padding: '3px 9px',
+                                    background: activeTeam === 'home' ? 'var(--primary)' : 'transparent',
+                                    color: activeTeam === 'home' ? 'var(--on-primary)' : 'var(--on-surface-variant)',
+                                    borderRight: 'var(--border-w) solid var(--ink)',
                                     cursor: 'pointer',
                                     letterSpacing: '0.08em',
                                     textTransform: 'uppercase',
@@ -412,9 +420,9 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                 type="button"
                                 onClick={() => onSetActiveTeam('away')}
                                 style={{
-                                    fontSize: 10, fontWeight: 700, padding: '2px 8px',
-                                    background: activeTeam === 'away' ? 'rgba(239,68,68,0.18)' : 'transparent',
-                                    color: activeTeam === 'away' ? '#ef4444' : 'var(--theme-muted)',
+                                    fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 800, padding: '3px 9px',
+                                    background: activeTeam === 'away' ? 'var(--whistle-orange)' : 'transparent',
+                                    color: activeTeam === 'away' ? 'var(--ink)' : 'var(--on-surface-variant)',
                                     cursor: 'pointer',
                                     letterSpacing: '0.08em',
                                     textTransform: 'uppercase',
@@ -429,18 +437,16 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                         <div className="flex flex-row items-center gap-2">
                             {activeOnChangeDesign && (
                                 <label className="flex flex-row items-center gap-1">
-                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Style</span>
+                                    <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">Style</span>
                                     <select
                                         value={activeDesign}
                                         onChange={(e) => activeOnChangeDesign(e.target.value as MarkerDesign)}
                                         style={{
-                                            background: 'var(--theme-panel)',
-                                            color: 'var(--theme-secondary-text)',
-                                            border: '1.5px solid var(--theme-border-btn)',
-                                            borderRadius: 5,
+                                            ...controlChrome,
+                                            color: 'var(--on-surface)',
                                             padding: '2px 4px',
                                             fontSize: 11,
-                                            fontWeight: 600,
+                                            fontWeight: 700,
                                             cursor: 'pointer',
                                             height: 24,
                                             outline: 'none',
@@ -457,14 +463,14 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             )}
                             {activeOnChangeBg && (
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
-                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">
+                                    <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">
                                         {activeDesign !== 'solid' ? 'Primary' : 'BG'}
                                     </span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                         <div style={{
                                             width: 24, height: 24, borderRadius: 5,
                                             background: activeBgColor,
-                                            border: '1.5px solid var(--theme-border-btn)',
+                                            border: 'var(--border-w) solid var(--ink)',
                                             cursor: 'pointer',
                                         }} />
                                         <input
@@ -478,12 +484,12 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             )}
                             {activeOnChangeSecondary && activeDesign !== 'solid' && (
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
-                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">2nd</span>
+                                    <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">2nd</span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                         <div style={{
                                             width: 24, height: 24, borderRadius: 5,
                                             background: activeSecondaryColor,
-                                            border: '1.5px solid var(--theme-border-btn)',
+                                            border: 'var(--border-w) solid var(--ink)',
                                             cursor: 'pointer',
                                         }} />
                                         <input
@@ -497,12 +503,12 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             )}
                             {activeOnChangeBorder && (
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
-                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Border</span>
+                                    <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">Border</span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                         <div style={{
                                             width: 24, height: 24, borderRadius: 5,
                                             background: activeBorderColor,
-                                            border: '1.5px solid var(--theme-border-btn)',
+                                            border: 'var(--border-w) solid var(--ink)',
                                             cursor: 'pointer',
                                         }} />
                                         <input
@@ -516,12 +522,12 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             )}
                             {activeOnChangeText && (
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }}>
-                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Text</span>
+                                    <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">Text</span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                                         <div style={{
                                             width: 24, height: 24, borderRadius: 5,
                                             background: activeTextColor,
-                                            border: '1.5px solid var(--theme-border-btn)',
+                                            border: 'var(--border-w) solid var(--ink)',
                                             cursor: 'pointer',
                                         }} />
                                         <input
@@ -538,7 +544,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                     {/* Divider between colors and buttons */}
                     {(activeOnChangeDesign || activeOnChangeBg || activeOnChangeBorder || activeOnChangeText) &&
                      (onToggleWaypoints || activeOnToggleMarkerType || activeOnToggleLabels) && (
-                        <div className="self-stretch w-px bg-[var(--theme-border)] mx-1" />
+                        <div className="self-stretch w-px bg-[var(--ink)] mx-1" />
                     )}
                     {/* Waypoints only for home team */}
                     {!isAway && onToggleWaypoints && (
@@ -602,16 +608,16 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
             {/* Section 3 — Arrows */}
             {onSetArrowTool && (
                 <>
-                    <div className="self-stretch h-px w-full md:h-auto md:w-px bg-[var(--theme-border)] md:mx-4" />
+                    <div className="self-stretch h-px w-full md:h-auto md:w-px bg-[var(--ink)] md:mx-4" />
                     <div className="flex flex-col flex-1 min-w-0">
                         <div className="flex flex-row items-center justify-between mb-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--theme-muted)]">Arrows</span>
+                            <span style={{ fontFamily: 'var(--font-display)' }} className="text-[10px] font-extrabold uppercase tracking-widest text-[var(--theme-muted)]">Arrows</span>
                             <div className="flex items-center gap-2">
                                 {/* Ball color */}
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }} title="Ball arrow color">
                                     <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#fbbf24' }}>Ball</span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                                        <div style={{ width: 18, height: 18, borderRadius: 4, background: arrowBallColor, border: `2px solid #fbbf2466`, cursor: 'pointer' }} />
+                                        <div style={{ width: 22, height: 22, borderRadius: 6, background: arrowBallColor, border: 'var(--border-w) solid var(--ink)', cursor: 'pointer' }} />
                                         {onChangeArrowBallColor && (
                                             <input type="color" value={arrowBallColor} onChange={e => onChangeArrowBallColor(e.target.value)}
                                                 style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
@@ -622,7 +628,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                 <label className="flex flex-row items-center gap-1" style={{ cursor: 'pointer' }} title="Player run arrow color">
                                     <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#60a5fa' }}>Run</span>
                                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                                        <div style={{ width: 18, height: 18, borderRadius: 4, background: arrowRunColor, border: `2px solid #60a5fa66`, cursor: 'pointer' }} />
+                                        <div style={{ width: 22, height: 22, borderRadius: 6, background: arrowRunColor, border: 'var(--border-w) solid var(--ink)', cursor: 'pointer' }} />
                                         {onChangeArrowRunColor && (
                                             <input type="color" value={arrowRunColor} onChange={e => onChangeArrowRunColor(e.target.value)}
                                                 style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
@@ -632,8 +638,9 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                 {/* Clear all */}
                                 {onClearArrows && (
                                     <button type="button" onClick={onClearArrows} title="Clear all arrows"
-                                        style={{ padding: '2px 4px', borderRadius: 4, border: '1.5px solid var(--theme-border-btn)', background: 'transparent', color: 'var(--theme-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                                        <Trash2 size={12} />
+                                        className="tool-btn"
+                                        style={{ padding: '4px 8px' }}>
+                                        <Trash2 size={12} /> Clear
                                     </button>
                                 )}
                             </div>
@@ -650,15 +657,10 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                 ] as { type: ArrowType; label: string; icon: React.FC }[]).map(({ type, label, icon: Icon }) => (
                                     <button key={type} type="button" title={label}
                                         onClick={() => onSetArrowTool(arrowTool === type ? null : type)}
-                                        style={{
-                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                                            padding: '3px 6px', borderRadius: 5, border: '1.5px solid',
-                                            borderColor: arrowTool === type ? '#fbbf24' : 'var(--theme-border-btn)',
-                                            background: arrowTool === type ? 'rgba(251,191,36,0.12)' : 'transparent',
-                                            cursor: 'pointer', minWidth: 36,
-                                        }}>
+                                        className={`tool-btn${arrowTool === type ? ' active' : ''}`}
+                                        style={{ flexDirection: 'column', gap: 2, padding: '3px 6px', minWidth: 40 }}>
                                         <Icon />
-                                        <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.06em', color: arrowTool === type ? '#fbbf24' : 'var(--theme-muted)', textTransform: 'uppercase' }}>{label}</span>
+                                        <span style={{ fontSize: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</span>
                                     </button>
                                 ))}
                             </div>
@@ -673,15 +675,10 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                 ] as { type: ArrowType; label: string; icon: React.FC }[]).map(({ type, label, icon: Icon }) => (
                                     <button key={type} type="button" title={label}
                                         onClick={() => onSetArrowTool(arrowTool === type ? null : type)}
-                                        style={{
-                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                                            padding: '3px 6px', borderRadius: 5, border: '1.5px solid',
-                                            borderColor: arrowTool === type ? '#60a5fa' : 'var(--theme-border-btn)',
-                                            background: arrowTool === type ? 'rgba(96,165,250,0.12)' : 'transparent',
-                                            cursor: 'pointer', minWidth: 36,
-                                        }}>
+                                        className={`tool-btn${arrowTool === type ? ' active' : ''}`}
+                                        style={{ flexDirection: 'column', gap: 2, padding: '3px 6px', minWidth: 40 }}>
                                         <Icon />
-                                        <span style={{ fontSize: 8, fontWeight: 600, letterSpacing: '0.06em', color: arrowTool === type ? '#60a5fa' : 'var(--theme-muted)', textTransform: 'uppercase' }}>{label}</span>
+                                        <span style={{ fontSize: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</span>
                                     </button>
                                 ))}
                             </div>

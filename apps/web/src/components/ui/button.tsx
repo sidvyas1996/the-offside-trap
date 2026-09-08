@@ -15,7 +15,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
                     variant === "default"
                         ? "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--on-primary)] font-semibold"
                         : variant === "outline"
-                        ? "border border-[var(--theme-border-btn)] text-[var(--theme-secondary-text)] hover:bg-white/5 hover:text-[var(--on-surface)] hover:border-[var(--hairline-strong)]"
+                        ? "border border-[var(--ink)] bg-[var(--surface-high)] text-[var(--on-surface)] hover:bg-[var(--surface-highest)]"
                         : "bg-transparent text-[var(--on-surface-variant)] hover:bg-white/5 hover:text-[var(--on-surface)]",
                     className
                 )}

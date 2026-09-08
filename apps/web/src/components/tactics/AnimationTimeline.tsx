@@ -84,20 +84,7 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
           Movement
         </h2>
         {authored > 0 && (
-          <span
-            className="ml-auto"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 10,
-              fontWeight: 800,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              color: 'var(--primary)',
-              background: 'var(--ink)',
-              borderRadius: 999,
-              padding: '3px 10px',
-            }}
-          >
+          <span className="chip-count ml-auto">
             {authored} {authored === 1 ? 'arrow' : 'arrows'}
           </span>
         )}
@@ -112,8 +99,10 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
             borderRadius: 999,
             border: 'var(--border-w) solid var(--ink)',
             background: 'var(--primary)',
-            color: 'var(--ink)',
-            fontWeight: 700,
+            color: 'var(--on-primary)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           {isPlaying ? <Pause size={14} /> : <Play size={14} />}
@@ -127,9 +116,11 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
           style={{
             borderRadius: 999,
             border: 'var(--border-w) solid var(--ink)',
-            background: fromArrows ? 'var(--primary)' : 'var(--surface-low)',
-            color: 'var(--ink)',
-            fontWeight: 700,
+            background: fromArrows ? 'var(--primary)' : 'var(--surface-high)',
+            color: fromArrows ? 'var(--on-primary)' : 'var(--on-surface)',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            boxShadow: fromArrows ? 'var(--shadow-sm)' : 'none',
           }}
           title={fromArrows
             ? 'Arrows are driving the animation. Click to leave them as static annotation.'
@@ -145,7 +136,7 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
               className="text-xs text-[var(--text-secondary)]"
               title="Length comes out of how far everyone has to travel, so there is nothing to pick"
             >
-              Runs {(derivedDurationMs / 1000).toFixed(1)}s
+              Runs <b style={{ color: 'var(--caption)' }}>{(derivedDurationMs / 1000).toFixed(1)}s</b>
             </span>
           ) : (
             <>
@@ -154,7 +145,7 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
                 value={durationMs}
                 onChange={e => onSetDuration(Number(e.target.value))}
                 className="text-xs px-2 py-1 text-[var(--on-surface)]"
-                style={{ background: 'var(--surface-low)', border: 'var(--border-w) solid var(--ink)', borderRadius: 8, fontWeight: 700 }}
+                style={{ background: 'var(--surface-low)', border: 'var(--border-w) solid var(--ink)', borderRadius: 8, fontWeight: 700, color: 'var(--on-surface)' }}
               >
                 {DURATION_OPTIONS.map(d => (
                   <option key={d} value={d}>{d / 1000}s</option>
@@ -168,7 +159,7 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
             value={fps}
             onChange={e => onSetFps(Number(e.target.value))}
             className="text-xs px-2 py-1 text-[var(--on-surface)]"
-            style={{ background: 'var(--surface-low)', border: 'var(--border-w) solid var(--ink)', borderRadius: 8, fontWeight: 700 }}
+            style={{ background: 'var(--surface-low)', border: 'var(--border-w) solid var(--ink)', borderRadius: 8, fontWeight: 700, color: 'var(--on-surface)' }}
           >
             {FPS_OPTIONS.map(f => (
               <option key={f} value={f}>{f}</option>

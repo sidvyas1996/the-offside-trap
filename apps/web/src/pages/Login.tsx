@@ -103,10 +103,10 @@ const Login: React.FC = () => {
               gap: 10,
               background: "var(--ink)",
               color: "var(--pitch-lime)",
-              border: "var(--border-w) solid var(--ink)",
+              border: "var(--border-w) solid var(--hairline-strong)",
               borderRadius: 999,
               padding: "8px 20px",
-              boxShadow: "4px 4px 0 rgba(21,20,15,0.25)",
+              boxShadow: "var(--card-shadow)",
               transform: "rotate(-2deg)",
             }}
           >
@@ -177,12 +177,12 @@ const Login: React.FC = () => {
                   fontFamily: "var(--font-display)",
                   fontWeight: 900,
                   fontSize: 13,
-                  color: 'var(--on-surface)',
+                  color: 'var(--ink)',
                 }}
               >
                 !
               </span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-surface)' }}>{errorMsg}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{errorMsg}</span>
             </div>
           )}
 
@@ -246,7 +246,7 @@ const Login: React.FC = () => {
                         fontFamily: "var(--font-body)",
                         fontSize: 12,
                         fontWeight: 700,
-                        color: "var(--playmaker-purple)",
+                        color: "var(--caption)",
                         textDecoration: "underline",
                         textUnderlineOffset: 2,
                         cursor: "pointer",

@@ -21,6 +21,19 @@ const Preview: React.FC<PreviewProps> = ({
 }) => {
   const { players, options, ball } = useFootballField();
   const [isExporting, setIsExporting] = useState(false);
+
+  // Export buttons: violet chips with the hard shadow; MP4 is the one green action.
+  const exportBtn = (primary = false): React.CSSProperties => ({
+    borderRadius: 10,
+    border: 'var(--border-w) solid var(--ink)',
+    background: primary ? 'var(--primary)' : 'var(--surface-high)',
+    color: primary ? 'var(--on-primary)' : 'var(--on-surface)',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 800,
+    fontSize: 12,
+    padding: '9px 12px',
+    boxShadow: 'var(--shadow-sm)',
+  });
   const [isExportingVideo, setIsExportingVideo] = useState(false);
 
   const handleExport = async (format: 'png' | 'jpg') => {
@@ -127,7 +140,7 @@ const Preview: React.FC<PreviewProps> = ({
         <span className="icon-chip"><Target size={14} /></span>
         Preview
       </h2>
-      <div className="rounded-xl overflow-hidden" style={{ border: "var(--border-w) solid var(--ink)" }}>
+      <div className="rounded-xl overflow-hidden" style={{ border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)" }}>
         <MiniTacticCard />
       </div>
 
@@ -137,7 +150,8 @@ const Preview: React.FC<PreviewProps> = ({
           <Button
             onClick={() => handleExport('png')}
             variant="outline"
-            className="flex-1 !rounded-lg text-xs font-semibold"
+            className="flex-1"
+            style={exportBtn()}
             disabled={isExporting}
           >
             <ImageIcon size={14} className="mr-2" />
@@ -146,7 +160,8 @@ const Preview: React.FC<PreviewProps> = ({
           <Button
             onClick={() => handleExport('jpg')}
             variant="outline"
-            className="flex-1 !rounded-lg text-xs font-semibold"
+            className="flex-1"
+            style={exportBtn()}
             disabled={isExporting}
           >
             <ImageIcon size={14} className="mr-2" />
@@ -158,7 +173,8 @@ const Preview: React.FC<PreviewProps> = ({
           <Button
             onClick={handleExportVideo}
             variant="outline"
-            className="w-full !rounded-lg text-xs font-semibold"
+            className="w-full"
+            style={exportBtn(true)}
             disabled={isExportingVideo || (animation?.keyframes.length ?? 0) < 2}
           >
             <Film size={14} className="mr-2" />

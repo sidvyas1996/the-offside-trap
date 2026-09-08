@@ -66,7 +66,7 @@ const ToolChip: React.FC<{
     style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
       flex: 1, minWidth: 0, padding: '8px 0 6px', borderRadius: 11, cursor: 'pointer',
-      fontFamily: "'Hanken Grotesk', sans-serif", fontWeight: 800, fontSize: 9.5,
+      fontFamily: "var(--font-body)", fontWeight: 800, fontSize: 9.5,
       color: active ? 'var(--on-primary)' : 'var(--on-surface-dim)',
       background: active ? 'var(--primary)' : 'var(--surface-high)',
       border: 'var(--border-w) solid var(--ink)',
@@ -78,7 +78,7 @@ const ToolChip: React.FC<{
       aria-hidden
       style={{
         width: 18, height: 0, marginBottom: 2,
-        borderTop: `2.5px ${dashed ? 'dashed' : 'solid'} ${active ? 'var(--ink)' : '#cfd0bf'}`,
+        borderTop: `2.5px ${dashed ? 'dashed' : 'solid'} ${active ? 'var(--ink)' : 'var(--on-surface-dim)'}`,
         borderRadius: 2,
       }}
     />
@@ -144,7 +144,7 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
         paddingBottom: collapsed
           ? 'calc(12px + env(safe-area-inset-bottom, 0px))'
           : 'calc(26px + env(safe-area-inset-bottom, 0px))',
-        boxShadow: '0 -4px 0 rgba(21,20,15,0.12)',
+        boxShadow: '0 -4px 0 rgba(15,13,21,0.35)',
       }}
     >
       {/* The whole header is the collapse control — the grab handle is the
@@ -165,7 +165,7 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: collapsed ? 0 : 11 }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7,
-            fontFamily: "'Archivo', sans-serif", fontWeight: 900, fontSize: 14,
+            fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 14,
             letterSpacing: '-0.01em', color: 'var(--on-surface)',
           }}>
             <ArrowUpRight size={15} strokeWidth={2.6} />
@@ -177,7 +177,7 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
                 marginLeft: 2, padding: '2px 8px', borderRadius: 99,
                 background: 'var(--primary)', border: 'var(--border-w) solid var(--ink)',
                 color: 'var(--on-primary)',
-                fontFamily: "'Hanken Grotesk', sans-serif", fontWeight: 800, fontSize: 10,
+                fontFamily: "var(--font-body)", fontWeight: 800, fontSize: 10,
               }}>
                 {activeLabel}
               </span>
@@ -205,7 +205,7 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
       {/* Playback + phase counter */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
-        background: 'var(--surface-container)', border: 'var(--border-w) solid var(--ink)', borderRadius: 14,
+        background: 'var(--surface-low)', border: 'var(--border-w) solid var(--ink)', borderRadius: 14,
         padding: '9px 11px', boxShadow: 'var(--card-shadow)',
       }}>
         <button
@@ -234,7 +234,7 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
             </span>
           </div>
           <div style={{ position: 'relative', height: 8, borderRadius: 99, background: 'var(--surface)', border: 'var(--border-w) solid var(--ink)' }}>
-            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: pct, borderRadius: 99, background: 'var(--playmaker-purple)' }} />
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: pct, borderRadius: 99, background: 'var(--primary)' }} />
             <span style={{
               position: 'absolute', left: pct, top: '50%', transform: 'translate(-50%,-50%)',
               width: 13, height: 13, borderRadius: '50%', background: '#ffffff',
@@ -250,8 +250,8 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
           aria-label="Add a new phase"
           title="Step forward: fast-forward the board and start the next beat"
           style={{
-            width: 36, height: 36, borderRadius: 10, background: 'var(--surface-container)',
-            border: 'var(--border-w) solid var(--ink)', display: 'flex', alignItems: 'center',
+            width: 36, height: 36, borderRadius: 10, background: 'var(--surface-high)',
+            border: 'var(--border-w) solid var(--ink)', color: 'var(--on-surface)', display: 'flex', alignItems: 'center',
             justifyContent: 'center', flexShrink: 0, cursor: 'pointer',
           }}
         >

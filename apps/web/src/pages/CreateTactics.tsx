@@ -618,7 +618,7 @@ const CreateTacticsContent: React.FC = () => {
       style={{
         fontFamily: 'var(--font-body)',
         fontSize: 12.5,
-        color: isDescriptionShort ? 'var(--whistle-orange)' : 'rgba(255,255,255,0.72)',
+        color: isDescriptionShort ? 'var(--whistle-orange)' : 'var(--on-surface-variant)',
         background: 'transparent',
         border: 'none',
         outline: 'none',
@@ -645,15 +645,8 @@ const CreateTacticsContent: React.FC = () => {
         onChange={e => form.setFormation(e.target.value)}
         aria-label="Formation"
         placeholder="4-3-3"
-        style={{
-          width: 58, textAlign: 'center', flexShrink: 0,
-          background: 'var(--playmaker-purple)',
-          border: `2px solid ${/^\d+-\d+(-\d+)*$/.test(form.formation) ? 'var(--ink)' : 'var(--whistle-orange)'}`,
-          borderRadius: 9, padding: '6px 4px',
-          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12,
-          color: '#ffffff', outline: 'none',
-          boxShadow: 'var(--card-shadow)',
-        }}
+        className={`chip-formation${/^\d+-\d+(-\d+)*$/.test(form.formation) ? '' : ' invalid'}`}
+        style={{ width: 62, padding: '6px 4px', fontSize: 12, borderRadius: 9, boxShadow: 'var(--card-shadow)' }}
       />
       <button
         type="button"
@@ -695,23 +688,13 @@ const CreateTacticsContent: React.FC = () => {
         placeholder="4-3-3"
         aria-label="Formation"
         title="Formation, e.g. 4-3-3"
-        style={{
-          fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 13, fontWeight: 700,
-          color: "#fff", background: "rgba(255,255,255,0.08)",
-          border: `1.5px solid ${/^\d+-\d+(-\d+)*$/.test(form.formation) ? 'rgba(255,255,255,0.18)' : 'var(--whistle-orange)'}`,
-          borderRadius: 10, padding: "7px 10px", width: 84, textAlign: "center",
-          outline: "none",
-        }}
+        className={`chip-formation${/^\d+-\d+(-\d+)*$/.test(form.formation) ? '' : ' invalid'}`}
       />
       <button
         onClick={state.handleToggleOpposition}
         type="button"
-        className="editorbar-btn"
-        style={{
-          background: showOpposition ? 'var(--whistle-orange)' : 'rgba(255,255,255,0.06)',
-          color: showOpposition ? 'var(--ink)' : '#fff',
-          border: `1.5px solid ${showOpposition ? 'var(--whistle-orange)' : 'rgba(255,255,255,0.22)'}`,
-        }}
+        className="editorbar-btn editorbar-btn--ghost"
+        style={showOpposition ? { background: 'var(--whistle-orange)', color: 'var(--ink)' } : undefined}
         title={showOpposition ? "Remove opposition team" : "Add opposition team"}
       >
         <UserPlus size={15} />
@@ -720,8 +703,7 @@ const CreateTacticsContent: React.FC = () => {
       <button
         onClick={handleSubmit}
         disabled={form.loading}
-        className="editorbar-btn"
-        style={{ background: 'var(--primary)', color: 'var(--ink)', border: 'none', opacity: form.loading ? 0.7 : 1 }}
+        className="editorbar-btn editorbar-btn--primary"
       >
         {form.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={15} />}
         {form.loading ? 'Saving…' : (isMobile ? 'Save' : (editId ? 'Update Tactic' : 'Save Tactic'))}
@@ -961,13 +943,13 @@ const CreateTacticsContent: React.FC = () => {
           {fieldStage}
         </div>
       ) : (
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', marginTop: 14 }}>
 
           {/* Left — field stage */}
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
             {/* Stage: field + toolbar + timeline, all in one scroll flow */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 24px', background: 'var(--theme-stage)' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 24px', background: 'var(--theme-stage)', borderTop: 'var(--border-w) solid var(--ink)' }}>
               {fieldStage}
 
               {/* Toolbar */}
@@ -981,7 +963,7 @@ const CreateTacticsContent: React.FC = () => {
               all live in the header now, so what used to be a details card here
               (restating them) is gone; Movement used to sit under the pitch, where
               it squeezed the board into a letterbox. */}
-          <div style={{ width: 400, borderLeft: 'var(--border-w) solid var(--ink)', background: 'var(--surface-low)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+          <div style={{ width: 400, borderLeft: 'var(--border-w) solid var(--ink)', borderTop: 'var(--border-w) solid var(--ink)', background: 'var(--surface)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {motionPanels}
             </div>
@@ -1020,12 +1002,10 @@ const CreateTacticsContent: React.FC = () => {
               <button
                 type="button"
                 onClick={state.handleToggleOpposition}
-                className="editorbar-btn"
+                className="editorbar-btn editorbar-btn--ghost"
                 style={{
                   alignSelf: 'flex-start',
-                  background: showOpposition ? 'var(--whistle-orange)' : 'var(--surface-low)',
-                  color: 'var(--ink)',
-                  border: `2px solid ${showOpposition ? 'var(--whistle-orange)' : 'var(--ink)'}`,
+                  ...(showOpposition ? { background: 'var(--whistle-orange)', color: 'var(--ink)' } : {}),
                 }}
               >
                 <UserPlus size={15} />

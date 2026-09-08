@@ -111,6 +111,9 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
           onPlayerSelect={onPlayerSelect}
           portrait={portrait}
           fitHeight={fitHeight}
+          // The desktop stage draws the board as a card; the height-fitted phone
+          // board already carries its own portrait chrome.
+          framed={!fitHeight}
         />
       </div>
     );

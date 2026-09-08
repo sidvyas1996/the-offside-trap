@@ -1,34 +1,34 @@
-/* index.css - Updated with black/dark gray color scheme and footer styles */
+/* index.css — global tokens + component classes for the web app */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* CSS Variables — Neo-brutalist Sports design system ("Bold · Popping · Playful · Fast · Loud") */
+/* CSS Variables — Neo-brutalist Sports design system ("Bold · Popping · Playful · Fast · Loud")
+   Palette: "Violet" (Offside Trap - Violet Palette, Sep 2026). Every surface sits on
+   one violet ramp (hue ≈ 270), bright pitch green is the single primary/active colour,
+   Whistle Orange is reserved for text highlights, body copy runs warm peach. */
 :root {
-  /* ── Surface hierarchy ──
-     Dark scheme, per the Mobile v2 design. Elevation now reads *lighter*: the
-     page is the darkest surface and cards lift away from it, which is the
-     inverse of the cream build this replaced. */
-  --surface:              #191a14;  /* page */
-  --surface-low:          #15140f;  /* inset/recessed — below the page */
-  --surface-container:    #23251c;  /* raised card */
-  --surface-high:         #2b2d22;  /* chips, inputs */
-  --surface-highest:      #3a3d2e;  /* brightest lift */
+  /* ── Surface hierarchy — the violet ramp ──
+     Page is the darkest step; nav/stage sit below it, cards lift above it, chips
+     lift again. Steps of one material, not different colours. */
+  --surface:              #1A1724;  /* page */
+  --surface-low:          #14111C;  /* nav pill, stage, recessed rows */
+  --surface-container:    #231F2F;  /* raised card / panel */
+  --surface-high:         #2E2A3C;  /* chips, inputs, secondary buttons */
+  --surface-highest:      #3A3549;  /* brightest lift */
+  --surface-glass:        rgba(35,31,47,0.95); /* floating toolbars over the pitch */
 
-  /* ── Accent / primary (Pitch Lime) ── */
-  --primary:              #c6f24e;
-  --primary-light:        #d6f97e;
-  --on-primary:           #15140f;  /* black ink sits on lime */
-  --primary-hover:        #b6e835;
+  /* ── Accent / primary (bright pitch green — complement of the violet ramp) ── */
+  --primary:              #B7F542;
+  --primary-light:        #CBFA6E;
+  --on-primary:           #0F0D15;  /* ink sits on green */
+  --primary-hover:        #A9EA33;
 
-  /* ── Ink ──
-     Still the border and hard-shadow colour. On a dark scheme it reads as a
-     crisp seam between surfaces rather than a heavy outline, which is why the
-     design also dropped the border from 2.5px to 1px. */
-  --ink:                  #15140f;  /* Kit Black */
+  /* ── Ink ── border + hard-shadow colour, one step darker than the nav */
+  --ink:                  #0F0D15;
 
-  /* ── Pitch Animation Tokens (A Fresh New Look) ── */
+  /* ── Pitch Animation Tokens (landing hero jerseys) ── */
   --token-home:           oklch(0.72 0.13 245);
   --color-token-home:     #4d7cff;
   --color-token-home-ring: rgba(255, 255, 255, 0.7);
@@ -43,16 +43,16 @@
   --color-token-key-ink:  #ffffff;
 
   /* ── Popping accent family (named in the design language) ── */
-  --pitch-lime:           #c6f24e;
-  --kit-black:            #15140f;
+  --pitch-lime:           #B7F542;
+  --kit-black:            #0F0D15;
   --playmaker-purple:     #5c5794;
   --whistle-orange:       #ff6b3d;
   --card-yellow:          #ffc83d;
   --keeper-blue:          #4d7cff;
   --striker-pink:         #ff6fae;
   --grass-green:          #19a974;
-  --deep-purple:          #211F2A;  /* feature-card container */
-  --deep-purple-high:     #2C2939;  /* raised surface inside a purple card */
+  --deep-purple:          #231F2F;  /* = --surface-container (kept for older components) */
+  --deep-purple-high:     #2E2A3C;  /* = --surface-high */
 
   /* Back-compat aliases (older components referenced these names) */
   --pastel-pink:          #ffd7e9;
@@ -65,50 +65,50 @@
   --accent-mint:          #19a974;
 
   /* ── Text ──
-     Secondary type runs warm rather than grey, tying the copy to the orange
-     accent instead of sitting neutral against it. Three steps, darkening as the
-     text gets smaller and less important — each still well clear of 4.5:1 on
-     the dark surfaces. Headings stay near-white so the hierarchy still reads. */
-  --on-surface:           #f3f0e4;  /* headings, primary type */
-  --on-surface-variant:   #f0c69a;  /* body copy — soft peach */
-  --caption:              #F6754D;  /* captions, kickers — amber */
-  --outline:              #F2A58D;  /* small hints, unit labels — deeper orange */
-  --on-surface-dim:       #e9e6d8;  /* labels on raised chips */
+     Headings near-white; body copy warm peach; Whistle Orange for the text that
+     is meant to pop — kickers, active nav, counts, panel numerals; a lighter
+     orange for small labels, hints and placeholders. */
+  --on-surface:           #F3F0E4;  /* headings, primary type */
+  --on-surface-variant:   #F0C69A;  /* body copy — warm peach */
+  --caption:              #FF6B3D;  /* kickers, highlights — Whistle Orange */
+  --outline:              #FF8A5C;  /* labels, hints, placeholders */
+  --on-surface-dim:       #E9E6D8;  /* labels on raised chips */
 
   /* ── Semantic aliases ── */
-  --background: #201d29;
-  --foreground:           #f3f0e4;
-  --card:                 #2C2939;
-  --card-foreground:      #f3f0e4;
-  --border:               #15140f;
-  --input:                #2b2d22;
-  --text-primary:         #f3f0e4;
-  --text-secondary:       #f0c69a;
-  --hero-overlay:         rgba(21,20,15,0.85);
+  --background:           #1A1724;
+  --foreground:           #F3F0E4;
+  --card:                 #231F2F;
+  --card-hover:           #2E2A3C;
+  --card-foreground:      #F3F0E4;
+  --border:               #0F0D15;
+  --input:                #2E2A3C;
+  --text-primary:         #F3F0E4;
+  --text-secondary:       #F0C69A;
+  --hero-overlay:         rgba(15,13,21,0.85);
 
   /* ── Studio theme aliases ── */
-  --theme-bg:             #191a14;
-  --theme-card:           #23251c;
-  --theme-stage:          #15140f;
-  --theme-panel:          #23251c;
-  --theme-border:         rgba(243,240,228,0.16);
-  --theme-border-btn:     rgba(243,240,228,0.30);
-  --theme-muted:          #d89a62;
-  --theme-secondary-text: #f0c69a;
-  --theme-bright-text:    #f3f0e4;
-  --theme-badge-bg:       #2b2d22;
+  --theme-bg:             #1A1724;
+  --theme-card:           #231F2F;
+  --theme-stage:          #14111C;
+  --theme-panel:          #231F2F;
+  --theme-border:         rgba(243,240,228,0.14);
+  --theme-border-btn:     rgba(243,240,228,0.28);
+  --theme-muted:          #FF8A5C;
+  --theme-secondary-text: #F0C69A;
+  --theme-bright-text:    #F3F0E4;
+  --theme-badge-bg:       #2E2A3C;
 
   /* ── Brutalist layer ── */
   --hairline:             rgba(243,240,228,0.14);
   --hairline-strong:      rgba(243,240,228,0.28);
   --primary-glow:         0 0 0 rgba(0,0,0,0);
-  /* Hard offset shadows — NO blur, this is the signature look. Tighter than the
-     cream build: ink-on-dark needs less throw to read as depth. */
+  /* Hard offset shadows — NO blur, this is the signature look. Ink on a dark
+     ramp needs little throw to read as depth. */
   --card-shadow:          2px 2px 0 var(--ink);
   --card-shadow-hover:    4px 4px 0 var(--ink);
   --shadow-sm:            1.5px 1.5px 0 var(--ink);
   --border-w:             1px;              /* standard border */
-  --dot-grid:             radial-gradient(#2b2d22 1.4px, transparent 1.4px);
+  --dot-grid:             radial-gradient(#2A2638 1.4px, transparent 1.4px);
 
   /* ── Typography ──
      Geist Pixel carries display type (titles, numerals, the pill labels); Geist
@@ -125,13 +125,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: var(--on-surface);
-  /* cream paper + signature dot grid */
+  /* violet page + signature dot grid */
   background-color: var(--surface);
   background-image: var(--dot-grid);
   background-size: 26px 26px;
 }
 
-/* cream paper + signature dot grid — for page roots that would otherwise
+/* page surface + signature dot grid — for page roots that would otherwise
    paint a solid fill over the body's dots */
 .dot-bg {
   background-color: var(--surface);
@@ -233,7 +233,7 @@ a {
   align-items: center;
   justify-content: center;
   border: var(--border-w) solid var(--ink);
-  color: var(--ink);
+  color: var(--on-surface);
   background-color: var(--surface-high);
   padding: 0.7rem 1.5rem;
   border-radius: 999px;
@@ -285,9 +285,9 @@ a {
 
 /* Tactic card styles */
 .tactic-card {
-  background: var(--surface-high);
+  background: var(--surface-container);
   border: var(--border-w) solid var(--ink);
-  border-radius: 22px;
+  border-radius: 14px;
   overflow: hidden;
   box-shadow: var(--card-shadow);
   transition: transform 0.14s ease, box-shadow 0.14s ease;
@@ -428,8 +428,8 @@ a {
   height: 1rem;
 }
 
-.stat-likes .stat-icon {
-  color: var(--primary);
+.stat-likes {
+  color: var(--caption);
 }
 
 /* Page header styles */
@@ -624,12 +624,12 @@ p {
 /* Chunky themed scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(21,20,15,0.30) transparent;
+  scrollbar-color: rgba(243,240,228,0.22) transparent;
 }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
 *::-webkit-scrollbar-track { background: transparent; }
-*::-webkit-scrollbar-thumb { background: rgba(21,20,15,0.28); border-radius: 99px; }
-*::-webkit-scrollbar-thumb:hover { background: rgba(21,20,15,0.5); }
+*::-webkit-scrollbar-thumb { background: rgba(243,240,228,0.2); border-radius: 99px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(243,240,228,0.4); }
 
 ::selection { background: var(--primary); color: var(--ink); }
 
@@ -726,7 +726,7 @@ p {
   transition: color 0.12s, background 0.12s;
 }
 
-.seg-tab:hover { color: var(--ink); }
+.seg-tab:hover { color: var(--on-surface); }
 
 .seg-tab.active {
   background: var(--primary);
@@ -754,12 +754,12 @@ p {
 }
 
 .nav-item:hover {
-  color: var(--ink);
-  background: rgba(21,20,15,0.05);
+  color: var(--on-surface);
+  background: var(--surface-high);
 }
 
 .nav-item .nav-icon { color: var(--outline); transition: color 0.12s; flex-shrink: 0; }
-.nav-item:hover .nav-icon { color: var(--ink); }
+.nav-item:hover .nav-icon { color: var(--on-surface); }
 
 .nav-item.active {
   color: var(--ink);
@@ -781,15 +781,17 @@ p {
   border-radius: 10px;
   border: var(--border-w) solid var(--ink);
   background: var(--surface-high);
-  color: var(--ink);
+  color: var(--on-surface);
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s, color 0.12s;
 }
 
 .icon-btn:hover {
   background: var(--primary);
+  color: var(--ink);
   transform: translate(-1px, -1px);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--card-shadow);
 }
 
 .icon-btn:active {
@@ -797,7 +799,7 @@ p {
   box-shadow: 0 0 0 var(--ink);
 }
 
-/* Sticky top bar — solid cream, hard bottom rule */
+/* Sticky top bar — solid page surface, hard bottom rule */
 .glass-bar {
   background: var(--surface);
   border-bottom: var(--border-w) solid var(--ink);
@@ -884,7 +886,7 @@ p {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--on-surface-variant);
+  color: var(--outline);
   margin-bottom: 6px;
 }
 
@@ -939,7 +941,7 @@ p {
   font-family: var(--font-display);
   font-size: 12px;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--on-surface);
   background: var(--surface-high);
   border: var(--border-w) solid var(--ink);
   box-shadow: var(--shadow-sm);
@@ -952,7 +954,7 @@ p {
   align-items: center;
   justify-content: center;
   background: var(--surface-high);
-  color: var(--ink);
+  color: var(--on-surface);
   border: var(--border-w) solid var(--ink);
   padding: 0.7rem 1.5rem;
   border-radius: 999px;
@@ -966,6 +968,7 @@ p {
 
 .btn-ghost:hover {
   background: var(--card-yellow);
+  color: var(--ink);
   transform: translate(-1px, -1px);
   box-shadow: var(--card-shadow);
 }
@@ -1049,11 +1052,11 @@ p {
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 13px;
-  color: #15140f;
+  color: var(--ink);
 }
 
 .hp-opp {
-  background: #15140f;
+  background: var(--ink);
   box-shadow: 0 0 0 1.5px rgba(255,255,255,0.25), 0 3px 7px rgba(0,0,0,0.4);
 }
 
@@ -1071,9 +1074,9 @@ p {
   background: linear-gradient(
     90deg,
     var(--surface) 0%,
-    rgba(25,26,20,0.92) 20%,
-    rgba(25,26,20,0.55) 36%,
-    rgba(25,26,20,0) 52%
+    rgba(26,23,36,0.92) 20%,
+    rgba(26,23,36,0.55) 36%,
+    rgba(26,23,36,0) 52%
   );
 }
 
@@ -1091,15 +1094,15 @@ p {
   .hero-scrim {
     background: linear-gradient(
       180deg,
-      rgba(25,26,20,0.94) 0%,
-      rgba(25,26,20,0.6) 38%,
-      rgba(25,26,20,0) 60%
+      rgba(26,23,36,0.94) 0%,
+      rgba(26,23,36,0.6) 38%,
+      rgba(26,23,36,0) 60%
     );
   }
 }
 
 /* Editor bar title input (on dark pill) */
-.editor-title-input::placeholder { color: rgba(255,255,255,0.4); }
+.editor-title-input::placeholder { color: rgba(243,240,228,0.4); }
 /* The phone header drops the black pill, so the placeholder needs ink-on-cream
    contrast instead of white-on-black. */
 .editor-title-input--bare::placeholder { color: rgba(243,240,228,0.38); }
@@ -1109,13 +1112,13 @@ p {
 
 /* Description line under the editor-bar title. Reads as a subtitle at rest and
    only shows its edges on hover/focus, so the header stays a header. */
-.editor-subtitle-input::placeholder { color: rgba(255,255,255,0.35); }
+.editor-subtitle-input::placeholder { color: rgba(243,240,228,0.38); }
 .editor-subtitle-input {
   border-bottom: 1px solid transparent !important;
   transition: border-color 0.15s ease;
 }
-.editor-subtitle-input:hover { border-bottom-color: rgba(255,255,255,0.2) !important; }
-.editor-subtitle-input:focus { border-bottom-color: rgba(255,255,255,0.45) !important; }
+.editor-subtitle-input:hover { border-bottom-color: rgba(243,240,228,0.2) !important; }
+.editor-subtitle-input:focus { border-bottom-color: rgba(243,240,228,0.45) !important; }
 
 /* Pill button used inside the dark editor bar */
 .editorbar-btn {
@@ -1127,8 +1130,183 @@ p {
   font-size: 13px;
   padding: 9px 16px;
   border-radius: 12px;
+  border: var(--border-w) solid var(--ink);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+/* Secondary action in the bar — a violet chip */
+.editorbar-btn--ghost {
+  background: var(--surface-high);
+  color: var(--on-surface);
+}
+
+/* The one primary action — green, with the hard shadow */
+.editorbar-btn--primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: var(--shadow-sm);
+}
+.editorbar-btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translate(-1px, -1px);
+  box-shadow: var(--card-shadow);
+}
+.editorbar-btn--primary:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.editorbar-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Formation chip in the editor bar / details header — yellow mono */
+.chip-formation {
+  display: inline-block;
+  box-sizing: border-box;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--card-yellow);
+  border: var(--border-w) solid var(--ink);
+  border-radius: 10px;
+  padding: 7px 10px;
+  width: 84px;
+  text-align: center;
+  outline: none;
+}
+.chip-formation::placeholder { color: rgba(15,13,21,0.5); }
+.chip-formation.invalid { border-color: var(--caption); box-shadow: 0 0 0 2px var(--caption); }
+
+/* Count badge — orange numerals on ink ("3 arrows", "11 players") */
+.chip-count {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--caption);
+  background: var(--ink);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+/* Numbered panel heading ("01 Lineup details") */
+.panel-num-title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-surface);
+}
+.panel-num-title .num { color: var(--caption); }
+
+/* Tag pill on the details page */
+.chip-tag {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--on-surface);
+  background: var(--surface-high);
+  border: var(--border-w) solid var(--ink);
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+
+/* Floating toolbar over the pitch (Studio + Lineups) */
+.pitch-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: var(--surface-glass);
+  border: var(--border-w) solid var(--ink);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-display);
+}
+.pitch-toolbar-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface-glass);
+  border: var(--border-w) solid var(--ink);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+}
+.pitch-toolbar-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: var(--border-w) solid transparent;
+  background: transparent;
+  color: var(--on-surface-variant);
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.pitch-toolbar-tab:hover { color: var(--on-surface); }
+.pitch-toolbar-tab.active {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--ink);
+}
+/* Tool button inside the toolbar */
+.tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  border: var(--border-w) solid var(--ink);
+  background: var(--surface-high);
+  color: var(--on-surface);
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
+}
+.tool-btn:hover { background: var(--surface-highest); }
+.tool-btn.active {
+  background: var(--primary);
+  color: var(--on-primary);
+  box-shadow: var(--shadow-sm);
+}
+.tool-btn.active:hover { background: var(--primary-hover); }
+.tool-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.tool-divider { height: 16px; width: 1px; background: var(--ink); flex-shrink: 0; }
+/* Colour swatch — active swatch rings in green */
+.tool-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: var(--border-w) solid var(--ink);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+.tool-swatch.active {
+  border: 2.5px solid var(--primary);
+  box-shadow: 0 0 0 2px var(--ink);
 }
 
 /* ── Landing page ── */
@@ -1145,10 +1323,11 @@ p {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 15px;
-  color: rgba(255,255,255,0.82);
+  color: rgba(243,240,228,0.78);
   transition: color 0.15s;
 }
-.lp-navlink:hover { color: var(--pitch-lime); }
+.lp-navlink:hover { color: var(--on-surface); }
+.lp-navlink.active { color: var(--caption); }
 
 .lp-features {
   display: grid;
@@ -1170,7 +1349,7 @@ p {
   .lp-features { grid-template-columns: 1fr; }
 }
 
-/* Skeleton — flat cream block with hard border */
+/* Skeleton — violet shimmer block with hard border */
 .skeleton-card {
   height: 200px;
   border-radius: 22px;
@@ -1195,7 +1374,7 @@ p {
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--on-surface);
   outline: none;
   box-shadow: 3px 3px 0 var(--hairline);
   transition: box-shadow 0.12s ease;
@@ -1274,14 +1453,14 @@ p {
   padding: 0;
   font-family: var(--font-body);
   font-weight: 800;
-  color: var(--ink);
+  color: var(--on-surface);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .auth-textlink:hover {
-  color: var(--playmaker-purple);
+  color: var(--caption);
 }
 
 /* ── Pitch Animation (A Fresh New Look) ── */
@@ -1461,7 +1640,7 @@ p {
   gap: 0.6rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--on-surface-variant, #f0c69a);
+  color: var(--on-surface-variant, #F0C69A);
 }
 
 .pitch-caption-step {
@@ -1471,9 +1650,9 @@ p {
   letter-spacing: 0.12em;
   padding: 0.25rem 0.5rem;
   border-radius: 0.5rem;
-  border: var(--border-w, 1px) solid var(--ink, #15140f);
-  background: var(--surface-container, #23251c);
-  color: var(--pitch-lime, #c6f24e);
+  border: var(--border-w, 1px) solid var(--ink, #0F0D15);
+  background: var(--surface-container, #231F2F);
+  color: var(--caption, #FF6B3D);
 }
 
 .pitch-chip {

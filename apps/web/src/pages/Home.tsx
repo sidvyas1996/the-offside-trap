@@ -115,11 +115,11 @@ const Home: React.FC = () => {
         <section className="lp-features" style={{ marginTop: 46 }}>
           {FEATURES.map(({ icon: Icon, bg, title, body, to }) => (
             <Link key={title} to={to} className="sleek-card" style={{
-              background: "var(--deep-purple)", border: "1.5px solid var(--ink)",
+              background: "var(--surface-container)", border: "1.5px solid var(--ink)",
               borderRadius: 18, padding: 24, textDecoration: "none", display: "block",
             }}>
               <div style={{
-                width: 46, height: 46, borderRadius: 13, background: bg, border: "1.5px solid var(--ink)",
+                width: 46, height: 46, borderRadius: 13, background: bg, border: "1.5px solid var(--ink)", boxShadow: "var(--shadow-sm)",
                 display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 16,
               }}>
                 <Icon size={24} color="var(--ink)" strokeWidth={2.2} />

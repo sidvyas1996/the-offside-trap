@@ -29,7 +29,7 @@ const iconBtn = (enabled: boolean): React.CSSProperties => ({
   height: 28,
   borderRadius: 999,
   border: 'var(--border-w) solid var(--ink)',
-  background: enabled ? 'var(--surface-low)' : 'transparent',
+  background: 'var(--surface-high)',
   color: 'var(--on-surface)',
   cursor: enabled ? 'pointer' : 'not-allowed',
   opacity: enabled ? 1 : 0.35,
@@ -76,9 +76,9 @@ const PhaseStrip: React.FC<PhaseStripProps> = ({
         flexWrap: 'wrap',
         border: 'var(--border-w) solid var(--ink)',
         borderRadius: 12,
-        background: 'var(--surface-low)',
+        background: 'var(--surface-container)',
         boxShadow: 'var(--card-shadow)',
-        padding: '7px 10px',
+        padding: '8px 10px',
         opacity: disabled ? 0.55 : 1,
       }}
     >
@@ -136,6 +136,7 @@ const PhaseStrip: React.FC<PhaseStripProps> = ({
           border: 'var(--border-w) solid var(--ink)',
           borderRadius: 999,
           padding: '4px 10px',
+          boxShadow: 'var(--shadow-sm)',
           cursor: disabled ? 'not-allowed' : 'pointer',
         }}
         title="Step forward: fast-forward the board and start the next beat (Spacebar)"
@@ -157,10 +158,10 @@ const PhaseStrip: React.FC<PhaseStripProps> = ({
           fontWeight: 800,
           letterSpacing: '0.03em',
           textTransform: 'uppercase',
-          // Ink only reads on the lime fill; off, the chip is bare on the panel.
+          // Green when every beat is shown; a violet chip otherwise.
           color: showAll ? 'var(--on-primary)' : 'var(--on-surface)',
-          background: showAll ? 'var(--primary)' : 'transparent',
-          border: `var(--border-w) solid ${showAll ? 'var(--ink)' : 'var(--border)'}`,
+          background: showAll ? 'var(--primary)' : 'var(--surface-high)',
+          border: 'var(--border-w) solid var(--ink)',
           borderRadius: 999,
           padding: '4px 10px',
           cursor: 'pointer',
@@ -187,7 +188,7 @@ const PhaseStrip: React.FC<PhaseStripProps> = ({
           <>Board has fast-forwarded. Draw the next arrows — they become beat {current}.</>
         ) : (
           <>
-            Runs at {(durationMs / 1000).toFixed(1)}s. Everything in a beat starts together;
+            Runs at <span style={{ color: 'var(--caption)', fontWeight: 700 }}>{(durationMs / 1000).toFixed(1)}s</span>. Everything in a beat starts together;
             each player takes as long as their own distance needs.
           </>
         )}

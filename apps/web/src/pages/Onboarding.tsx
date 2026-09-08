@@ -404,7 +404,7 @@ const Onboarding: React.FC = () => {
               background: "var(--pastel-pink)",
               fontSize: 14,
               fontWeight: 600,
-              color: 'var(--on-surface)',
+              color: 'var(--ink)',
             }}
           >
             {errorMsg}

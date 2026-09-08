@@ -43,8 +43,8 @@ const StatusChip: React.FC<StatusChipProps> = ({
       gap: 5,
       padding: '5px 10px',
       borderRadius: 20,
-      border: `1px solid ${active ? activeColor + '55' : 'var(--theme-border-btn)'}`,
-      background: active ? activeBg : 'transparent',
+      border: `1px solid ${active ? activeColor + '88' : 'var(--ink)'}`,
+      background: active ? activeBg : 'var(--surface-high)',
       color: active ? activeColor : 'var(--theme-muted)',
       fontSize: 10,
       fontWeight: 700,
@@ -83,8 +83,8 @@ const fieldLabel: React.CSSProperties = {
 const inputBase: React.CSSProperties = {
   width: '100%',
   background: 'var(--theme-stage)',
-  border: '1px solid var(--theme-border)',
-  borderRadius: 6,
+  border: 'var(--border-w) solid var(--ink)',
+  borderRadius: 8,
   padding: '7px 10px',
   fontSize: 13,
   color: 'var(--theme-bright-text)',
@@ -134,7 +134,7 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
           zIndex: 100,
           display: 'flex',
           flexDirection: 'column',
-          background: 'var(--theme-card)',
+          background: 'var(--surface-container)',
           transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
           ...(mobile
             ? {
@@ -154,7 +154,7 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
                 top: 0,
                 bottom: 0,
                 width: 300,
-                borderLeft: '1px solid var(--theme-border)',
+                borderLeft: 'var(--border-w) solid var(--ink)',
                 transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
                 boxShadow: '-12px 0 40px rgba(0,0,0,0.5)',
               }),
@@ -166,8 +166,8 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '14px 16px',
-          borderBottom: '1px solid var(--theme-border)',
-          background: 'var(--theme-panel)',
+          borderBottom: 'var(--border-w) solid var(--ink)',
+          background: 'var(--surface-low)',
           flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -243,7 +243,7 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
           </section>
 
           {/* Divider */}
-          <div style={{ height: 1, background: 'var(--theme-border)' }} />
+          <div style={{ height: 1, background: 'var(--ink)' }} />
 
           {/* Operational Status */}
           <section>
@@ -289,7 +289,7 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
         {/* Footer */}
         <div style={{
           padding: '12px 16px',
-          borderTop: '1px solid var(--theme-border)',
+          borderTop: 'var(--border-w) solid var(--ink)',
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
           gap: 10,
@@ -301,10 +301,10 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
             onClick={() => setDraft({ ...snapshot })}
             style={{
               padding: '9px 0',
-              background: 'transparent',
-              border: '1px solid var(--theme-border-btn)',
-              borderRadius: 7,
-              color: 'var(--theme-secondary-text)',
+              background: 'var(--surface-high)',
+              border: 'var(--border-w) solid var(--ink)',
+              borderRadius: 8,
+              color: 'var(--on-surface)',
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: '0.1em',
@@ -320,13 +320,12 @@ const PlayerEditorPanel: React.FC<PlayerEditorPanelProps> = ({
             className="btn-primary"
             style={{
               padding: '9px 0',
-              borderRadius: 7,
+              borderRadius: 8,
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: '0.1em',
               textTransform: 'uppercase',
               cursor: 'pointer',
-              border: 'none',
             }}
           >
             Apply

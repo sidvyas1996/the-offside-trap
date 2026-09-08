@@ -115,7 +115,7 @@ const BeatList: React.FC<BeatListProps> = ({
             borderRadius: 12,
             // The beat you are standing on is the one a new arrow joins, so it reads
             // as active rather than being just another group in a list.
-            background: beat === currentBeat ? 'var(--surface-container)' : 'var(--surface-low)',
+            background: beat === currentBeat ? 'var(--surface-high)' : 'var(--surface-low)',
             padding: '8px 10px',
             boxShadow: beat === currentBeat ? '3px 3px 0 var(--primary)' : 'var(--card-shadow)',
           }}

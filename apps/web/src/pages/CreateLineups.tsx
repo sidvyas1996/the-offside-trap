@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, Loader2, SlidersHorizontal, Palette, Camera, Layers, Shirt, Circle, CaseSensitive, ArrowLeft } from "lucide-react";
+import { Save, Loader2, SlidersHorizontal, Palette, Camera, Layers, Shirt, Circle, CaseSensitive, RotateCcw, RotateCw, ChevronUp, ChevronDown } from "lucide-react";
+import EditorBar from "../components/EditorBar";
 import BottomSheet from "../components/ui/bottom-sheet";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
@@ -170,109 +171,57 @@ const CreateLineupsContent: React.FC = () => {
         gap: 18,
       }}
     >
-      <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: 18 }}>
-        {/* Lineup Sub-Header Bar */}
-        <div
-          className="rounded-2xl p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4"
-          style={{
-            background: "var(--surface-container)",
-            border: "var(--border-w) solid var(--ink)",
-            boxShadow: "var(--card-shadow)",
-          }}
-        >
-          <div className="flex items-center gap-3.5 min-w-0">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              aria-label="Go back"
-              title="Go back"
-              className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-all flex-shrink-0 hover:translate-x-[-2px]"
-              style={{
-                background: "var(--surface-high)",
-                border: "var(--border-w) solid var(--ink)",
-                boxShadow: "var(--card-shadow)",
-                color: "var(--on-surface)",
-              }}
-            >
-              <ArrowLeft size={18} strokeWidth={2.4} />
-            </button>
-
-            <div className="flex flex-col gap-1 min-w-0">
-              <span className="text-[10px] font-black tracking-widest uppercase" style={{ color: "var(--outline)", fontFamily: "var(--font-display)" }}>
-                LINEUP CREATOR
+      <div style={{ maxWidth: 1400, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: isMobile ? 12 : 18 }}>
+        {/* Editor pill — the same header the Studio uses */}
+        <EditorBar
+          kicker="Lineup Creator"
+          title={form.title}
+          onTitleChange={form.setTitle}
+          placeholder="Matchday XI — Press high, trap late"
+          compact={isMobile}
+          bare={isMobile}
+          actions={
+            <>
+              <span className="chip-formation" style={isMobile ? { width: 62, padding: '6px 4px', fontSize: 12, borderRadius: 9 } : undefined}>
+                {form.formation || "4-3-3"}
               </span>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => form.setTitle(e.target.value)}
-                placeholder="Matchday XI — Press high, trap late"
-                className="bg-transparent font-black text-xl md:text-2xl border-none outline-none truncate"
-                style={{ color: "var(--on-surface)", fontFamily: "var(--font-display)" }}
-              />
-            </div>
-          </div>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <span
-              className="px-3 py-1 rounded-full text-xs font-extrabold"
-              style={{
-                background: "var(--primary)",
-                color: "var(--ink)",
-                border: "var(--border-w) solid var(--ink)",
-                boxShadow: "var(--shadow-sm)",
-                fontFamily: "var(--font-display)",
-              }}
-            >
-              {form.formation || "4-3-3"}
-            </span>
+              {isMobile ? (
+                <button
+                  type="button"
+                  onClick={() => setMobileSheet(true)}
+                  aria-label="Lineup settings"
+                  style={{
+                    width: 40, height: 40, borderRadius: 11, flexShrink: 0, cursor: "pointer",
+                    background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)",
+                    boxShadow: "var(--card-shadow)", color: "var(--on-surface)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  <SlidersHorizontal size={18} strokeWidth={2.4} />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setMobileSheet(!mobileSheet)}
+                  className="editorbar-btn editorbar-btn--ghost"
+                >
+                  <SlidersHorizontal size={14} /> Setup
+                </button>
+              )}
 
-            {isMobile ? (
               <button
                 type="button"
-                onClick={() => setMobileSheet(true)}
-                aria-label="Lineup settings"
-                className="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer"
-                style={{
-                  background: "var(--surface-high)",
-                  border: "var(--border-w) solid var(--ink)",
-                  boxShadow: "var(--card-shadow)",
-                  color: "var(--on-surface)",
-                }}
+                onClick={handleSubmit}
+                disabled={form.loading}
+                className="editorbar-btn editorbar-btn--primary"
               >
-                <SlidersHorizontal size={18} />
+                {form.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={15} />}
+                {form.loading ? "Saving…" : editId ? "Update Lineup" : "Save Lineup"}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setMobileSheet(!mobileSheet)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider cursor-pointer transition-all"
-                style={{
-                  background: "var(--surface-high)",
-                  color: "var(--on-surface)",
-                  border: "var(--border-w) solid var(--ink)",
-                  boxShadow: "var(--card-shadow)",
-                  fontFamily: "var(--font-display)",
-                }}
-              >
-                <SlidersHorizontal size={14} /> SETUP
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={form.loading}
-              className="btn-primary flex items-center gap-2 px-5 py-2.5"
-              style={{
-                borderRadius: 12,
-                fontSize: 13,
-              }}
-            >
-              {form.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save size={15} />}
-              {form.loading ? "Saving…" : editId ? "UPDATE LINEUP" : "SAVE LINEUP"}
-            </button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* Main Workspace Layout: Pitch Stage Left, Options Right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -311,90 +260,45 @@ const CreateLineupsContent: React.FC = () => {
               {/* Floating Pitch Toolbar Overlay at Bottom Center */}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto max-w-[95%]">
                 {/* Tab selector */}
-                <div
-                  className="flex items-center gap-1 p-1 rounded-full text-[11px] font-extrabold uppercase"
-                  style={{
-                    background: "rgba(35, 37, 28, 0.95)",
-                    border: "var(--border-w) solid var(--ink)",
-                    boxShadow: "var(--card-shadow)",
-                    backdropFilter: "blur(8px)",
-                    fontFamily: "var(--font-display)",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setPitchTab("style")}
-                    className="px-3 py-1 rounded-full flex items-center gap-1.5 transition-all"
-                    style={{
-                      background: pitchTab === "style" ? "var(--primary)" : "transparent",
-                      color: pitchTab === "style" ? "var(--ink)" : "var(--on-surface-variant)",
-                    }}
-                  >
-                    <Palette size={13} /> STYLE
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPitchTab("camera")}
-                    className="px-3 py-1 rounded-full flex items-center gap-1.5 transition-all"
-                    style={{
-                      background: pitchTab === "camera" ? "var(--primary)" : "transparent",
-                      color: pitchTab === "camera" ? "var(--ink)" : "var(--on-surface-variant)",
-                    }}
-                  >
-                    <Camera size={13} /> CAMERA
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPitchTab("overlays")}
-                    className="px-3 py-1 rounded-full flex items-center gap-1.5 transition-all"
-                    style={{
-                      background: pitchTab === "overlays" ? "var(--primary)" : "transparent",
-                      color: pitchTab === "overlays" ? "var(--ink)" : "var(--on-surface-variant)",
-                    }}
-                  >
-                    <Layers size={13} /> OVERLAYS
-                  </button>
+                <div className="pitch-toolbar-tabs">
+                  {([
+                    { id: "style", label: "Style", Icon: Palette },
+                    { id: "camera", label: "Camera", Icon: Camera },
+                    { id: "overlays", label: "Overlays", Icon: Layers },
+                  ] as const).map(({ id, label, Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setPitchTab(id)}
+                      className={`pitch-toolbar-tab${pitchTab === id ? " active" : ""}`}
+                    >
+                      <Icon size={13} /> {label}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Sub-controls for active tab */}
-                <div
-                  className="flex items-center gap-2.5 px-4 py-2 rounded-2xl flex-wrap justify-center"
-                  style={{
-                    background: "rgba(35, 37, 28, 0.95)",
-                    border: "var(--border-w) solid var(--ink)",
-                    boxShadow: "var(--card-shadow)",
-                    backdropFilter: "blur(8px)",
-                    fontFamily: "var(--font-display)",
-                  }}
-                >
+                <div className="pitch-toolbar flex-wrap justify-center" style={{ gap: 10, padding: "8px 16px" }}>
                   {pitchTab === "style" && (
                     <>
                       <button
                         type="button"
                         onClick={state.handleToggleMarkerType}
-                        className="px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 border cursor-pointer transition-all"
-                        style={{
-                          background: state.markerType === "shirt" ? "var(--primary)" : "var(--surface-high)",
-                          color: state.markerType === "shirt" ? "var(--ink)" : "var(--on-surface)",
-                          borderColor: "var(--ink)",
-                        }}
+                        className={`tool-btn${state.markerType === "shirt" ? " active" : ""}`}
+                        style={{ fontSize: 12, padding: "5px 12px" }}
                       >
-                        <Shirt size={14} /> JERSEY
+                        <Shirt size={14} /> Jersey
                       </button>
                       <button
                         type="button"
                         onClick={state.handleToggleMarkerType}
-                        className="px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 border cursor-pointer transition-all"
-                        style={{
-                          background: state.markerType === "circle" ? "var(--primary)" : "var(--surface-high)",
-                          color: state.markerType === "circle" ? "var(--ink)" : "var(--on-surface)",
-                          borderColor: "var(--ink)",
-                        }}
+                        className={`tool-btn${state.markerType === "circle" ? " active" : ""}`}
+                        style={{ fontSize: 12, padding: "5px 12px" }}
                       >
-                        <Circle size={14} /> CIRCLE
+                        <Circle size={14} /> Circle
                       </button>
 
-                      <div className="h-4 w-px bg-[var(--ink)] opacity-40 mx-0.5" />
+                      <div className="tool-divider" />
 
                       <div className="flex items-center gap-1.5">
                         {[
@@ -409,96 +313,62 @@ const CreateLineupsContent: React.FC = () => {
                             type="button"
                             title={s.name}
                             onClick={() => state.handleMarkerBgColorChange(s.color)}
-                            style={{
-                              width: 22,
-                              height: 22,
-                              borderRadius: 6,
-                              background: s.color,
-                              border: options.markerBgColor === s.color ? "2.5px solid var(--primary)" : "var(--border-w) solid var(--ink)",
-                              boxShadow: options.markerBgColor === s.color ? "0 0 0 2px var(--ink)" : "none",
-                              cursor: "pointer",
-                            }}
+                            className={`tool-swatch${options.markerBgColor === s.color ? " active" : ""}`}
+                            style={{ background: s.color }}
                           />
                         ))}
                       </div>
 
-                      <div className="h-4 w-px bg-[var(--ink)] opacity-40 mx-0.5" />
+                      <div className="tool-divider" />
 
                       <button
                         type="button"
                         onClick={state.handleTogglePlayerLabels}
-                        className="px-3 py-1 rounded-xl text-xs font-black flex items-center gap-1.5 border cursor-pointer transition-all"
-                        style={{
-                          background: state.showPlayerLabels ? "var(--primary)" : "var(--surface-high)",
-                          color: state.showPlayerLabels ? "var(--ink)" : "var(--on-surface)",
-                          borderColor: "var(--ink)",
-                        }}
+                        className={`tool-btn${state.showPlayerLabels ? " active" : ""}`}
+                        style={{ fontSize: 12, padding: "5px 12px" }}
                       >
-                        <CaseSensitive size={14} /> NAMES
+                        <CaseSensitive size={14} /> Names
                       </button>
                     </>
                   )}
 
                   {pitchTab === "camera" && (
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleRotateLeft}
-                        className="px-3 py-1 rounded-xl text-xs font-bold bg-[var(--surface-high)] text-[var(--on-surface)] border border-[var(--ink)]"
-                      >
-                        Rotate Left
+                    <>
+                      <button type="button" onClick={handleRotateLeft} className="tool-btn" style={{ fontSize: 12, padding: "5px 12px" }}>
+                        <RotateCcw size={14} /> Rotate left
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleRotateRight}
-                        className="px-3 py-1 rounded-xl text-xs font-bold bg-[var(--surface-high)] text-[var(--on-surface)] border border-[var(--ink)]"
-                      >
-                        Rotate Right
+                      <button type="button" onClick={handleRotateRight} className="tool-btn" style={{ fontSize: 12, padding: "5px 12px" }}>
+                        <RotateCw size={14} /> Rotate right
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleTiltUp}
-                        className="px-3 py-1 rounded-xl text-xs font-bold bg-[var(--surface-high)] text-[var(--on-surface)] border border-[var(--ink)]"
-                      >
-                        Tilt Up
+                      <div className="tool-divider" />
+                      <button type="button" onClick={handleTiltUp} className="tool-btn" style={{ fontSize: 12, padding: "5px 12px" }}>
+                        <ChevronUp size={14} /> Tilt up
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleTiltDown}
-                        className="px-3 py-1 rounded-xl text-xs font-bold bg-[var(--surface-high)] text-[var(--on-surface)] border border-[var(--ink)]"
-                      >
-                        Tilt Down
+                      <button type="button" onClick={handleTiltDown} className="tool-btn" style={{ fontSize: 12, padding: "5px 12px" }}>
+                        <ChevronDown size={14} /> Tilt down
                       </button>
-                    </div>
+                    </>
                   )}
 
                   {pitchTab === "overlays" && (
-                    <div className="flex items-center gap-3">
+                    <>
                       <button
                         type="button"
                         onClick={state.handleToggleHorizontalZones}
-                        className="px-3 py-1 rounded-xl text-xs font-bold border"
-                        style={{
-                          background: state.horizontalZonesMode ? "var(--primary)" : "var(--surface-high)",
-                          color: state.horizontalZonesMode ? "var(--ink)" : "var(--on-surface)",
-                          borderColor: "var(--ink)",
-                        }}
+                        className={`tool-btn${state.horizontalZonesMode ? " active" : ""}`}
+                        style={{ fontSize: 12, padding: "5px 12px" }}
                       >
-                        Horizontal Zones
+                        Horizontal zones
                       </button>
                       <button
                         type="button"
                         onClick={state.handleToggleVerticalSpaces}
-                        className="px-3 py-1 rounded-xl text-xs font-bold border"
-                        style={{
-                          background: state.verticalSpacesMode ? "var(--primary)" : "var(--surface-high)",
-                          color: state.verticalSpacesMode ? "var(--ink)" : "var(--on-surface)",
-                          borderColor: "var(--ink)",
-                        }}
+                        className={`tool-btn${state.verticalSpacesMode ? " active" : ""}`}
+                        style={{ fontSize: 12, padding: "5px 12px" }}
                       >
-                        Vertical Spaces
+                        Vertical spaces
                       </button>
-                    </div>
+                    </>
                   )}
                 </div>
               </div>

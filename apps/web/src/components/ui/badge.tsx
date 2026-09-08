@@ -22,7 +22,7 @@ const badgeVariants = cva(
                 formation:
                     "border-transparent bg-blue-500 text-white hover:bg-blue-600",
                 tag:
-                    "bg-[#333] hover:bg-[#444] border-none text-[var(--text-primary)] hover:text-white",
+                    "bg-[var(--surface-high)] hover:bg-[var(--surface-highest)] border-[var(--ink)] text-[var(--on-surface-variant)] hover:text-[var(--on-surface)]",
             },
             size: {
                 default: "px-2.5 py-0.5 text-xs",

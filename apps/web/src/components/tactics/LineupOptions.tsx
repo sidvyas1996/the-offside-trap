@@ -155,28 +155,17 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
         }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-black tracking-widest uppercase flex items-center gap-2" style={{ color: "var(--on-surface-variant)" }}>
-            <span style={{ color: "var(--primary)", fontFamily: "var(--font-display)" }}>01</span>
-            LINEUP DETAILS
+          <h3 className="panel-num-title">
+            <span className="num">01</span>
+            Lineup details
           </h3>
-          <span
-            className="px-2.5 py-0.5 rounded-full text-xs font-extrabold"
-            style={{
-              background: "var(--primary)",
-              color: "var(--ink)",
-              border: "var(--border-w) solid var(--ink)",
-              boxShadow: "var(--shadow-sm)",
-              fontFamily: "var(--font-display)",
-            }}
-          >
-            {formation || "4-3-3"}
-          </span>
+          <span className="chip-mono">{formation || "4-3-3"}</span>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5" style={{ color: "var(--outline)" }}>
-              TITLE
+            <label className="field-label" style={{ fontSize: 10, letterSpacing: "0.1em" }}>
+              Title
             </label>
             <Input
               value={title}
@@ -187,8 +176,8 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase tracking-wider block mb-1.5" style={{ color: "var(--outline)" }}>
-              DESCRIPTION
+            <label className="field-label" style={{ fontSize: 10, letterSpacing: "0.1em" }}>
+              Description
             </label>
             <Textarea
               rows={3}
@@ -200,8 +189,8 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase tracking-wider block mb-2" style={{ color: "var(--outline)" }}>
-              FORMATION
+            <label className="field-label" style={{ fontSize: 10, letterSpacing: "0.1em", marginBottom: 8 }}>
+              Formation
             </label>
             <div className="flex items-center gap-2 flex-wrap mb-3">
               {FORMATIONS_LIST.map((f) => {
@@ -248,7 +237,7 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
               }}
             >
               <Wand2 size={14} />
-              SNAP TO FORMATION
+              Snap to formation
             </button>
           </div>
         </div>
@@ -264,28 +253,19 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
         }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-black tracking-widest uppercase flex items-center gap-2" style={{ color: "var(--on-surface-variant)" }}>
-            <span style={{ color: "var(--primary)", fontFamily: "var(--font-display)" }}>02</span>
-            KIT PICKER
+          <h3 className="panel-num-title">
+            <span className="num">02</span>
+            Kit picker
           </h3>
-          <span
-            className="px-2.5 py-0.5 rounded-full text-xs font-extrabold"
-            style={{
-              background: "var(--primary)",
-              color: "var(--ink)",
-              border: "var(--border-w) solid var(--ink)",
-              boxShadow: "var(--shadow-sm)",
-              fontFamily: "var(--font-display)",
-            }}
-          >
-            HOME LIME
+          <span className="chip-count">
+            {OUTFIELD_KITS.find(k => k.bg === options.markerBgColor)?.name ?? "Custom kit"}
           </span>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-wider block mb-2" style={{ color: "var(--outline)" }}>
-              OUTFIELD
+            <label className="field-label" style={{ fontSize: 10, letterSpacing: "0.1em", marginBottom: 8 }}>
+              Outfield
             </label>
             <div className="flex items-center gap-2 flex-wrap">
               {OUTFIELD_KITS.map((kit) => {
@@ -317,8 +297,8 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase tracking-wider block mb-2" style={{ color: "var(--outline)" }}>
-              KEEPER
+            <label className="field-label" style={{ fontSize: 10, letterSpacing: "0.1em", marginBottom: 8 }}>
+              Keeper
             </label>
             <div className="flex items-center gap-2 flex-wrap">
               {KEEPER_KITS.map((kit) => {
@@ -357,22 +337,11 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
         }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-black tracking-widest uppercase flex items-center gap-2" style={{ color: "var(--on-surface-variant)" }}>
-            <span style={{ color: "var(--primary)", fontFamily: "var(--font-display)" }}>03</span>
-            SQUAD
+          <h3 className="panel-num-title">
+            <span className="num">03</span>
+            Squad
           </h3>
-          <span
-            className="px-2.5 py-0.5 rounded-full text-xs font-extrabold"
-            style={{
-              background: "var(--primary)",
-              color: "var(--ink)",
-              border: "var(--border-w) solid var(--ink)",
-              boxShadow: "var(--shadow-sm)",
-              fontFamily: "var(--font-display)",
-            }}
-          >
-            {players.length || 11} PLAYERS
-          </span>
+          <span className="chip-count">{players.length || 11} players</span>
         </div>
 
         <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1">
@@ -388,6 +357,7 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
                 style={{
                   background: isSelected ? "var(--surface-high)" : "var(--surface-low)",
                   border: isSelected ? "1.5px solid var(--primary)" : "var(--border-w) solid var(--ink)",
+                  boxShadow: isSelected ? "var(--card-shadow)" : "none",
                 }}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -419,7 +389,10 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
                     style={{ color: "var(--on-surface)", width: 140 }}
                   />
                 </div>
-                <span className="text-[11px] font-semibold text-right" style={{ color: "var(--on-surface-variant)" }}>
+                <span
+                  className="text-[11px] font-semibold text-right"
+                  style={{ color: isSelected ? "var(--outline)" : "var(--on-surface-variant)", fontFamily: "var(--font-display)" }}
+                >
                   {roleName}
                 </span>
               </div>

@@ -9,7 +9,7 @@ interface PresetPickerProps {
 /**
  * One-click tactical presets. Rendered as a visible chip row rather than a
  * dropdown: there are only a handful, so showing them all makes them
- * discoverable, and it matches the studio's cream/ink chip styling (the shared
+ * discoverable, and it matches the studio's violet/ink chip styling (the shared
  * dropdown-menu component is hard-coded to a dark theme).
  */
 const PresetPicker: React.FC<PresetPickerProps> = ({ onApplyPreset }) => (
@@ -22,7 +22,7 @@ const PresetPicker: React.FC<PresetPickerProps> = ({ onApplyPreset }) => (
         fontWeight: 800,
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
-        color: 'var(--text-secondary)',
+        color: 'var(--caption)',
       }}
     >
       <Wand2 size={13} />
@@ -42,7 +42,7 @@ const PresetPicker: React.FC<PresetPickerProps> = ({ onApplyPreset }) => (
           fontWeight: 800,
           letterSpacing: '0.02em',
           color: 'var(--on-surface)',
-          background: 'var(--surface-container)',
+          background: 'var(--surface-high)',
           border: 'var(--border-w) solid var(--ink)',
           borderRadius: 999,
           padding: '4px 12px',

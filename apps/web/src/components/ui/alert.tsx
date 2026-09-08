@@ -24,5 +24,5 @@ export function Alert({ variant = "default", icon, className, children, ...props
 }
 
 export const AlertDescription = ({ children }: { children: React.ReactNode }) => (
-    <p className="text-sm text-gray-300">{children}</p>
+    <p className="text-sm" style={{ color: "var(--on-surface-variant)" }}>{children}</p>
 );

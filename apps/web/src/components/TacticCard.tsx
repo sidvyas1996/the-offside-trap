@@ -27,8 +27,8 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
     return (
         <motion.div
             className="tactic-card"
-            whileHover={{ y: -4, background: "var(--deep-purple-high)" }}
-            style={{ background: "var(--deep-purple)", borderRadius: 14, overflow: "hidden", transition: "all 0.2s" }}
+            whileHover={{ y: -4, background: "var(--surface-high)" }}
+            style={{ background: "var(--surface-container)", borderRadius: 14, overflow: "hidden", transition: "all 0.2s" }}
         >
             <Link to={`/tactics/${tactic.id}`}>
                 <div className="aspect-video relative overflow-hidden">
@@ -41,10 +41,13 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
                     ) : (
                         <MiniTacticCard className="h-full" />
                     )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3">
-                        <p className="font-bold truncate text-white">{tactic.title || "Untitled Tactic"}</p>
+                    <div
+                        className="absolute bottom-0 left-0 right-0 px-4 py-3"
+                        style={{ background: "linear-gradient(to top, rgba(15,13,21,0.85), transparent)" }}
+                    >
+                        <p className="font-bold truncate" style={{ color: "var(--on-surface)" }}>{tactic.title || "Untitled Tactic"}</p>
                         {tactic.formation && (
-                            <p className="text-sm text-gray-300">{tactic.formation}</p>
+                            <p className="text-sm" style={{ color: "var(--outline)", fontFamily: "var(--font-display)", fontWeight: 700 }}>{tactic.formation}</p>
                         )}
                     </div>
                 </div>
@@ -56,7 +59,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
                         <span
                             key={index}
                             style={{
-                                background: "var(--deep-purple-high)",
+                                background: "var(--surface-high)",
                                 color: "var(--on-surface-variant)",
                                 fontSize: 10,
                                 fontWeight: 600,
@@ -70,7 +73,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
                     ))}
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm" style={{ color: "var(--on-surface-variant)" }}>
                     <div className="flex items-center gap-4">
                         <div className="stat-item stat-likes">
                             <Heart className="stat-icon" />

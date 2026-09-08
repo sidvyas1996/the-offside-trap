@@ -18,7 +18,7 @@ interface TopNavProps {
 }
 
 /**
- * The global black-pill navigation bar — consistent across every screen.
+ * The global navigation pill — the darkest step of the violet ramp, consistent across every screen.
  * Renders just the pill; the page owns the surrounding padding / max-width.
  */
 
@@ -38,10 +38,10 @@ const ProfileButton: React.FC = () => {
       <button
         onClick={() => navigate("/login")}
         style={{
-          background: "var(--primary)", color: "var(--ink)",
-          fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13,
-          border: "var(--border-w) solid var(--ink)", padding: "8px 16px",
-          borderRadius: 999, cursor: "pointer", boxShadow: "var(--shadow-sm)",
+          background: "var(--surface-high)", color: "var(--on-surface)",
+          fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 14,
+          border: "var(--border-w) solid var(--ink)", padding: "11px 20px",
+          borderRadius: 12, cursor: "pointer",
         }}
       >
         Sign in
@@ -57,12 +57,12 @@ const ProfileButton: React.FC = () => {
       aria-label={`Open profile for ${user.username}`}
       title={user.username}
       style={{
-        width: 38, height: 38, borderRadius: 999, flexShrink: 0, cursor: "pointer",
+        width: 42, height: 42, borderRadius: 999, flexShrink: 0, cursor: "pointer",
         padding: 0, overflow: "hidden",
-        background: "var(--primary)", color: "var(--ink)",
-        border: "var(--border-w) solid var(--ink)", boxShadow: "var(--shadow-sm)",
+        background: "var(--primary)", color: "var(--on-primary)",
+        border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13,
+        fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 14,
       }}
     >
       {user.avatar
@@ -86,52 +86,35 @@ const TopNav: React.FC<TopNavProps> = ({ actions, showLinks = true }) => {
         alignItems: "center",
         justifyContent: "space-between",
         gap: 16,
-        background: "var(--surface-container)",
+        background: "var(--surface-low)",
         border: "var(--border-w) solid var(--ink)",
         boxShadow: "var(--card-shadow)",
-        borderRadius: 20,
-        padding: "10px 18px",
+        borderRadius: 18,
+        padding: "12px 14px 12px 16px",
       }}
     >
       {/* Logo */}
       <Link to="/" style={{ display: "flex", alignItems: "center", gap: 11, textDecoration: "none", flexShrink: 0 }}>
-        <Logo size={32} />
-        <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 15, letterSpacing: "0.02em", color: "var(--on-surface)", lineHeight: 1 }}>
+        <Logo size={34} />
+        <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 16, letterSpacing: "0.02em", color: "var(--on-surface)", lineHeight: 1 }}>
           OFFSIDE<br />TRAP
         </span>
       </Link>
 
       {/* Center links */}
       {showLinks && (
-        <div className="lp-navlinks" style={{ gap: 28 }}>
+        <div className="lp-navlinks" style={{ gap: 26 }}>
           {NAV_LINKS.map(({ label, to }) => {
             const active = isActive(to);
             return (
               <button
                 key={label}
                 onClick={() => navigate(to)}
-                className="lp-navlink"
-                style={{
-                  color: active ? "var(--primary)" : "rgba(255,255,255,0.75)",
-                  position: "relative",
-                  paddingBottom: 4,
-                  fontWeight: active ? 800 : 700,
-                }}
+                // Active link is a text highlight (Whistle Orange), not an underline.
+                className={`lp-navlink${active ? " active" : ""}`}
+                aria-current={active ? "page" : undefined}
               >
                 {label}
-                {active && (
-                  <span
-                    style={{
-                      position: "absolute",
-                      bottom: -2,
-                      left: "15%",
-                      right: "15%",
-                      height: 2.5,
-                      backgroundColor: "var(--primary)",
-                      borderRadius: 2,
-                    }}
-                  />
-                )}
               </button>
             );
           })}

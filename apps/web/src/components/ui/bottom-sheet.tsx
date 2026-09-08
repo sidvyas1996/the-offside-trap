@@ -52,7 +52,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           position: 'fixed',
           inset: 0,
           zIndex: 90,
-          background: 'rgba(21,20,15,0.45)',
+          background: 'rgba(15,13,21,0.55)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
           transition: 'opacity 0.22s ease',
@@ -76,7 +76,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
           borderTop: 'var(--border-w) solid var(--ink)',
           borderTopLeftRadius: 18,
           borderTopRightRadius: 18,
-          boxShadow: '0 -6px 0 rgba(21,20,15,0.12)',
+          boxShadow: '0 -6px 0 rgba(15,13,21,0.35)',
           transform: open ? 'translateY(0)' : 'translateY(100%)',
           transition: 'transform 0.26s cubic-bezier(0.4,0,0.2,1)',
           // A closed sheet is still in the tree; keep it out of the tab order
@@ -135,7 +135,8 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
               height: 32,
               borderRadius: 10,
               border: 'var(--border-w) solid var(--ink)',
-              background: 'var(--surface-low)',
+              background: 'var(--surface-high)',
+              color: 'var(--on-surface)',
               cursor: 'pointer',
               flexShrink: 0,
             }}

@@ -38,7 +38,7 @@ const KitPicker: React.FC<KitPickerProps> = ({ value, onChange, team }) => {
     width: 24,
     height: 24,
     borderRadius: 7,
-    background: "var(--surface-low)",
+    background: "var(--surface-high)",
     border: "var(--border-w) solid var(--ink)",
     color: "var(--on-surface)",
     cursor: "pointer",
@@ -127,9 +127,10 @@ const KitPicker: React.FC<KitPickerProps> = ({ value, onChange, team }) => {
                 padding: kitScale > 1 ? 0 : 4,
                 borderRadius: 10,
                 cursor: "pointer",
-                background: selected ? "var(--pastel-mint)" : "var(--surface-low)",
-                border: `var(--border-w) solid ${selected ? "var(--accent-mint)" : "var(--ink)"}`,
-                boxShadow: selected ? "0 0 0 2px var(--accent-mint) inset" : "none",
+                // Active swatch rings in green over an ink ring, like every other swatch.
+                background: selected ? "var(--surface-high)" : "var(--surface-low)",
+                border: selected ? "2.5px solid var(--primary)" : "var(--border-w) solid var(--ink)",
+                boxShadow: selected ? "0 0 0 2px var(--ink)" : "var(--shadow-sm)",
                 transition: "background 120ms ease, border-color 120ms ease",
               }}
             >
