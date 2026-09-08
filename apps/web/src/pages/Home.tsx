@@ -105,7 +105,7 @@ const Home: React.FC = () => {
             </div>
           </div>
 
-          {/* 3D Pitch Animation from A Fresh New Look */}
+          {/* 3D Pitch Animation */}
           <div style={{ width: "100%", maxWidth: 640, justifySelf: "center" }}>
             <HeroPitch />
           </div>
