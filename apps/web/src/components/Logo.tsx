@@ -1,12 +1,7 @@
 import React from "react";
 
-/** Natural aspect ratio of the logo artwork (1464 x 1370). */
-const ASPECT = 1464 / 1370;
-/** Corner radius already baked into the artwork, as a fraction of its width. */
-const BAKED_RADIUS = "7%";
-
 interface LogoProps {
-  /** Rendered height in px; width follows the artwork's aspect ratio. */
+  /** Rendered size in px; the mark is square. */
   size?: number;
   /** Neo-brutalist treatment: kit-black border + hard offset shadow. */
   bordered?: boolean;
@@ -15,28 +10,40 @@ interface LogoProps {
 }
 
 /**
- * The Offside Trap brand mark.
+ * The Offside Trap brand mark: the linesman's flag going up.
+ *
+ * The artwork is a transparent black cut-out, so the green tile is drawn here
+ * rather than baked into the file — the mark stays legible on the dark chrome,
+ * and the brand colour follows the palette instead of a re-export.
+ *
  * Single source of truth for the logo; use this rather than referencing the
  * image directly so sizing and the bordered treatment stay consistent.
  */
 const Logo: React.FC<LogoProps> = ({ size = 40, bordered = false, style, alt = "The Offside Trap" }) => (
-  <img
-    src="/logo-mark.png"
-    alt={alt}
-    width={Math.round(size * ASPECT)}
-    height={size}
+  <span
+    role="img"
+    aria-label={alt}
     style={{
-      display: "block",
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
       flexShrink: 0,
+      width: size,
       height: size,
-      width: size * ASPECT,
-      // matches the artwork's own corners so the border traces its edge
-      borderRadius: BAKED_RADIUS,
+      borderRadius: "22%",
+      background: "var(--primary)",
       border: bordered ? "var(--border-w) solid var(--ink)" : undefined,
       boxShadow: bordered ? "var(--card-shadow)" : undefined,
       ...style,
     }}
-  />
+  >
+    <img
+      src="/logo-flag.png"
+      alt=""
+      draggable={false}
+      style={{ display: "block", width: "76%", height: "76%", objectFit: "contain" }}
+    />
+  </span>
 );
 
 export default Logo;

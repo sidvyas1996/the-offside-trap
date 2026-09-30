@@ -2,10 +2,13 @@ import React from "react";
 import { Shirt, ChevronLeft, ChevronRight } from "lucide-react";
 import { KIT_SETS, getKitSetIndex } from "../../data/kits";
 
-interface KitPickerProps {
+interface KitGridProps {
   /** Currently applied kit id; nothing is selected when unset. */
   value?: string;
   onChange: (kitId: string) => void;
+}
+
+interface KitPickerProps extends KitGridProps {
   /**
    * Which team the chosen kit dresses. Home and away pick independently, so the
    * panel says which one it is editing rather than leaving it to be guessed.
@@ -13,7 +16,14 @@ interface KitPickerProps {
   team?: 'home' | 'away';
 }
 
-const KitPicker: React.FC<KitPickerProps> = ({ value, onChange, team }) => {
+/**
+ * The kit catalog itself — set pager and swatches, with no panel around it.
+ *
+ * Split out so the studio and the lineup rail draw from one definition: they
+ * frame it differently, and two copies of the grid would drift the moment a set
+ * is added.
+ */
+export const KitGrid: React.FC<KitGridProps> = ({ value, onChange }) => {
   // Open on the set holding the applied kit, so reopening the panel does not
   // land somewhere that fails to show the current selection.
   const [setIndex, setSetIndex] = React.useState(() => getKitSetIndex(value));
@@ -46,54 +56,36 @@ const KitPicker: React.FC<KitPickerProps> = ({ value, onChange, team }) => {
   };
 
   return (
-    <div
-      className="rounded-2xl p-5"
-      style={{
-        background: "var(--surface-container)",
-        border: "var(--border-w) solid var(--ink)",
-        boxShadow: "var(--card-shadow)",
-      }}
-    >
-      <div className="flex items-center justify-between mb-1 gap-2">
-        <h2 className="panel-title" style={{ marginBottom: 0 }}>
-          <span className="icon-chip"><Shirt size={14} /></span>
-          Kit
-        </h2>
-        {/* Set pager — only earns its place once there is more than one set. */}
-        {KIT_SETS.length > 1 && (
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => step(-1)}
-              title="Previous set"
-              aria-label="Previous kit set"
-              style={navBtn}
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span
-              className="text-[10px] font-semibold uppercase tracking-widest"
-              style={{ color: "var(--on-surface-variant)", minWidth: 38, textAlign: "center" }}
-            >
-              {activeSet.name}
-            </span>
-            <button
-              type="button"
-              onClick={() => step(1)}
-              title="Next set"
-              aria-label="Next kit set"
-              style={navBtn}
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-        )}
-      </div>
-      <p className="text-xs mb-4" style={{ color: "var(--on-surface-variant)", lineHeight: 1.5 }}>
-        {team === 'away'
-          ? "Pick the shirt worn by the away markers."
-          : "Pick the shirt worn by your markers."}
-      </p>
+    <>
+      {/* Set pager — only earns its place once there is more than one set. */}
+      {KIT_SETS.length > 1 && (
+        <div className="flex items-center justify-end gap-1.5 mb-2">
+          <button
+            type="button"
+            onClick={() => step(-1)}
+            title="Previous set"
+            aria-label="Previous kit set"
+            style={navBtn}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span
+            className="text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--on-surface-variant)", minWidth: 38, textAlign: "center" }}
+          >
+            {activeSet.name}
+          </span>
+          <button
+            type="button"
+            onClick={() => step(1)}
+            title="Next set"
+            aria-label="Next kit set"
+            style={navBtn}
+          >
+            <ChevronRight size={14} />
+          </button>
+        </div>
+      )}
 
       <div
         // Fixed height with its own scroll: a full set would otherwise push the
@@ -127,10 +119,11 @@ const KitPicker: React.FC<KitPickerProps> = ({ value, onChange, team }) => {
                 padding: kitScale > 1 ? 0 : 4,
                 borderRadius: 10,
                 cursor: "pointer",
-                // Active swatch rings in green over an ink ring, like every other swatch.
-                background: selected ? "var(--surface-high)" : "var(--surface-low)",
-                border: selected ? "2.5px solid var(--primary)" : "var(--border-w) solid var(--ink)",
-                boxShadow: selected ? "0 0 0 2px var(--ink)" : "var(--shadow-sm)",
+                // Swatches sit on the panel itself — only the selected one draws
+                // a tile, so the shirts read as artwork rather than as buttons.
+                background: selected ? "var(--surface-high)" : "transparent",
+                border: selected ? "2.5px solid var(--primary)" : "var(--border-w) solid transparent",
+                boxShadow: selected ? "0 0 0 2px var(--ink)" : "none",
                 transition: "background 120ms ease, border-color 120ms ease",
               }}
             >
@@ -149,8 +142,31 @@ const KitPicker: React.FC<KitPickerProps> = ({ value, onChange, team }) => {
           );
         })}
       </div>
-    </div>
+    </>
   );
 };
+
+/** The studio's framing of the catalog: its own card, titled and captioned. */
+const KitPicker: React.FC<KitPickerProps> = ({ value, onChange, team }) => (
+  <div
+    className="rounded-2xl p-5"
+    style={{
+      background: "var(--surface-container)",
+      border: "var(--border-w) solid var(--ink)",
+      boxShadow: "var(--card-shadow)",
+    }}
+  >
+    <h2 className="panel-title" style={{ marginBottom: 0 }}>
+      <span className="icon-chip"><Shirt size={14} /></span>
+      Kit
+    </h2>
+    <p className="text-xs mb-4" style={{ color: "var(--on-surface-variant)", lineHeight: 1.5 }}>
+      {team === 'away'
+        ? "Pick the shirt worn by the away markers."
+        : "Pick the shirt worn by your markers."}
+    </p>
+    <KitGrid value={value} onChange={onChange} />
+  </div>
+);
 
 export default KitPicker;

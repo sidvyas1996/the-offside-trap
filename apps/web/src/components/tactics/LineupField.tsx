@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useFootballField } from "../../contexts/FootballFieldContext.tsx";
 import PlayerMarker from "../PlayerMarker.tsx";
 import {
   DEFAULT_FOOTBALL_FIELD_COLOUR,
   normalizeFieldColor,
 } from "../../utils/colors.ts";
-
-// Field aspect (height / width)
-const FIELD_RATIO = 7 / 11;
 
 interface LineupFieldProps {
   portrait?: boolean;
@@ -66,6 +63,9 @@ const LineupField: React.FC<LineupFieldProps> = ({
   const { onUpdatePlayer, onPlayerNameChange } = actions;
 
   const [scale, setScale] = useState(1);
+  // The stage frames both the camera and the 2D marker layer laid over it.
+  // Drags are listened for here so a pointer over a marker still reaches them.
+  const stageRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -79,12 +79,12 @@ const LineupField: React.FC<LineupFieldProps> = ({
 
   // Field rotation and tilt state - use props if provided, otherwise use local state
   const [localRotationAngle, setLocalRotationAngle] = useState(0);
-  const [localTiltAngle, setLocalTiltAngle] = useState(20);
+  const [localTiltAngle, setLocalTiltAngle] = useState(28);
   const rotationAngle = propRotationAngle !== undefined ? propRotationAngle : localRotationAngle;
   const tiltAngle = propTiltAngle !== undefined ? propTiltAngle : localTiltAngle;
   // Zoom state: 1.0 = default (100%), 0.5 = zoomed out (50%), 1.2 = zoomed in (120%)
   // Default can zoom out to 0.5, then from 0.5 can zoom in to 1.0, then to 1.2
-  const [localZoomLevel, setLocalZoomLevel] = useState(1.0);
+  const [localZoomLevel, setLocalZoomLevel] = useState(0.9);
   const zoomLevel = propZoomLevel !== undefined ? propZoomLevel : localZoomLevel;
 
   // Function to calculate and update context menu position
@@ -92,7 +92,7 @@ const LineupField: React.FC<LineupFieldProps> = ({
     if (!fieldRef.current || !contextMenu.visible || contextMenu.playerId !== playerId) return;
 
     // Find the marker wrapper by data attribute
-    const markerWrapper = fieldRef.current.querySelector(`[data-player-id="${playerId}"]`) as HTMLElement;
+    const markerWrapper = stageRef.current?.querySelector(`[data-player-id="${playerId}"]`) as HTMLElement | null;
     if (!markerWrapper) return;
 
     const markerRect = markerWrapper.getBoundingClientRect();
@@ -170,42 +170,63 @@ const LineupField: React.FC<LineupFieldProps> = ({
     return () => window.removeEventListener("click", closeMenu);
   }, [contextMenu.visible]);
 
-  // Observe field size (marker scaling + fit math)
-  const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
+  // Observe field size to scale the markers with the board and to keep the
+  // projection centred (see `projectionDrop`).
+  const [boardBox, setBoardBox] = useState({ w: 0, h: 0 });
   useEffect(() => {
     if (!fieldRef.current) return;
-    const stageEl = fieldRef.current.parentElement;
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
-        const fieldWidth = entry.contentRect.width;
-        const newScale = Math.max(0.8, Math.min(1.5, fieldWidth / 1000));
-        setScale(newScale);
-      }
-      if (stageEl) {
-        const r = stageEl.getBoundingClientRect();
-        setStageSize({ w: r.width, h: r.height });
+        const { width, height } = entry.contentRect;
+        setScale(Math.max(0.8, Math.min(1.5, width / 1000)));
+        setBoardBox({ w: width, h: height });
       }
     });
     observer.observe(fieldRef.current);
-    if (stageEl) observer.observe(stageEl);
     return () => observer.disconnect();
   }, [fieldRef]);
 
-  // Camera-viewport scaling. The fit scale is the largest size at which the
-  // rotated, tilted field still fits entirely inside the fixed stage. Zoom
-  // multiplies ON TOP of that fit: 100% always shows the whole field as big
-  // as the frame allows; >100% leans in and lets the edges crop at the frame
-  // like a camera viewport, so zoom keeps working at every rotation.
-  const rad = (rotationAngle * Math.PI) / 180;
-  const sinA = Math.abs(Math.sin(rad));
-  const cosA = Math.abs(Math.cos(rad));
-  const bbW = cosA + FIELD_RATIO * sinA;                                  // × field width
-  const bbH = (sinA + FIELD_RATIO * cosA) * Math.cos((tiltAngle * Math.PI) / 180); // × field width
-  // 0.86 leaves comfortable breathing room around the field at 100% zoom
-  const FIT_MARGIN = 0.86;
-  const fitByW = FIT_MARGIN / bbW;
-  const fitByH = stageSize.w > 0 && stageSize.h > 0 ? (FIT_MARGIN * stageSize.h) / (stageSize.w * bbH) : fitByW;
-  const fittedScale = Math.min(fitByW, fitByH) * zoomLevel;
+  /**
+   * How far below its own centre the board ends up once projected.
+   *
+   * Perspective does not fall symmetrically about the axis a tilt turns on: the
+   * near half is magnified more than the far half shrinks, so the board lands
+   * low in its frame, leaving a wider gap above it than below. Shifting the
+   * scene back by this much evens the two up.
+   *
+   * The extremes of a rotated rectangle are its corners, so the vertical span
+   * either side of centre is `halfSpan`; projecting that through the same
+   * perspective as the board gives the offset in closed form — no measuring,
+   * so it stays exact while the camera is moving.
+   */
+  const PERSPECTIVE = 1500;
+  const tiltRad = (tiltAngle * Math.PI) / 180;
+  const rotationRad = (rotationAngle * Math.PI) / 180;
+  const halfSpan =
+    zoomLevel *
+    ((boardBox.w / 2) * Math.abs(Math.sin(rotationRad)) + (boardBox.h / 2) * Math.abs(Math.cos(rotationRad)));
+  const projectionDrop =
+    (halfSpan * halfSpan * PERSPECTIVE * Math.sin(tiltRad) * Math.cos(tiltRad)) /
+    Math.max(PERSPECTIVE * PERSPECTIVE - halfSpan * halfSpan * Math.sin(tiltRad) ** 2, 1);
+
+  /**
+   * Where a pitch coordinate lands on screen, relative to the stage's centre.
+   *
+   * The same camera the board is drawn with — zoom, then the bearing, then the
+   * tilt, then the perspective divide — applied by hand to one point, so a
+   * marker placed here sits exactly on its patch of turf. `depth` is the
+   * perspective's own magnification at that point: markers nearer the lens
+   * draw a little larger, as they would standing on the board.
+   */
+  const projectToScreen = (px: number, py: number) => {
+    const x0 = (px / 100 - 0.5) * boardBox.w * zoomLevel;
+    const y0 = (py / 100 - 0.5) * boardBox.h * zoomLevel;
+    const bearing = -rotationRad;
+    const x1 = x0 * Math.cos(bearing) - y0 * Math.sin(bearing);
+    const y1 = x0 * Math.sin(bearing) + y0 * Math.cos(bearing);
+    const depth = PERSPECTIVE / (PERSPECTIVE - y1 * Math.sin(tiltRad));
+    return { x: x1 * depth, y: y1 * Math.cos(tiltRad) * depth, depth };
+  };
 
   const handlePlayerAction = (action: string) => {
     if (!contextMenu.playerId || !onUpdatePlayer) return;
@@ -263,6 +284,10 @@ const LineupField: React.FC<LineupFieldProps> = ({
     background: pitchBackground,
     aspectRatio: portrait ? "7/11" : "11/7",
     width: "100%",
+    // On a phone the card has a height of its own, so cap the board by it and
+    // let the aspect ratio hand back the width. On desktop there is no such
+    // cap: the board spans the stage and the stage takes its height from it.
+    ...(portrait ? { maxHeight: "100%" } : {}),
     maxWidth: "100%",
     margin: "0 auto",
   };
@@ -274,6 +299,9 @@ const LineupField: React.FC<LineupFieldProps> = ({
         background: "var(--surface-container)",
         border: "var(--border-w) solid var(--ink)",
         boxShadow: "var(--card-shadow)",
+        // The card is the camera's frame: perspective widens the board's near
+        // edge past its own box, so it spills into the padding and crops here.
+        overflow: "hidden",
         // On a phone the card is the stage, so it takes the height it is given
         // instead of wrapping a fixed-height box with dead space around it.
         ...(portrait ? { height: "100%", display: "flex", flexDirection: "column" as const } : {}),
@@ -282,36 +310,44 @@ const LineupField: React.FC<LineupFieldProps> = ({
       <div className="w-full flex justify-center relative" style={portrait ? { flex: 1, minHeight: 0 } : undefined}>
         {/* 3D Perspective Container */}
         <div
-          className="overflow-hidden mb-0"
+          ref={stageRef}
+          className="mb-0 relative"
+          onPointerMove={actions.onPointerMove}
+          onPointerUp={actions.onPointerUp}
+          onPointerCancel={actions.onPointerUp}
           style={{
             perspective: "1500px",
             perspectiveOrigin: "center center",
             width: "100%",
             maxWidth: "100%",
-            // Center field so it doesn't clip on rotation.
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            // Fixed stage: the box never resizes — the field auto-fits
-            // inside it at any rotation/tilt/zoom (see fittedScale).
-            height: portrait ? "100%" : "clamp(420px, 62vh, 680px)",
-            margin: "32px 0",
+            // The stage takes its height from the board it frames, so zoom is a
+            // plain camera scale rather than a fit: 100% fills the frame and
+            // anything past it crops at the edges, like the reference rig.
+            ...(portrait ? { height: "100%" } : {}),
+            padding: "16px 0",
+            // Applied out here, outside the perspective, so it moves the whole
+            // projection evenly instead of being projected itself.
+            transform: `translateY(${-projectionDrop}px)`,
+            transition: "transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
           <div
             ref={fieldRef}
-            className="relative rounded-xl overflow-hidden cursor-move mb-0"
+            // Not clipped: perspective pushes the near edge past the board's
+            // own box. The card is the frame that crops.
+            className="relative rounded-xl cursor-move mb-0"
             style={{
               ...fieldStyle,
               transformStyle: "preserve-3d",
-              transform: `rotateX(${tiltAngle}deg) rotateZ(${rotationAngle}deg) scale(${fittedScale})`,
+              // The dial is the camera's bearing, so the board counter-rotates
+              // against it — orbiting the camera right swings the pitch left.
+              transform: `rotateX(${tiltAngle}deg) rotateZ(${-rotationAngle}deg) scale(${zoomLevel})`,
               transformOrigin: "center center",
-              transition: "transform 0.45s cubic-bezier(0.22, 0.8, 0.25, 1)",
-              willChange: "transform",
+              transition: "transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
-            onPointerMove={actions.onPointerMove}
-            onPointerUp={actions.onPointerUp}
-            onPointerCancel={actions.onPointerUp}
           >
             {/* 3D Field Markings */}
             <svg
@@ -519,77 +555,45 @@ const LineupField: React.FC<LineupFieldProps> = ({
 
             {verticalSpacesMode && (
               <g>
-                {/* Left Wing */}
-                <rect
-                  x="20"
-                  y="20"
-                  width="170"
-                  height="310"
-                  fill="rgba(255, 255, 255, 0.1)"
-                  stroke="rgba(255, 255, 255, 0.8)"
-                  strokeWidth="2"
-                  strokeDasharray="5.5"
-                />
-                <text
-                  transform={portrait ? "rotate(90 275 340)" : undefined}
-                  x="105"
-                  y="340"
-                  textAnchor="middle"
-                  fill="white"
-                  fontSize="12"
-                  dominantBaseline="middle"
-                  fontWeight="bold"
-                >
-                  Left wing
-                </text>
-
-                {/* Center */}
-                <rect
-                  x="190"
-                  y="20"
-                  width="170"
-                  height="310"
-                  fill="rgba(255, 255, 255, 0.1)"
-                  stroke="rgba(255, 255, 255, 0.8)"
-                  strokeWidth="2"
-                  strokeDasharray="5.5"
-                />
-                <text
-                  transform={portrait ? "rotate(90 275 340)" : undefined}
-                  x="275"
-                  y="340"
-                  textAnchor="middle"
-                  fill="white"
-                  fontSize="12"
-                  dominantBaseline="middle"
-                  fontWeight="bold"
-                >
-                  Center
-                </text>
-
-                {/* Right Wing */}
-                <rect
-                  x="360"
-                  y="20"
-                  width="170"
-                  height="310"
-                  fill="rgba(255, 255, 255, 0.1)"
-                  stroke="rgba(255, 255, 255, 0.8)"
-                  strokeWidth="2"
-                  strokeDasharray="5.5"
-                />
-                <text
-                  transform={portrait ? "rotate(90 275 340)" : undefined}
-                  x="445"
-                  y="340"
-                  textAnchor="middle"
-                  fill="white"
-                  fontSize="12"
-                  dominantBaseline="middle"
-                  fontWeight="bold"
-                >
-                  Right wing
-                </text>
+                {/* The five channels as the studio draws them — wide, half-space
+                    and centre lanes running goal to goal. They stack across the
+                    pitch's width, which is what makes them vertical: strips
+                    running along its length would be thirds. */}
+                {[
+                  { y: 20, height: 70, label: "Wide space", fontSize: 12, outlined: true },
+                  { y: 90, height: 45, label: "Half space", fontSize: 12, outlined: false },
+                  { y: 135, height: 80, label: "Centre", fontSize: 14, outlined: true },
+                  { y: 215, height: 45, label: "Half space", fontSize: 12, outlined: false },
+                  { y: 260, height: 70, label: "Wide space", fontSize: 12, outlined: true },
+                ].map((lane) => {
+                  const midY = lane.y + lane.height / 2;
+                  return (
+                    <g key={`${lane.label}-${lane.y}`}>
+                      <rect
+                        x="20"
+                        y={lane.y}
+                        width="510"
+                        height={lane.height}
+                        fill={`rgba(255, 255, 255, ${lane.outlined ? 0.15 : 0.2})`}
+                        stroke={lane.outlined ? "rgba(255, 255, 255, 0.9)" : undefined}
+                        strokeWidth={lane.outlined ? 2 : undefined}
+                        strokeDasharray={lane.outlined ? "5,5" : undefined}
+                      />
+                      <text
+                        transform={portrait ? `rotate(90 275 ${midY})` : undefined}
+                        x="275"
+                        y={midY}
+                        textAnchor="middle"
+                        fill="white"
+                        fontSize={lane.fontSize}
+                        dominantBaseline="middle"
+                        fontWeight="bold"
+                      >
+                        {lane.label}
+                      </text>
+                    </g>
+                  );
+                })}
               </g>
             )}
 
@@ -615,66 +619,6 @@ const LineupField: React.FC<LineupFieldProps> = ({
             })}
             </g>
             </svg>
-
-          {/* Player Markers with 3D Transform */}
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              transformStyle: "preserve-3d",
-              transform: "translateZ(0)",
-              pointerEvents: "none"
-            }}
-          >
-            {players.map((player) => (
-              <div
-                key={player.id}
-                data-player-id={player.id}
-                style={{
-                  position: "absolute",
-                  // Same quarter turn as the markings, in percentage space.
-                  left: `${portrait ? player.y : player.x}%`,
-                  top: `${portrait ? 100 - player.x : player.y}%`,
-                  transform: "translate(-50%, -50%)",
-                  pointerEvents: "auto"
-                }}
-              >
-                <PlayerMarker
-                  key={player.id}
-                  player={player}
-                  scale={scale}
-                  isDragged={draggedPlayer?.id === player.id}
-                  onPointerDown={() => actions.onPointerDown && actions.onPointerDown(player)}
-                  editable={options.editable}
-                  onNameChange={onPlayerNameChange}
-                  onPositionChange={
-                    actions.onUpdatePlayer
-                      ? (id, position) => actions.onUpdatePlayer!(id, { position })
-                      : undefined
-                  }
-                  onContextMenu={(e) => {
-                    onShowContextMenu(e, player);
-                  }}
-                  enableContextMenu={options.enableContextMenu}
-                  showPlayerLabels={options.showPlayerLabels ?? showPlayerLabels}
-                  markerType={markerType}
-                  waypointsMode={waypointsMode}
-                  isSelected={selectedPlayer === player.id}
-                  onWaypointsClick={() => handleWaypointsClick(player.id)}
-                  rotationAngle={rotationAngle}
-                  markerBgColor={options.markerBgColor}
-                  markerBorderColor={options.markerBorderColor}
-                  markerTextColor={options.markerTextColor}
-                  markerSecondaryColor={options.markerSecondaryColor}
-                  markerDesign={options.markerDesign}
-                  shirtTextureUrl={options.shirtTextureUrl}
-                  shirtKitId={options.shirtKitId}
-                  showShirtNumbers={options.showShirtNumbers}
-                  onPlayerSelect={onPlayerSelect}
-                />
-              </div>
-            ))}
-          </div>
 
           {/* Context Menu */}
           {contextMenu.visible && (
@@ -736,6 +680,80 @@ const LineupField: React.FC<LineupFieldProps> = ({
               })}
             </div>
           )}
+          </div>
+
+          {/* Player markers: a 2D layer over the camera, not inside it.
+
+              Each is placed by projecting its pitch coordinate through the same
+              perspective the board is drawn with, so its anchor lands exactly
+              where that patch of turf does. Inside the 3D scene they had three
+              faults at once: the board's zoom sat between the camera's tilt and
+              the marker's counter-tilt and did not commute with it, so circles
+              rendered up to 15% oval; a label hanging below its shirt dipped
+              under the turf, where the depth sort swallowed it; and lifting the
+              plane to stop that shifted the whole team by height × sin(tilt),
+              walking the goalkeeper off the pitch. Flat, none of that exists:
+              round at any zoom, never occluded, and drawn on their coordinates. */}
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+            {players.map((player) => {
+              // Same quarter turn as the markings, in percentage space.
+              const at = projectToScreen(portrait ? player.y : player.x, portrait ? 100 - player.x : player.y);
+              const dragged = draggedPlayer?.id === player.id;
+              return (
+                <div
+                  key={player.id}
+                  data-player-id={player.id}
+                  style={{
+                    position: "absolute",
+                    left: `calc(50% + ${at.x}px)`,
+                    top: `calc(50% + ${at.y}px)`,
+                    translate: "-50% -50%",
+                    // Nearer markers paint over farther ones, as they would on the board.
+                    zIndex: Math.round(1000 + at.depth * 100),
+                    pointerEvents: "auto",
+                    // Glides with the board's own camera transition, but never
+                    // while being dragged — an ease on a drag makes the marker
+                    // trail the cursor instead of following it.
+                    transition: dragged
+                      ? "none"
+                      : "left 260ms cubic-bezier(0.22, 1, 0.36, 1), top 260ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
+                >
+                  <PlayerMarker
+                    key={player.id}
+                    player={player}
+                    scale={scale * zoomLevel * at.depth}
+                    isDragged={dragged}
+                    onPointerDown={(grabbed, e) => actions.onPointerDown?.(grabbed, e)}
+                    editable={options.editable}
+                    onNameChange={onPlayerNameChange}
+                    onPositionChange={
+                      actions.onUpdatePlayer
+                        ? (id, position) => actions.onUpdatePlayer!(id, { position })
+                        : undefined
+                    }
+                    onContextMenu={(e) => {
+                      onShowContextMenu(e, player);
+                    }}
+                    enableContextMenu={options.enableContextMenu}
+                    showPlayerLabels={options.showPlayerLabels ?? showPlayerLabels}
+                    markerType={markerType}
+                    waypointsMode={waypointsMode}
+                    isSelected={selectedPlayer === player.id}
+                    onWaypointsClick={() => handleWaypointsClick(player.id)}
+                    markerBgColor={options.markerBgColor}
+                    markerBorderColor={options.markerBorderColor}
+                    markerTextColor={options.markerTextColor}
+                    markerSecondaryColor={options.markerSecondaryColor}
+                    markerDesign={options.markerDesign}
+                    shirtTextureUrl={options.shirtTextureUrl}
+                    shirtKitId={options.shirtKitId}
+                    showShirtNumbers={options.showShirtNumbers}
+                    onPlayerSelect={onPlayerSelect}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
 

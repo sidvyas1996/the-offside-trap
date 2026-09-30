@@ -880,12 +880,12 @@ const FootballField: React.FC<FootballFieldProps> = ({
           isDragged={draggedPlayer?.id === player.id}
           isAnimating={isAnimating}
           dwellMs={draggedPlayer?.id === player.id ? capture.liveDwellMs : 0}
-          onPointerDown={() => {
+          onPointerDown={(_grabbed, e) => {
             // While a later beat is on screen the positions are a computed preview,
             // so a drag has nowhere legitimate to land: committing it would write a
             // mid-move pose back into the tactic's starting board.
             if (previewingPhase) return;
-            actions.onPointerDown?.(player);
+            actions.onPointerDown?.(player, e);
             beginCapture({ kind: 'player', team: 'home', playerId: player.id }, { x: player.x, y: player.y });
           }}
           editable={typeof editable === "boolean" ? editable : options.editable}
@@ -930,9 +930,9 @@ const FootballField: React.FC<FootballFieldProps> = ({
           isDragged={draggedOppositionPlayer?.id === player.id}
           isAnimating={isAnimating}
           dwellMs={draggedOppositionPlayer?.id === player.id ? capture.liveDwellMs : 0}
-          onPointerDown={() => {
+          onPointerDown={(_grabbed, e) => {
             if (previewingPhase) return;
-            oppositionActions.onPointerDown?.(player);
+            oppositionActions.onPointerDown?.(player, e);
             beginCapture({ kind: 'player', team: 'away', playerId: player.id }, { x: player.x, y: player.y });
           }}
           editable={typeof editable === "boolean" ? editable : oppositionOptions.editable}

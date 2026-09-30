@@ -40,8 +40,8 @@ export const useTacticsActions = (
   // Set up home actions
   useEffect(() => {
     setActions({
-      onPointerDown: (player: Player) => {
-        drag.handlePointerDown(player);
+      onPointerDown: (player: Player, e?: React.PointerEvent) => {
+        drag.handlePointerDown(player, e);
         setDraggedPlayer(player);
       },
       onPointerMove: drag.handlePointerMove,
@@ -65,8 +65,8 @@ export const useTacticsActions = (
   // Set up opposition actions
   useEffect(() => {
     setOppositionActions({
-      onPointerDown: (player: Player) => {
-        oppDrag.handlePointerDown(player);
+      onPointerDown: (player: Player, e?: React.PointerEvent) => {
+        oppDrag.handlePointerDown(player, e);
         setDraggedOppositionPlayer(player);
       },
       onPointerMove: oppDrag.handlePointerMove,

@@ -324,7 +324,10 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                 >
                                     <RotateCcw size={18} />
                                 </Button>
-                                <span className="text-xs font-mono w-8 text-center text-[var(--theme-secondary-text)]">{rotationAngle}°</span>
+                                {/* The stored angle runs on past 360 so the board
+                                    never animates the long way round a wrap; the
+                                    readout shows the bearing it settles on. */}
+                                <span className="text-xs font-mono w-8 text-center text-[var(--theme-secondary-text)]">{((Math.round(rotationAngle) % 360) + 360) % 360}°</span>
                                 <Button
                                     onClick={(e) => { e.preventDefault(); onRotateRight!(); }}
                                     className="!p-2"
@@ -370,7 +373,7 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             <div className="flex flex-row items-center gap-1">
                                 <Button
                                     onClick={(e) => { e.preventDefault(); onZoomOut!(); }}
-                                    disabled={zoomLevel === 0.75}
+                                    disabled={zoomLevel <= 0.75}
                                     className="!p-2"
                                     style={btnStyle(false)}
                                     variant="outline" type="button" title="Zoom Out"

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Save, Loader2, SlidersHorizontal, Palette, Camera, Layers, Shirt, Circle, CaseSensitive, RotateCcw, RotateCw, ChevronUp, ChevronDown } from "lucide-react";
+import { Save, Loader2, SlidersHorizontal, Palette, Camera, Layers, Shirt, Circle, CaseSensitive, RotateCcw, Hash, Image as ImageIcon } from "lucide-react";
+import { api } from "../lib/api";
 import EditorBar from "../components/EditorBar";
 import BottomSheet from "../components/ui/bottom-sheet";
+import RotationDial from "../components/ui/RotationDial";
 import { useIsMobile } from "../hooks/useMediaQuery";
 import { FootballFieldProvider, useFootballField } from "../contexts/FootballFieldContext";
 import { useTacticsForm } from "../hooks/useTacticsForm";
@@ -14,6 +16,39 @@ import CreatorsMenu from "../components/ui/creators-menu";
 import PlayerEditorPanel from "../components/ui/PlayerEditorPanel";
 import { TacticEntity } from "../entities/TacticEntity";
 import type { TacticFormData, Player } from "../../../../packages/shared/src";
+
+/**
+ * Resting camera: square-on bearing, broadcast tilt, pulled back a touch.
+ *
+ * 90% rather than a full 100%: at 100% the board spans the frame exactly, so
+ * any rotation immediately crops its corners. The margin buys room to turn.
+ */
+const DEFAULT_CAMERA = { rotation: 0, tilt: 28, zoom: 0.9 };
+
+const SliderRow: React.FC<{
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  suffix: string;
+  onChange: (v: number) => void;
+}> = ({ label, value, min, max, suffix, onChange }) => (
+  <label className="tool-slider-row">
+    <span className="tool-slider-label">{label}</span>
+    <input
+      type="range"
+      min={min}
+      max={max}
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      className="tool-range"
+    />
+    <span className="tool-slider-value">
+      {Math.round(value)}
+      {suffix}
+    </span>
+  </label>
+);
 
 const CreateLineupsContent: React.FC = () => {
   const isMobile = useIsMobile();
@@ -38,17 +73,97 @@ const CreateLineupsContent: React.FC = () => {
   );
 
   // Field rotation, tilt, and zoom state
-  const [rotationAngle, setRotationAngle] = useState(0);
-  const [tiltAngle, setTiltAngle] = useState(20);
-  const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [rotationAngle, setRotationAngle] = useState(DEFAULT_CAMERA.rotation);
+  const [tiltAngle, setTiltAngle] = useState(DEFAULT_CAMERA.tilt);
+  const [zoomLevel, setZoomLevel] = useState(DEFAULT_CAMERA.zoom);
 
-  // Rotation and tilt handlers
+  // Rotation and tilt handlers. Rotation is deliberately left unwrapped: 359 ->
+  // 0 reads to CSS as a full turn backwards and animates the whole way round.
   const handleRotateLeft = () => {
-    setRotationAngle((prev) => (prev - 15 + 360) % 360);
+    setRotationAngle((prev) => prev - 15);
   };
 
   const handleRotateRight = () => {
-    setRotationAngle((prev) => (prev + 15) % 360);
+    setRotationAngle((prev) => prev + 15);
+  };
+
+  const [isExporting, setIsExporting] = useState<null | "png" | "jpg">(null);
+
+  /**
+   * Render the board server-side and hand back the image.
+   *
+   * The whole look travels with the request — camera, kit, marker colours and
+   * whichever overlays are showing — because the exporter re-renders this same
+   * board from the payload rather than photographing the page.
+   */
+  const handleExport = async (format: "png" | "jpg") => {
+    setIsExporting(format);
+    try {
+      const response = await api.post(
+        "/export/field",
+        {
+          rotationAngle,
+          tiltAngle,
+          zoomLevel,
+          fieldColor: options.fieldColor || "#19a974",
+          players: players.map((player) => ({
+            id: player.id,
+            x: player.x,
+            y: player.y,
+            name: player.name || `Player ${player.number}`,
+            // The squad number, or a short code if one was typed on the marker.
+            // `position` also carries the squad list's role name, which would
+            // otherwise arrive at the exporter as the shirt's number.
+            number:
+              player.position && player.position.length <= 2
+                ? player.position
+                : player.number.toString(),
+            isCaptain: player.isCaptain,
+            hasYellowCard: player.hasYellowCard,
+            hasRedCard: player.hasRedCard,
+            isStarPlayer: player.isStarPlayer,
+          })),
+          showPlayerLabels: state.showPlayerLabels,
+          markerType: state.markerType,
+          showShirtNumbers: state.showShirtNumbers,
+          shirtKitId: options.shirtKitId,
+          markerBgColor: options.markerBgColor,
+          markerBorderColor: options.markerBorderColor,
+          markerTextColor: options.markerTextColor,
+          markerSecondaryColor: options.markerSecondaryColor,
+          markerDesign: options.markerDesign,
+          waypointsMode: false,
+          horizontalZonesMode: state.horizontalZonesMode,
+          verticalSpacesMode: state.verticalSpacesMode,
+          format,
+          previewType: "lineup",
+        },
+        { responseType: "blob" },
+      );
+
+      const slug =
+        (form.title || "lineup").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "lineup";
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${slug}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting lineup:", error);
+      alert("Failed to export image. Please try again.");
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  // Both halves of the marker style are kept in step the way the toolbar's own
+  // toggle does it — the board reads the state, the save payload reads options.
+  const handleUseShirtMarkers = () => {
+    state.setMarkerType('shirt');
+    setOptions((prev) => ({ ...prev, markerType: 'shirt' }));
   };
 
   const handleTiltUp = () => {
@@ -59,15 +174,17 @@ const CreateLineupsContent: React.FC = () => {
     setTiltAngle((prev) => Math.max(0, prev - 5));
   };
 
-  const ZOOM_STEPS = [0.75, 1.0, 1.2, 1.5];
+  // Stepped zoom for the phone's +/- buttons. They move to the next stop past
+  // wherever the slider left things rather than matching a stop exactly, so any
+  // value in between — the 90% resting zoom included — still steps.
+  const ZOOM_STEPS = [0.75, 0.9, 1.0, 1.2, 1.5];
+  const EPSILON = 0.001;
   const handleZoomOut = () => {
-    const i = ZOOM_STEPS.indexOf(zoomLevel);
-    if (i > 0) setZoomLevel(ZOOM_STEPS[i - 1]);
+    setZoomLevel((z) => [...ZOOM_STEPS].reverse().find((s) => s < z - EPSILON) ?? z);
   };
 
   const handleZoomIn = () => {
-    const i = ZOOM_STEPS.indexOf(zoomLevel);
-    if (i >= 0 && i < ZOOM_STEPS.length - 1) setZoomLevel(ZOOM_STEPS[i + 1]);
+    setZoomLevel((z) => ZOOM_STEPS.find((s) => s > z + EPSILON) ?? z);
   };
 
   // Load existing lineup when editing
@@ -227,7 +344,7 @@ const CreateLineupsContent: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left: Pitch Stage */}
           <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-4 relative">
-            <div className="relative rounded-2xl overflow-hidden" style={{ minHeight: isMobile ? 420 : 620 }}>
+            <div className="relative">
               <LineupField
                 waypointsMode={state.waypointsMode}
                 horizontalZonesMode={state.horizontalZonesMode}
@@ -256,121 +373,190 @@ const CreateLineupsContent: React.FC = () => {
                 onPlayerSelect={setSelectedPlayer}
                 portrait={isMobile}
               />
+            </div>
 
-              {/* Floating Pitch Toolbar Overlay at Bottom Center */}
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto max-w-[95%]">
-                {/* Tab selector */}
-                <div className="pitch-toolbar-tabs">
-                  {([
-                    { id: "style", label: "Style", Icon: Palette },
-                    { id: "camera", label: "Camera", Icon: Camera },
-                    { id: "overlays", label: "Overlays", Icon: Layers },
-                  ] as const).map(({ id, label, Icon }) => (
+            {/* Pitch Toolbar (below pitch, no longer overlapping it) */}
+            <div className="flex flex-col items-center gap-2 mx-auto max-w-[95%]">
+              {/* Tab selector */}
+              <div className="pitch-toolbar-tabs">
+                {([
+                  { id: "style", label: "Style", Icon: Palette },
+                  { id: "camera", label: "Camera", Icon: Camera },
+                  { id: "overlays", label: "Overlays", Icon: Layers },
+                ] as const).map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setPitchTab(id)}
+                    className={`pitch-toolbar-tab${pitchTab === id ? " active" : ""}`}
+                  >
+                    <Icon size={13} /> {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sub-controls for active tab */}
+              <div className="pitch-toolbar flex-wrap justify-center" style={{ gap: 10, padding: "8px 16px" }}>
+                {pitchTab === "style" && (
+                  <>
                     <button
-                      key={id}
                       type="button"
-                      onClick={() => setPitchTab(id)}
-                      className={`pitch-toolbar-tab${pitchTab === id ? " active" : ""}`}
+                      onClick={state.handleToggleMarkerType}
+                      className={`tool-btn${state.markerType === "shirt" ? " active" : ""}`}
+                      style={{ fontSize: 12, padding: "5px 12px" }}
                     >
-                      <Icon size={13} /> {label}
+                      <Shirt size={14} /> Jersey
                     </button>
-                  ))}
-                </div>
+                    <button
+                      type="button"
+                      onClick={state.handleToggleMarkerType}
+                      className={`tool-btn${state.markerType === "circle" ? " active" : ""}`}
+                      style={{ fontSize: 12, padding: "5px 12px" }}
+                    >
+                      <Circle size={14} /> Circle
+                    </button>
 
-                {/* Sub-controls for active tab */}
-                <div className="pitch-toolbar flex-wrap justify-center" style={{ gap: 10, padding: "8px 16px" }}>
-                  {pitchTab === "style" && (
-                    <>
+                    <div className="tool-divider" />
+
+                    <div className="flex items-center gap-1.5">
+                      {[
+                        { color: '#c6f24e', name: 'Lime' },
+                        { color: '#15803d', name: 'Green' },
+                        { color: '#2563eb', name: 'Blue' },
+                        { color: '#ea580c', name: 'Orange' },
+                        { color: '#111827', name: 'Dark' },
+                      ].map((s) => (
+                        <button
+                          key={s.color}
+                          type="button"
+                          title={s.name}
+                          onClick={() => state.handleMarkerBgColorChange(s.color)}
+                          className={`tool-swatch${options.markerBgColor === s.color ? " active" : ""}`}
+                          style={{ background: s.color }}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="tool-divider" />
+
+                    <button
+                      type="button"
+                      onClick={state.handleTogglePlayerLabels}
+                      className={`tool-btn${state.showPlayerLabels ? " active" : ""}`}
+                      style={{ fontSize: 12, padding: "5px 12px" }}
+                    >
+                      <CaseSensitive size={14} /> Names
+                    </button>
+
+                    {/* A circle always carries its number, so this only has
+                        something to turn off once the markers are shirts. */}
+                    {state.markerType === "shirt" && (
                       <button
                         type="button"
-                        onClick={state.handleToggleMarkerType}
-                        className={`tool-btn${state.markerType === "shirt" ? " active" : ""}`}
+                        onClick={state.handleToggleShirtNumbers}
+                        className={`tool-btn${state.showShirtNumbers ? " active" : ""}`}
                         style={{ fontSize: 12, padding: "5px 12px" }}
+                        title={state.showShirtNumbers ? "Hide numbers on shirts" : "Show numbers on shirts"}
                       >
-                        <Shirt size={14} /> Jersey
+                        <Hash size={14} /> Numbers
                       </button>
+                    )}
+
+                    <div className="tool-divider" />
+
+                    <label className="tool-colour" title="Number colour">
+                      <Hash size={13} />
+                      <span className="tool-swatch" style={{ background: options.markerTextColor ?? "#ffffff" }} />
+                      <input
+                        type="color"
+                        value={options.markerTextColor ?? "#ffffff"}
+                        onChange={(e) => state.handleMarkerTextColorChange(e.target.value)}
+                        aria-label="Number colour"
+                      />
+                    </label>
+                  </>
+                )}
+
+                {pitchTab === "camera" && (
+                  <>
+                    <RotationDial rotation={rotationAngle} onChange={setRotationAngle} />
+
+                    <div className="flex flex-col gap-1.5" style={{ minWidth: 180 }}>
+                      <SliderRow label="Tilt" value={tiltAngle} min={0} max={45} suffix="°" onChange={setTiltAngle} />
+                      <SliderRow
+                        label="Zoom"
+                        value={Math.round(zoomLevel * 100)}
+                        min={75}
+                        max={150}
+                        suffix="%"
+                        onChange={(v) => setZoomLevel(v / 100)}
+                      />
+                    </div>
+
+                    <div className="tool-divider" />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Settle on the nearest square-on turn rather than a
+                        // literal 0: a camera spun twice round should come back
+                        // the short way, not rewind everywhere it has been.
+                        setRotationAngle(
+                          (r) => Math.round((r - DEFAULT_CAMERA.rotation) / 360) * 360 + DEFAULT_CAMERA.rotation,
+                        );
+                        setTiltAngle(DEFAULT_CAMERA.tilt);
+                        setZoomLevel(DEFAULT_CAMERA.zoom);
+                      }}
+                      className="tool-btn"
+                      style={{ fontSize: 12, padding: "5px 12px" }}
+                      title="Reset camera"
+                    >
+                      <RotateCcw size={14} /> Reset
+                    </button>
+
+                    <div className="tool-divider" />
+
+                    {(["png", "jpg"] as const).map((format) => (
                       <button
+                        key={format}
                         type="button"
-                        onClick={state.handleToggleMarkerType}
-                        className={`tool-btn${state.markerType === "circle" ? " active" : ""}`}
+                        onClick={() => handleExport(format)}
+                        disabled={isExporting !== null}
+                        className="tool-btn"
                         style={{ fontSize: 12, padding: "5px 12px" }}
+                        title={`Export this view as ${format.toUpperCase()}`}
                       >
-                        <Circle size={14} /> Circle
+                        {isExporting === format ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          <ImageIcon size={14} />
+                        )}
+                        {format.toUpperCase()}
                       </button>
+                    ))}
+                  </>
+                )}
 
-                      <div className="tool-divider" />
-
-                      <div className="flex items-center gap-1.5">
-                        {[
-                          { color: '#c6f24e', name: 'Lime' },
-                          { color: '#15803d', name: 'Green' },
-                          { color: '#2563eb', name: 'Blue' },
-                          { color: '#ea580c', name: 'Orange' },
-                          { color: '#111827', name: 'Dark' },
-                        ].map((s) => (
-                          <button
-                            key={s.color}
-                            type="button"
-                            title={s.name}
-                            onClick={() => state.handleMarkerBgColorChange(s.color)}
-                            className={`tool-swatch${options.markerBgColor === s.color ? " active" : ""}`}
-                            style={{ background: s.color }}
-                          />
-                        ))}
-                      </div>
-
-                      <div className="tool-divider" />
-
-                      <button
-                        type="button"
-                        onClick={state.handleTogglePlayerLabels}
-                        className={`tool-btn${state.showPlayerLabels ? " active" : ""}`}
-                        style={{ fontSize: 12, padding: "5px 12px" }}
-                      >
-                        <CaseSensitive size={14} /> Names
-                      </button>
-                    </>
-                  )}
-
-                  {pitchTab === "camera" && (
-                    <>
-                      <button type="button" onClick={handleRotateLeft} className="tool-btn" style={{ fontSize: 12, padding: "5px 12px" }}>
-                        <RotateCcw size={14} /> Rotate left
-                      </button>
-                      <button type="button" onClick={handleRotateRight} className="tool-btn" style={{ fontSize: 12, padding: "5px 12px" }}>
-                        <RotateCw size={14} /> Rotate right
-                      </button>
-                      <div className="tool-divider" />
-                      <button type="button" onClick={handleTiltUp} className="tool-btn" style={{ fontSize: 12, padding: "5px 12px" }}>
-                        <ChevronUp size={14} /> Tilt up
-                      </button>
-                      <button type="button" onClick={handleTiltDown} className="tool-btn" style={{ fontSize: 12, padding: "5px 12px" }}>
-                        <ChevronDown size={14} /> Tilt down
-                      </button>
-                    </>
-                  )}
-
-                  {pitchTab === "overlays" && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={state.handleToggleHorizontalZones}
-                        className={`tool-btn${state.horizontalZonesMode ? " active" : ""}`}
-                        style={{ fontSize: 12, padding: "5px 12px" }}
-                      >
-                        Horizontal zones
-                      </button>
-                      <button
-                        type="button"
-                        onClick={state.handleToggleVerticalSpaces}
-                        className={`tool-btn${state.verticalSpacesMode ? " active" : ""}`}
-                        style={{ fontSize: 12, padding: "5px 12px" }}
-                      >
-                        Vertical spaces
-                      </button>
-                    </>
-                  )}
-                </div>
+                {pitchTab === "overlays" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={state.handleToggleHorizontalZones}
+                      className={`tool-btn${state.horizontalZonesMode ? " active" : ""}`}
+                      style={{ fontSize: 12, padding: "5px 12px" }}
+                    >
+                      Horizontal zones
+                    </button>
+                    <button
+                      type="button"
+                      onClick={state.handleToggleVerticalSpaces}
+                      className={`tool-btn${state.verticalSpacesMode ? " active" : ""}`}
+                      style={{ fontSize: 12, padding: "5px 12px" }}
+                    >
+                      Vertical spaces
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -387,6 +573,8 @@ const CreateLineupsContent: React.FC = () => {
               onSnapToFormation={handleSnapToFormation}
               onSelectPlayer={setSelectedPlayer}
               selectedPlayerId={selectedPlayer?.id}
+              markerType={state.markerType}
+              onUseShirtMarkers={handleUseShirtMarkers}
             />
           </div>
         </div>

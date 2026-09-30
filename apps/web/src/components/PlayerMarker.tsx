@@ -33,7 +33,8 @@ interface PlayerMarkerProps {
    * shows a delay accumulating — a delay you can't see coming is a bug report.
    */
   dwellMs?: number;
-  onPointerDown: (player: Player) => void;
+  /** The event rides along so a drag can keep hold of the exact point grabbed. */
+  onPointerDown: (player: Player, e: React.PointerEvent) => void;
   editable?: boolean;
   onNameChange?: (id: number, name: string) => void;
   onPositionChange?: (id: number, position: string) => void;
@@ -52,7 +53,6 @@ interface PlayerMarkerProps {
   waypointsMode?: boolean;
   isSelected?: boolean;
   onWaypointsClick?: () => void;
-  rotationAngle?: number;
   fovAngle?: number;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
@@ -89,7 +89,6 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   waypointsMode = false,
   isSelected = false,
   onWaypointsClick,
-  rotationAngle = 0,
   fovAngle,
   onMouseEnter,
   onMouseLeave,
@@ -106,7 +105,13 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingPosition, setIsEditingPosition] = useState(false);
   const [name, setName] = useState(player.name || `Player ${player.number}`);
-  const [position, setPosition] = useState(player.position || player.number.toString());
+  // What the marker itself is stamped with. `position` doubles as the squad
+  // list's role — "Midfielder" — which is neither short enough for a shirt nor
+  // meant for one, so anything longer than a typed code falls back to the
+  // squad number.
+  const [position, setPosition] = useState(
+    player.position && player.position.length <= 2 ? player.position : player.number.toString(),
+  );
   const [isStarSpinning, setIsStarSpinning] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -191,7 +196,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
         e.preventDefault();
         const startX = e.clientX;
         const startY = e.clientY;
-        onPointerDown(player);
+        onPointerDown(player, e);
         if (onPlayerSelect) {
           // Tap-vs-drag: a release within TAP_SLOP of the press is a selection,
           // anything further was a drag. The threshold is larger for touch
@@ -285,13 +290,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           }}
           onDoubleClick={() => editable && setIsEditingPosition(true)}
         >
-            <div
-              className="flex items-center justify-center"
-              style={{
-                transform: `rotate(${-rotationAngle}deg)`,
-                transformOrigin: 'center',
-              }}
-            >
+            <div className="flex items-center justify-center">
               {isEditingPosition ? (
                 <input
                   type="text"
@@ -341,30 +340,31 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
                   }
                 }}
                 autoFocus
-                className="absolute w-8 h-8 bg-transparent text-white font-bold text-lg text-center border-none outline-none"
+                className="absolute w-8 h-8 bg-transparent text-lg text-center border-none outline-none"
                 style={{
                   left: '50%',
                   top: '50%',
-                  transform: `
-                    translate(-50%, -50%) 
-                    rotate(${-rotationAngle}deg)
-                  `,
+                  transform: 'translate(-50%, -50%)',
                   transformOrigin: 'center',
+                  color: markerTextColor,
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 800,
                 }}
                 maxLength={2}
               />
             ) : showShirtNumbers ? (
               <div
-                className="absolute text-white font-bold text-lg"
+                className="absolute text-lg"
                 style={{
                   left: '50%',
                   top: '50%',
-                  transform: `
-                    translate(-50%, -50%)
-                    rotate(${-rotationAngle}deg)
-                  `,
+                  transform: 'translate(-50%, -50%)',
                   transformOrigin: 'center',
-                  textShadow: '0 1px 3px rgba(0,0,0,0.6)',
+                  color: markerTextColor,
+                  // Same face and weight as the circle marker's digit, so a
+                  // number reads identically whichever marker wears it.
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 800,
                 }}
               >
                 {position}
@@ -424,11 +424,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
           style={{
             left: '50%',
             top: '50%',
-            transform: `
-              translate(-50%, -50%) 
-              translate(${labelRadius * Math.sin(rotationAngle * Math.PI / 180)}px, ${labelRadius * Math.cos(rotationAngle * Math.PI / 180)}px)
-              rotate(${-rotationAngle}deg)
-            `,
+            transform: `translate(-50%, -50%) translateY(${labelRadius}px)`,
             transformOrigin: 'center',
           }}
         >
@@ -448,8 +444,12 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
               className="bg-[#1a1a1a] text-white font-semibold mt-1 px-2 py-1 rounded border border-gray-900 max-w-[120px] text-center whitespace-nowrap overflow-hidden text-ellipsis"
             />
           ) : (
-            <div style={{ background: '#fbf5e9', border: '2px solid #15140f', color: '#15140f', boxShadow: '2px 2px 0 #15140f', fontFamily: 'var(--font-display)' }} className="font-extrabold mt-1.5 px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap overflow-hidden text-ellipsis max-w-[110px]">
-              {name}
+            <div style={{ background: '#fbf5e9', border: '2px solid #15140f', color: '#15140f', boxShadow: '2px 2px 0 #15140f', fontFamily: 'var(--font-display)' }} className="font-extrabold mt-1.5 px-2 py-0.5 rounded-full text-[11px] max-w-[110px]">
+              {/* The name is truncated on an inner span rather than on the pill
+                  itself. Clipping the bordered, rounded box under the marker's
+                  3D transform had headless Chromium mask it a few pixels short
+                  on the left, slicing the pill's end off in every export. */}
+              <span className="block whitespace-nowrap overflow-hidden text-ellipsis">{name}</span>
             </div>
           )}
         </div>

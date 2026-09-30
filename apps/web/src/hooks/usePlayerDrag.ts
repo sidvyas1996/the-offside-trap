@@ -16,13 +16,26 @@ export const usePlayerDrag = (
     const updateThrottle = 16; // ~60fps
     const draggedPlayerRef = useRef<Player | null>(null);
     const originalPositionRef = useRef<{ x: number; y: number } | null>(null);
+    // Where the marker was caught, relative to its anchor, in pitch percent. A
+    // drag moves the marker by the cursor's travel rather than dropping its
+    // centre under the cursor — grabbed by the shoulder, it stays held by the
+    // shoulder instead of jumping the moment the pointer comes down.
+    const grabOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-    const handlePointerDown = useCallback((player: Player) => {
-        if (player && typeof player.x === 'number' && typeof player.y === 'number') {
-            draggedPlayerRef.current = player;
-            originalPositionRef.current = { x: player.x, y: player.y };
-        }
-    }, []);
+    const handlePointerDown = useCallback(
+        (player: Player, grab?: { clientX: number; clientY: number }) => {
+            if (player && typeof player.x === 'number' && typeof player.y === 'number') {
+                draggedPlayerRef.current = player;
+                originalPositionRef.current = { x: player.x, y: player.y };
+                grabOffsetRef.current = { x: 0, y: 0 };
+                if (grab && fieldRef.current) {
+                    const at = clientToPitchPct(fieldRef.current, grab.clientX, grab.clientY);
+                    if (at) grabOffsetRef.current = { x: player.x - at.x, y: player.y - at.y };
+                }
+            }
+        },
+        [fieldRef]
+    );
 
     const handlePointerMove = useCallback(
         (e: React.PointerEvent) => {
@@ -30,7 +43,9 @@ export const usePlayerDrag = (
 
             const mapped = clientToPitchPct(fieldRef.current, e.clientX, e.clientY);
             if (!mapped) return;
-            const { x: clampedX, y: clampedY } = mapped;
+            const offset = grabOffsetRef.current;
+            const clampedX = Math.max(0, Math.min(100, mapped.x + offset.x));
+            const clampedY = Math.max(0, Math.min(100, mapped.y + offset.y));
 
             const draggedId = draggedPlayerRef.current.id;
             if (draggedId) {

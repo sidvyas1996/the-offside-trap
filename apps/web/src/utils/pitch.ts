@@ -83,13 +83,37 @@ export const pctToSvgX = (x: number) => (x / 100) * PITCH_LENGTH;
 export const pctToSvgY = (y: number) => (y / 100) * PITCH_WIDTH;
 
 /**
+ * Marks how far (px) a board's draggable markers float above its surface.
+ *
+ * Read by the pointer mapping below, the same way the orientation attribute is:
+ * the rendered board declares where its markers live, and every drag on it
+ * lands on that plane without each caller having to know.
+ */
+export const MARKER_PLANE_ATTR = 'data-marker-plane-z';
+
+/** Height of the element's marker plane in its own coordinates; 0 when they lie on the turf. */
+export function markerPlaneZOf(el: HTMLElement): number {
+  const z = Number(el.getAttribute(MARKER_PLANE_ATTR));
+  return Number.isFinite(z) ? z : 0;
+}
+
+/**
  * Map a viewport point onto 0-100 pitch percentages.
  *
- * The board carries a live CSS transform (rotateX + rotateZ + scale), so the
- * only reliable way back to field coordinates is to read the computed matrix and
- * invert it. Everything that turns a cursor into a pitch position — player drag,
- * ball drag, gesture capture — must go through here; hand-rolling it means three
- * copies that drift apart the moment the board's transform changes.
+ * The board carries a live CSS transform (rotateX + rotateZ + scale) beneath a
+ * parent `perspective`, so the only reliable way back to field coordinates is
+ * to send the cursor's ray through that same camera and intersect it with the
+ * plane the dragged thing actually sits on. Everything that turns a cursor into
+ * a pitch position — player drag, ball drag, gesture capture — must go through
+ * here; hand-rolling it means three copies that drift apart the moment the
+ * board's transform changes.
+ *
+ * `planeZ` is that plane's height in the board's own space. The lineup board's
+ * markers float above the grass, and under perspective a point up there lands
+ * on screen a little outboard of the same point on the turf — intersecting the
+ * turf instead left a grabbed marker sitting off the cursor and creeping as it
+ * was dragged. Inverting the matrix alone had the same flaw: it ignores the
+ * perspective divide, so its error grew towards the near and far edges.
  *
  * On the portrait board the element's own percentage space is *rotated* relative
  * to stored coordinates, so the projection's `fromPct` is applied on the way
@@ -97,17 +121,17 @@ export const pctToSvgY = (y: number) => (y / 100) * PITCH_WIDTH;
  * drawn, and nothing downstream — drag, gesture capture, save — has to know the
  * orientation.
  *
- * The projection defaults to whatever the board element says it is drawn with,
- * so callers get this right by doing nothing. Pass one explicitly only to
- * override that.
+ * Both the projection and the plane default to whatever the board element
+ * declares, so callers get this right by doing nothing.
  *
- * Returns null when the element isn't laid out yet.
+ * Returns null when the element isn't laid out yet or the ray misses the plane.
  */
 export function clientToPitchPct(
   el: HTMLElement,
   clientX: number,
   clientY: number,
   projection: PitchProjection = projectionOf(el),
+  planeZ: number = markerPlaneZOf(el),
 ): { x: number; y: number } | null {
   const parent = el.parentElement;
   if (!parent) return null;
@@ -118,21 +142,46 @@ export function clientToPitchPct(
   if (el.offsetWidth === 0 || el.offsetHeight === 0) return null;
 
   const parentRect = parent.getBoundingClientRect();
-  // Offset of the cursor from the perspective container's centre.
-  const localX = clientX - parentRect.left - parentRect.width / 2;
-  const localY = clientY - parentRect.top - parentRect.height / 2;
+  // Cursor relative to the perspective origin — the container's centre, which
+  // the flex-centred board's own transform origin shares.
+  const sx = clientX - parentRect.left - parentRect.width / 2;
+  const sy = clientY - parentRect.top - parentRect.height / 2;
 
   const rawTransform = window.getComputedStyle(el).transform;
-  const matrix = new DOMMatrix(rawTransform === 'none' ? undefined : rawTransform);
-  const pt = matrix.inverse().transformPoint(new DOMPoint(localX, localY, 0, 1));
+  const board = new DOMMatrix(rawTransform === 'none' ? undefined : rawTransform);
+  // The parent's perspective is not part of the element's own matrix, so it is
+  // rebuilt here as the camera: identity with m34 = -1/d. Without one it stays
+  // identity and everything below collapses to the flat, affine case.
+  const perspective = window.getComputedStyle(parent).perspective;
+  const depth = perspective && perspective !== 'none' ? parseFloat(perspective) : 0;
+  const camera = depth > 0
+    ? new DOMMatrix([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -1 / depth, 0, 0, 0, 1])
+    : new DOMMatrix();
+  const m = camera.multiply(board);
+
+  // Find the (x, y) on the plane z = planeZ that projects to (sx, sy):
+  //   X(x, y) = sx · W(x, y)   and   Y(x, y) = sy · W(x, y)
+  // which, with the shared homogeneous W multiplied through, is a pair of
+  // linear equations. DOMMatrix is column-major: X = m11·x + m21·y + m31·z + m41,
+  // Y = m12·x + m22·y + m32·z + m42, W = m14·x + m24·y + m34·z + m44.
+  const a1 = m.m11 - sx * m.m14;
+  const b1 = m.m21 - sx * m.m24;
+  const c1 = sx * (m.m34 * planeZ + m.m44) - (m.m31 * planeZ + m.m41);
+  const a2 = m.m12 - sy * m.m14;
+  const b2 = m.m22 - sy * m.m24;
+  const c2 = sy * (m.m34 * planeZ + m.m44) - (m.m32 * planeZ + m.m42);
+  const det = a1 * b2 - a2 * b1;
+  // A degenerate camera (the board edge-on) has no single answer; refuse rather
+  // than hand back a point at infinity.
+  if (!Number.isFinite(det) || Math.abs(det) < 1e-9) return null;
+  const px = (c1 * b2 - c2 * b1) / det;
+  const py = (a1 * c2 - a2 * c1) / det;
 
   // The field is flex-centred in its container so the centres coincide, but the
   // field's own layout size is the correct divisor — the container's height can
   // differ from the field's.
-  const x = ((pt.x + el.offsetWidth / 2) / el.offsetWidth) * 100;
-  const y = ((pt.y + el.offsetHeight / 2) / el.offsetHeight) * 100;
-
-  // A non-invertible transform yields NaN, which Math.min/max would pass through.
+  const x = ((px + el.offsetWidth / 2) / el.offsetWidth) * 100;
+  const y = ((py + el.offsetHeight / 2) / el.offsetHeight) * 100;
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
   // Clamp in the *board's* space, before un-rotating: the clamp is what keeps a

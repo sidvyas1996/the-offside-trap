@@ -1,9 +1,10 @@
 import React from "react";
 import { Wand2 } from "lucide-react";
 import { useFootballField } from "../../contexts/FootballFieldContext";
-import type { MarkerDesign } from "../../contexts/FootballFieldContext";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import { KitGrid } from "./KitPicker";
+import { KITS } from "../../data/kits";
 
 export interface LineupOptionsProps {
   title: string;
@@ -15,6 +16,10 @@ export interface LineupOptionsProps {
   onSnapToFormation: (formationName: string) => void;
   onSelectPlayer?: (player: any) => void;
   selectedPlayerId?: number | null;
+  /** Marker style in force, so the kit picker knows whether a kit would show. */
+  markerType: 'circle' | 'shirt';
+  /** Switch the board over to shirt markers so a chosen kit is visible. */
+  onUseShirtMarkers: () => void;
 }
 
 export const FORMATIONS_LIST = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "5-3-2"];
@@ -87,24 +92,6 @@ export const FORMATION_PRESETS: Record<string, { x: number; y: number; position:
   ],
 };
 
-const OUTFIELD_KITS = [
-  { id: 'lime', name: 'Home Lime', bg: '#c6f24e', secondary: '#c6f24e', design: 'solid' as MarkerDesign },
-  { id: 'blue', name: 'Royal Blue', bg: '#2563eb', secondary: '#2563eb', design: 'solid' as MarkerDesign },
-  { id: 'orange-stripes', name: 'Orange Stripes', bg: '#ea580c', secondary: '#15140f', design: 'stripes' as MarkerDesign },
-  { id: 'green-split', name: 'Green Split', bg: '#10b981', secondary: '#064e3b', design: 'vertical-split' as MarkerDesign },
-  { id: 'bw-stripes', name: 'Ref Stripes', bg: '#111827', secondary: '#ffffff', design: 'stripes' as MarkerDesign },
-  { id: 'red', name: 'Striker Red', bg: '#ef4444', secondary: '#ef4444', design: 'solid' as MarkerDesign },
-];
-
-const KEEPER_KITS = [
-  { id: 'keeper-lime', name: 'Keeper Lime', bg: '#c6f24e', secondary: '#c6f24e', design: 'solid' as MarkerDesign },
-  { id: 'keeper-blue', name: 'Keeper Blue', bg: '#2563eb', secondary: '#2563eb', design: 'solid' as MarkerDesign },
-  { id: 'keeper-orange', name: 'Keeper Orange', bg: '#ea580c', secondary: '#ea580c', design: 'solid' as MarkerDesign },
-  { id: 'keeper-green', name: 'Keeper Green', bg: '#10b981', secondary: '#10b981', design: 'solid' as MarkerDesign },
-  { id: 'keeper-bw', name: 'Keeper Dark', bg: '#111827', secondary: '#ffffff', design: 'stripes' as MarkerDesign },
-  { id: 'keeper-pink', name: 'Keeper Pink', bg: '#ff6fae', secondary: '#ff6fae', design: 'solid' as MarkerDesign },
-];
-
 const LineupOptions: React.FC<LineupOptionsProps> = ({
   title,
   onTitleChange,
@@ -115,6 +102,8 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
   onSnapToFormation,
   onSelectPlayer,
   selectedPlayerId,
+  markerType,
+  onUseShirtMarkers,
 }) => {
   const { players, setPlayers, options, setOptions, actions } = useFootballField();
 
@@ -126,21 +115,11 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
     return "Forward";
   };
 
-  const handleSelectOutfieldKit = (kit: typeof OUTFIELD_KITS[0]) => {
-    setOptions(prev => ({
-      ...prev,
-      markerBgColor: kit.bg,
-      markerSecondaryColor: kit.secondary,
-      markerDesign: kit.design,
-    }));
-  };
-
-  const handleSelectKeeperKit = (kit: typeof KEEPER_KITS[0]) => {
-    // Apply keeper kit styling or primary color
-    setOptions(prev => ({
-      ...prev,
-      markerBorderColor: kit.bg,
-    }));
+  // A kit is artwork on a shirt marker, so a circle has nowhere to wear it —
+  // picking one turns the markers into shirts rather than doing nothing.
+  const handleSelectKit = (kitId: string) => {
+    setOptions(prev => ({ ...prev, shirtKitId: kitId }));
+    if (markerType !== 'shirt') onUseShirtMarkers();
   };
 
   return (
@@ -258,73 +237,11 @@ const LineupOptions: React.FC<LineupOptionsProps> = ({
             Kit picker
           </h3>
           <span className="chip-count">
-            {OUTFIELD_KITS.find(k => k.bg === options.markerBgColor)?.name ?? "Custom kit"}
+            {KITS.find(k => k.id === options.shirtKitId)?.name ?? "No kit"}
           </span>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="field-label" style={{ fontSize: 10, letterSpacing: "0.1em", marginBottom: 8 }}>
-              Outfield
-            </label>
-            <div className="flex items-center gap-2 flex-wrap">
-              {OUTFIELD_KITS.map((kit) => {
-                const active = options.markerBgColor === kit.bg;
-                return (
-                  <button
-                    key={kit.id}
-                    type="button"
-                    title={kit.name}
-                    onClick={() => handleSelectOutfieldKit(kit)}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 9,
-                      background: kit.design === 'stripes'
-                        ? `repeating-linear-gradient(90deg, ${kit.bg} 0px, ${kit.bg} 5px, ${kit.secondary} 5px, ${kit.secondary} 10px)`
-                        : kit.design === 'vertical-split'
-                        ? `linear-gradient(90deg, ${kit.bg} 50%, ${kit.secondary} 50%)`
-                        : kit.bg,
-                      border: active ? "2.5px solid var(--primary)" : "var(--border-w) solid var(--ink)",
-                      boxShadow: active ? "0 0 0 2px var(--ink)" : "var(--shadow-sm)",
-                      cursor: "pointer",
-                      transition: "transform 0.1s ease",
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="field-label" style={{ fontSize: 10, letterSpacing: "0.1em", marginBottom: 8 }}>
-              Keeper
-            </label>
-            <div className="flex items-center gap-2 flex-wrap">
-              {KEEPER_KITS.map((kit) => {
-                const active = options.markerBorderColor === kit.bg;
-                return (
-                  <button
-                    key={kit.id}
-                    type="button"
-                    title={kit.name}
-                    onClick={() => handleSelectKeeperKit(kit)}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 9,
-                      background: kit.bg,
-                      border: active ? "2.5px solid var(--primary)" : "var(--border-w) solid var(--ink)",
-                      boxShadow: active ? "0 0 0 2px var(--ink)" : "var(--shadow-sm)",
-                      cursor: "pointer",
-                      transition: "transform 0.1s ease",
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <KitGrid value={options.shirtKitId} onChange={handleSelectKit} />
       </div>
 
       {/* 03 SQUAD */}

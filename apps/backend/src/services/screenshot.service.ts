@@ -49,8 +49,16 @@ export class ScreenshotService {
     
     // Create a new context with device scale factor for high-DPI rendering
     const context = await browser.newContext({
-      viewport: { width: 3840, height: 2160 },
-      deviceScaleFactor: 2, // 2x for sharper rendering (effectively 7680x4320)
+      // Square and large enough to hold the zoomed board whichever way the
+      // camera has turned it: rotated a quarter turn, the board's long side
+      // becomes its height, and a viewport that only suited a landscape board
+      // cropped it.
+      viewport: { width: 4400, height: 4400 },
+      // The export page lays the board out several times larger instead of
+      // relying on a device scale factor, because that factor does not reach
+      // inside the markers' own 3D layers. Resolution is bought there, so 1
+      // here keeps the output from multiplying twice over.
+      deviceScaleFactor: 1,
     });
     const page = await context.newPage();
 
@@ -63,7 +71,13 @@ export class ScreenshotService {
 
       // Viewport is already set via context (3840x2160 with 2x scale = 7680x4320 effective)
 
-      // Add CSS to improve rendering quality
+      // Add CSS to improve rendering quality.
+      //
+      // Deliberately no `image-rendering` override: Chromium treats
+      // `-webkit-optimize-contrast` as pixelated, and the kit artwork is
+      // magnified by the board's perspective, so forcing it turned every shirt
+      // into hard stair-stepped blocks. Smooth resampling is what a photograph
+      // of the board should use.
       await page.addInitScript(() => {
         // @ts-ignore - document is available in browser context
         const style = document.createElement('style');
@@ -71,7 +85,6 @@ export class ScreenshotService {
           * {
             -webkit-font-smoothing: antialiased !important;
             -moz-osx-font-smoothing: grayscale !important;
-            image-rendering: -webkit-optimize-contrast !important;
             text-rendering: optimizeLegibility !important;
           }
           svg {
@@ -147,14 +160,79 @@ export class ScreenshotService {
       // Wait a bit more for final rendering
       await page.waitForTimeout(500);
 
-      // Take screenshot of the field container at 4K quality (3840x2160)
-      // Using maximum quality settings for crisp, high-resolution output
-      const screenshot = await fieldContainer.screenshot({
-        type: format,
-        quality: format === 'jpeg' ? 100 : undefined, // Maximum quality for JPEG (lossless)
-        animations: 'disabled',
-        // Use CSS media features to ensure high-DPI rendering
-      });
+      // The page measures what the board actually paints — perspective pushes
+      // its near edge past its own box, and the markers' labels reach further
+      // still. Clipping to that keeps the outermost shirt in frame; the
+      // element's layout box would shave it off.
+      const measure = () =>
+        page.evaluate(() => {
+          const remeasure = (window as any).__MEASURE_BOUNDS__;
+          if (typeof remeasure === 'function') remeasure();
+          return (window as any).__EXPORT_BOUNDS__ ?? null;
+        }) as Promise<{ x: number; y: number; width: number; height: number } | null>;
+
+      let bounds = await measure();
+
+      // A clip cannot reach past the window the page is rendered in, so the
+      // window has to hold the whole board. Fitting by size alone is not
+      // enough: a turned board can be narrower than the window and still hang
+      // over its edge, and that overhang is what kept shaving the outermost
+      // label. Grow until the bounds sit inside, re-measuring each time —
+      // resizing re-centres the page, which moves them.
+      const MAX_VIEWPORT = 8000;
+      const MARGIN = 80;
+      const fitsInside = (
+        box: { x: number; y: number; width: number; height: number },
+        view: { width: number; height: number },
+      ) => box.x >= 0 && box.y >= 0 && box.x + box.width <= view.width && box.y + box.height <= view.height;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const viewport = page.viewportSize();
+        if (!bounds || !viewport || fitsInside(bounds, viewport)) break;
+
+        const target = {
+          width: Math.min(
+            MAX_VIEWPORT,
+            Math.ceil(Math.max(viewport.width, bounds.width + MARGIN * 2, bounds.x + bounds.width + MARGIN)),
+          ),
+          height: Math.min(
+            MAX_VIEWPORT,
+            Math.ceil(Math.max(viewport.height, bounds.height + MARGIN * 2, bounds.y + bounds.height + MARGIN)),
+          ),
+        };
+        if (target.width === viewport.width && target.height === viewport.height) break;
+
+        await page.setViewportSize(target);
+        await page.waitForTimeout(500);
+        bounds = await measure();
+      }
+
+      // Keep the clip inside the window whatever happened above; Playwright
+      // rejects one that hangs over the edge.
+      const finalViewport = page.viewportSize();
+      if (bounds && finalViewport) {
+        const x = Math.max(0, Math.floor(bounds.x));
+        const y = Math.max(0, Math.floor(bounds.y));
+        bounds = {
+          x,
+          y,
+          width: Math.min(Math.ceil(bounds.x + bounds.width), finalViewport.width) - x,
+          height: Math.min(Math.ceil(bounds.y + bounds.height), finalViewport.height) - y,
+        };
+      }
+
+      const screenshot = bounds
+        ? await page.screenshot({
+            type: format,
+            quality: format === 'jpeg' ? 100 : undefined,
+            animations: 'disabled',
+            clip: bounds,
+          })
+        : await fieldContainer.screenshot({
+            type: format,
+            quality: format === 'jpeg' ? 100 : undefined,
+            animations: 'disabled',
+          });
 
       return screenshot as Buffer;
     } finally {
