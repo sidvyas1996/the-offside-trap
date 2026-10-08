@@ -131,7 +131,10 @@ export function zigzagPath(
  * Animated curved runs and lofted passes must bow exactly the way the drawn
  * arrow does, so both read this rather than each deriving their own curve.
  */
-export function curveControl(x1: number, y1: number, x2: number, y2: number): { cx: number; cy: number } {
+export function curveControl(
+  x1: number, y1: number, x2: number, y2: number,
+  side: BendSide = 1,
+): { cx: number; cy: number } {
   const mx = (x1 + x2) / 2;
   const my = (y1 + y2) / 2;
   const dx = x2 - x1;
@@ -140,7 +143,32 @@ export function curveControl(x1: number, y1: number, x2: number, y2: number): { 
   if (len < 1) return { cx: mx, cy: my };
   const nx = -dy / len;
   const ny = dx / len;
-  return { cx: mx + nx * len * 0.28, cy: my + ny * len * 0.28 };
+  return { cx: mx + side * nx * len * 0.28, cy: my + side * ny * len * 0.28 };
+}
+
+/** Which way a curve bows: 1 is to the left of travel, -1 to the right. */
+export type BendSide = 1 | -1;
+
+/**
+ * Which way a long ball bows, from where it is played.
+ *
+ * It swings out towards the passer's own touchline and curls back in, so a ball
+ * from the right flank and its mirror from the left bend in opposite directions
+ * instead of both bowing to the left of travel. Measured in pitch percentages
+ * (y = 0 and 100 are the touchlines), so it is the same on either orientation
+ * of the board. A ball from the middle, or one played straight across (no
+ * forward component to bow with), keeps the default.
+ */
+export function longBallSide(from: { x: number; y: number }, to: { x: number; y: number }): BendSide {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.hypot(dx, dy);
+  const flank = from.y - 50;
+  if (len < 1 || Math.abs(flank) < 1) return 1;
+  // y component of the default (left-of-travel) normal.
+  const ny = dx / len;
+  if (Math.abs(ny) < 0.05) return 1;
+  return ny * flank > 0 ? 1 : -1;
 }
 
 /**

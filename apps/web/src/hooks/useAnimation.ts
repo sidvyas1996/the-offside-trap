@@ -85,28 +85,64 @@ export function getInterpolatedFrame(
   return { players, fieldSettings, oppositionPlayers };
 }
 
+/**
+ * How long a looping animation rests on its final pose before replaying.
+ *
+ * Without a pause the move restarts the instant it lands, so it reads as one
+ * endless shuffle rather than a pattern you can watch, take in and watch again.
+ */
+export const LOOP_DELAY_MS = 5000;
+
 interface UseAnimationOptions {
   onFrame?: (players: Player[], fieldSettings: FieldSettings, oppositionPlayers?: Player[]) => void;
   /**
-   * Loop forever instead of stopping at the end. A tactic is a repeating
-   * pattern, so this is the default for on-screen playback. Compiled animations
-   * open and close on the same pose, which is what makes the wrap seamless.
+   * Initial playback mode: repeat (with a {@link LOOP_DELAY_MS} rest between
+   * runs) or play once and stop on the final pose. Changeable later via
+   * `setLoop`. Arrow animations end on the move's final pose rather than
+   * rewinding, so a loop rests there and then cuts back to the start.
    */
   loop?: boolean;
+  /**
+   * Rest on the final pose between loops. Defaults to {@link LOOP_DELAY_MS},
+   * which suits watching a tactic; an editor passes 0 so iterating on a move
+   * isn't a wait.
+   */
+  loopDelayMs?: number;
 }
 
 export function useAnimation(options: UseAnimationOptions = {}) {
-  const { loop = true } = options;
+  const loopDelayMs = Math.max(0, options.loopDelayMs ?? LOOP_DELAY_MS);
   const [keyframes, setKeyframes] = useState<Keyframe[]>([]);
-  const [currentTimeMs, setCurrentTimeMs] = useState(0);
+  const [currentTimeMs, setCurrentTimeMsState] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [durationMs, setDuration] = useState(5000);
   const [fps, setFps] = useState(24);
+  const [loop, setLoop] = useState(options.loop ?? true);
+  /** Time left in the rest between loops; 0 while the animation is running. */
+  const [loopDelayRemainingMs, setLoopDelayRemainingMs] = useState(0);
 
   const rafRef = useRef<number | null>(null);
   const lastTimestampRef = useRef<number | null>(null);
   const onFrameRef = useRef(options.onFrame);
   onFrameRef.current = options.onFrame;
+  // The playhead and the rest are read and advanced inside the rAF tick, so they
+  // live in refs; state mirrors them for rendering. Advancing via a setState
+  // updater instead would run side effects (stopping, starting the rest) inside
+  // it, which StrictMode invokes twice.
+  const timeRef = useRef(0);
+  const delayRef = useRef(0);
+  const keyframesRef = useRef(keyframes);
+  keyframesRef.current = keyframes;
+
+  const setCurrentTimeMs = useCallback((t: number) => {
+    timeRef.current = t;
+    setCurrentTimeMsState(t);
+  }, []);
+
+  const clearLoopDelay = useCallback(() => {
+    delayRef.current = 0;
+    setLoopDelayRemainingMs(0);
+  }, []);
 
   // rAF playback loop
   useEffect(() => {
@@ -126,13 +162,34 @@ export function useAnimation(options: UseAnimationOptions = {}) {
       const elapsed = timestamp - lastTimestampRef.current;
       lastTimestampRef.current = timestamp;
 
-      setCurrentTimeMs(prev => {
-        const next = prev + elapsed;
-        if (next < durationMs) return next;
-        if (loop) return next % durationMs;
-        setIsPlaying(false);
-        return durationMs;
-      });
+      if (delayRef.current > 0) {
+        // Resting on the final pose between loops.
+        delayRef.current = Math.max(0, delayRef.current - elapsed);
+        setLoopDelayRemainingMs(delayRef.current);
+        if (delayRef.current === 0) setCurrentTimeMs(0);
+      } else {
+        const next = timeRef.current + elapsed;
+        if (next < durationMs) {
+          setCurrentTimeMs(next);
+        } else {
+          // Land exactly on the final pose rather than wrapping past it, so the
+          // rest (or the stop) shows where the move actually finishes. Pushed
+          // here directly: when playback stops on this same tick, the onFrame
+          // effect below never sees it, and the board would freeze a frame short.
+          setCurrentTimeMs(durationMs);
+          const last = getInterpolatedFrame(durationMs, keyframesRef.current);
+          if (last) onFrameRef.current?.(last.players, last.fieldSettings, last.oppositionPlayers);
+          if (loop && loopDelayMs > 0) {
+            delayRef.current = loopDelayMs;
+            setLoopDelayRemainingMs(loopDelayMs);
+          } else if (loop) {
+            setCurrentTimeMs(0);
+          } else {
+            setIsPlaying(false);
+            return;
+          }
+        }
+      }
 
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -141,7 +198,15 @@ export function useAnimation(options: UseAnimationOptions = {}) {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [isPlaying, durationMs, loop]);
+  }, [isPlaying, durationMs, loop, loopDelayMs, setCurrentTimeMs]);
+
+  // Switching to play-once mid-rest has nothing left to wait for.
+  useEffect(() => {
+    if (!loop && delayRef.current > 0) {
+      clearLoopDelay();
+      setIsPlaying(false);
+    }
+  }, [loop, clearLoopDelay]);
 
   // Call onFrame whenever currentTimeMs changes during playback
   useEffect(() => {
@@ -177,28 +242,41 @@ export function useAnimation(options: UseAnimationOptions = {}) {
   }, [durationMs]);
 
   const seekTo = useCallback((timeMs: number) => {
+    clearLoopDelay();
     setCurrentTimeMs(Math.max(0, Math.min(durationMs, timeMs)));
-  }, [durationMs]);
+  }, [durationMs, clearLoopDelay, setCurrentTimeMs]);
 
   const play = useCallback(() => {
-    if (currentTimeMs >= durationMs) setCurrentTimeMs(0);
+    if (timeRef.current >= durationMs) setCurrentTimeMs(0);
     setIsPlaying(true);
-  }, [currentTimeMs, durationMs]);
+  }, [durationMs, setCurrentTimeMs]);
 
-  const pause = useCallback(() => setIsPlaying(false), []);
+  // A pause during the rest drops it: the playhead is at the end, so the next
+  // play starts the move over rather than sitting out the remainder.
+  const pause = useCallback(() => {
+    clearLoopDelay();
+    setIsPlaying(false);
+  }, [clearLoopDelay]);
 
   const getAnimation = useCallback((): AnimationData => ({
     durationMs,
     fps,
     keyframes,
-  }), [durationMs, fps, keyframes]);
+    loop,
+  }), [durationMs, fps, keyframes, loop]);
 
+  /**
+   * Deliberately leaves `loop` alone: presets and recompiles load through here
+   * too and always carry `loop: true`, which would undo the viewer's choice.
+   * Pages hydrating a saved tactic call `setLoop` themselves.
+   */
   const loadAnimation = useCallback((data: AnimationData) => {
     setKeyframes(data.keyframes || []);
     if (data.durationMs) setDuration(data.durationMs);
     if (data.fps) setFps(data.fps);
+    clearLoopDelay();
     setCurrentTimeMs(0);
-  }, []);
+  }, [clearLoopDelay, setCurrentTimeMs]);
 
   return {
     keyframes,
@@ -219,6 +297,12 @@ export function useAnimation(options: UseAnimationOptions = {}) {
     pause,
     setDuration,
     setFps,
+    /** Repeat (resting `loopDelayMs` between runs) or play once. */
+    loop,
+    loopDelayMs,
+    setLoop,
+    /** Countdown to the next run while resting between loops; 0 otherwise. */
+    loopDelayRemainingMs,
     getAnimation,
     loadAnimation,
     getInterpolatedFrame: (t: number) => getInterpolatedFrame(t, keyframes),

@@ -121,6 +121,18 @@ export function getKitSrc(id: string | undefined): string | undefined {
   return KITS.find((k) => k.id === id)?.src;
 }
 
+/**
+ * The away team's kit when none has been picked for it.
+ *
+ * Without one, away shirt markers fell back to the plain grey sprite, which reads
+ * as "no kit" rather than as a team. White is the classic change strip; against
+ * a home kit that is itself mostly white, royal blue keeps the sides apart.
+ */
+export function defaultAwayKitId(homeKitId: string | undefined): string {
+  const homeIsWhite = !!homeKitId && /^(pl-)?\d+-white/.test(homeKitId);
+  return homeIsWhite ? "27-royal-blue" : "16-white";
+}
+
 /** Display scale for the set holding this kit; 1 when the id is unknown. */
 export function getKitScale(id: string | undefined): number {
   if (!id) return 1;

@@ -166,10 +166,13 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
     const [draggedOppositionPlayer, setDraggedOppositionPlayer] = useState<Player | null>(null);
     const [oppositionOptions, setOppositionOptions] = useState<FieldOptions>({
         editable: true,
-        markerBgColor: '#111827',     // dark kit
-        markerBorderColor: '#ff6fae', // Striker Pink ring keeps the teams apart
-        markerTextColor: '#ffffff',   // white number
-        markerSecondaryColor: '#ff6fae',
+        // A solid Striker Pink kit with dark numbers: the opposite of the home
+        // team's dark fill, so the sides read apart at a glance. A pink ring
+        // alone on the same dark fill was too easy to miss.
+        markerBgColor: '#ff6fae',     // Striker Pink kit
+        markerBorderColor: '#ffffff', // white ring, as home
+        markerTextColor: '#111827',   // dark number
+        markerSecondaryColor: '#111827',
         markerDesign: 'solid',
         enableContextMenu: true,
         showPlayerLabels: true,

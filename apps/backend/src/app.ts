@@ -9,7 +9,11 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 
 // Middleware
-app.use(express.json());
+// Tactics carry their compiled animation: a keyframe per frame, each with every
+// player on both teams. Express's 100kb default rejects an ordinary animated
+// tactic ("request entity too large"); the largest the schema allows (60s at
+// 60fps, 22 players) is ~6MB.
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', routes);

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { migrateTacticToV2, type MigrationResult } from "../migrate-v1";
+import { migrateTacticToV2, tacticStateFromArrows, type MigrationResult } from "../migrate-v1";
 import { positionAt, resolveTimeline } from "../compile-tactic";
 import { BALL, playerActor, type Action, type TacticState } from "../tactic-v2";
 import { pitchDistance } from "../pitch-geometry";
@@ -433,5 +433,36 @@ describe.each(V1_FIXTURES)("compiles cleanly: $name", ({ tactic }) => {
         }
       }
     }
+  });
+});
+
+describe("tacticStateFromArrows: where the ball starts", () => {
+  const players = [
+    { id: 1, x: 5, y: 50, number: 1 },
+    { id: 6, x: 20, y: 35, number: 6 },
+    { id: 4, x: 45, y: 65, number: 4 },
+  ];
+  const pass = {
+    id: "p1", type: "pass" as const, beat: 1, endsAtPlayer: true,
+    points: [{ x: 20, y: 35 }, { x: 45, y: 65 }],
+    from: { team: "home" as const, playerId: 6 }, to: { team: "home" as const, playerId: 4 },
+  };
+
+  it("starts the ball with the first passer when it was left elsewhere", () => {
+    const { state } = tacticStateFromArrows([pass], players, [], { x: 9, y: 50 });
+    expect(state.initialBoard[BALL]).toEqual({ x: 20, y: 35 });
+    // ...so the opening pass leaves from the passer, not the keeper's spot.
+    const timeline = resolveTimeline(state);
+    expect(pitchDistance(positionAt(timeline.segments, BALL, 0, { x: 0, y: 0 }), { x: 20, y: 35 })).toBeLessThan(0.01);
+  });
+
+  it("leaves a ball already at the passer's feet where it is", () => {
+    const { state } = tacticStateFromArrows([pass], players, [], { x: 21.5, y: 33 });
+    expect(state.initialBoard[BALL]).toEqual({ x: 21.5, y: 33 });
+  });
+
+  it("leaves the ball alone when there is no pass", () => {
+    const { state } = tacticStateFromArrows([], players, [], { x: 9, y: 50 });
+    expect(state.initialBoard[BALL]).toEqual({ x: 9, y: 50 });
   });
 });

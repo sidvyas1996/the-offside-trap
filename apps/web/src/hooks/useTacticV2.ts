@@ -94,6 +94,9 @@ export function useTacticV2({
         fieldSettings,
         fps,
         timeScale,
+        // End on the final pose: the ball stays with its last receiver instead
+        // of rewinding to where the move began.
+        returnHome: false,
       }),
     // fieldSettings is rebuilt every render by its owner; the geometry that
     // matters is already covered by `state`, and the visual fields it carries are

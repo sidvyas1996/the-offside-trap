@@ -124,6 +124,15 @@ export interface ResolveOptions {
   maxResetMs?: number;
   /** Dead time on the final pose, before the reset, so the shape can be read. */
   settleMs?: number;
+  /**
+   * Append the reset that walks everyone back to their start. Defaults to true.
+   *
+   * Off, the animation ends on the pose the move actually finishes on — the ball
+   * stays with whoever received it. That is what a viewer expects: a rewind
+   * reads as the move being undone. Looping playback rests on that final pose
+   * and then cuts back to the start, so the seam is not needed there.
+   */
+  returnHome?: boolean;
 }
 
 /** How close an actor must be to the ball to be holding it. */
@@ -305,7 +314,7 @@ export function resolveTimeline(
   state: TacticState,
   options: ResolveOptions = {},
 ): Timeline {
-  const { settleMs = 0, maxResetMs = DEFAULT_MAX_RESET_MS } = options;
+  const { settleMs = 0, maxResetMs = DEFAULT_MAX_RESET_MS, returnHome = true } = options;
   const timeScale = options.timeScale && options.timeScale > 0 ? options.timeScale : 1;
 
   const segments: Segment[] = [];
@@ -604,7 +613,7 @@ export function resolveTimeline(
   const lastEnd = segments.reduce((max, s) => Math.max(max, s.endMs), cursor);
   const resetStartMs = Math.max(cursor, lastEnd) + Math.max(0, settleMs);
 
-  const movedActors = [...new Set(segments.map(s => s.actorId))];
+  const movedActors = returnHome ? [...new Set(segments.map(s => s.actorId))] : [];
   const resets: { actorId: ActorId; from: Point; to: Point; distance: number }[] = [];
   for (const actorId of movedActors) {
     const from = where(actorId, resetStartMs);

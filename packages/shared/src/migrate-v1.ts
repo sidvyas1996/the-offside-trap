@@ -23,6 +23,7 @@ import {
   type TacticState,
 } from "./tactic-v2";
 import { pitchDistance } from "./pitch-geometry";
+import { longBallSide, type BendSide } from "./arrow-geometry";
 
 /**
  * One-way conversion of every V1 authoring format into a V2 TacticState.
@@ -156,7 +157,7 @@ const samePoint = (a: Point, b: Point) => pitchDistance(a, b) <= EPSILON_PCT;
  * computed in unscaled percentage space, so using pitchDistance here would move
  * the bend off the drawn arrow.
  */
-function curveWaypoints(from: Point, to: Point): Point[] {
+function curveWaypoints(from: Point, to: Point, side: BendSide = 1): Point[] {
   const mx = (from.x + to.x) / 2;
   const my = (from.y + to.y) / 2;
   const dx = to.x - from.x;
@@ -164,8 +165,8 @@ function curveWaypoints(from: Point, to: Point): Point[] {
   const len = Math.sqrt(dx * dx + dy * dy);
   if (len < 1) return [];
   // Same control point ArrowOverlay draws with, so animated and drawn agree.
-  const cx = mx + (-dy / len) * len * 0.28;
-  const cy = my + (dx / len) * len * 0.28;
+  const cx = mx + side * (-dy / len) * len * 0.28;
+  const cy = my + side * (dx / len) * len * 0.28;
 
   const SEGMENTS = 8;
   const out: Point[] = [];
@@ -313,7 +314,7 @@ function phasesFromArrows(
       }
 
       const receiver = arrow.endsAtPlayer ? resolveArrowActor(arrow.to, to, board) : null;
-      const bend = arrow.type === 'long-ball' ? curveWaypoints(from, to) : [];
+      const bend = arrow.type === 'long-ball' ? curveWaypoints(from, to, longBallSide(from, to)) : [];
       actions.push({
         id: `arrow-${arrow.id}`,
         actorId: BALL,
@@ -641,6 +642,12 @@ function phasesFromKeyframes(
 // Live authoring
 // ---------------------------------------------------------------------------
 
+/** Arrows that play the ball on — a target marker only annotates. */
+const FIRST_TOUCH_TYPES = new Set(['pass', 'dribble', 'long-ball']);
+
+/** Within this of the passer, the ball is already at their feet. Matches the compiler. */
+const BALL_CARRY_RADIUS = 4;
+
 /**
  * Build a V2 TacticState from arrows on the board right now.
  *
@@ -663,6 +670,16 @@ export function tacticStateFromArrows(
   for (const p of players) initialBoard[playerActor('home', p.id)] = { x: p.x, y: p.y };
   for (const p of oppositionPlayers) initialBoard[playerActor('away', p.id)] = { x: p.x, y: p.y };
   initialBoard[BALL] = { ...ball };
+
+  // The first pass says who starts on the ball. If the ball was left somewhere
+  // else — the goalkeeper's default spot, typically — start it at the passer's
+  // feet, or the opening pass would visibly fly in from wherever it was resting.
+  const first = arrows
+    .filter(a => FIRST_TOUCH_TYPES.has(a.type) && a.points.length >= 2)
+    .sort((a, b) => beatOf(a) - beatOf(b))[0];
+  if (first && pitchDistance(ball, first.points[0]) > BALL_CARRY_RADIUS) {
+    initialBoard[BALL] = { ...first.points[0] };
+  }
 
   const phases = phasesFromArrows(arrows, initialBoard, w => warnings.push(w));
   return { state: { schemaVersion: 2, initialBoard, phases }, warnings };

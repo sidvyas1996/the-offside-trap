@@ -48,6 +48,9 @@ const fieldSettingsObject = z.object({
     .object({
       x: z.number().min(0).max(100),
       y: z.number().min(0).max(100),
+      // Height on a lofted pass. Listed so zod keeps it: an unknown key is
+      // stripped, and a saved long ball would replay flat along the ground.
+      lift: z.number().min(0).max(1).optional(),
     })
     .optional(),
 });
@@ -89,7 +92,9 @@ const arrowSchema = z.object({
 });
 
 const keyframeSchema = z.object({
-  id: z.string().uuid(),
+  // Not a uuid: the tactic compiler emits deterministic ids (`kf-0`, …) so the
+  // same tactic always compiles to byte-identical keyframes.
+  id: z.string().min(1).max(64),
   timeMs: z.number().min(0),
   players: z.array(playerSchema).length(11),
   fieldSettings: fieldSettingsObject,

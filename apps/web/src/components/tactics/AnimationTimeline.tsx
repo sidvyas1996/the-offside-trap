@@ -3,6 +3,7 @@ import { Film, Play, Pause, Pencil } from "lucide-react";
 import { Button } from "../ui/button";
 import PresetPicker from "./PresetPicker";
 import BeatList from "./BeatList";
+import LoopToggle from "./LoopToggle";
 import type { MovementTempo, Player, TacticArrow } from "../../../../../packages/shared/src";
 
 interface AnimationTimelineProps {
@@ -32,6 +33,11 @@ interface AnimationTimelineProps {
   fps: number;
   onPlay: () => void;
   onPause: () => void;
+  /** Repeat with a rest between runs, or play once. */
+  loop: boolean;
+  onSetLoop: (loop: boolean) => void;
+  loopDelayRemainingMs?: number;
+  loopDelayMs?: number;
   onSetDuration: (ms: number) => void;
   onSetFps: (fps: number) => void;
   onApplyPreset?: (presetId: string) => void;
@@ -65,6 +71,10 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
   fps,
   onPlay,
   onPause,
+  loop,
+  onSetLoop,
+  loopDelayRemainingMs,
+  loopDelayMs,
   onSetDuration,
   onSetFps,
   onApplyPreset,
@@ -129,6 +139,8 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
           <Pencil size={13} />
           {fromArrows ? 'Arrows animate' : 'Arrows static'}
         </Button>
+
+        <LoopToggle loop={loop} onChange={onSetLoop} delayRemainingMs={loopDelayRemainingMs} delayMs={loopDelayMs} />
 
         <div className="flex items-center gap-1.5 ml-auto">
           {derivedDurationMs !== undefined ? (

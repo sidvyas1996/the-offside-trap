@@ -1,5 +1,6 @@
 import React from "react";
 import type { TacticArrow, ArrowType } from "../../../../packages/shared";
+import { longBallSide, type BendSide } from "../../../../packages/shared/src/arrow-geometry";
 import { LANDSCAPE, PITCH_X_SCALE, type PitchProjection } from "../utils/pitch";
 
 // SVG coordinate space matches the field markings — see utils/pitch.ts
@@ -30,18 +31,18 @@ function offsetAlongDir(x: number, y: number, dx: number, dy: number, r: number)
 }
 
 // Clip start/end of a straight line inward by MARKER_RADIUS
-function clipLine(ax: number, ay: number, bx: number, by: number, clipEnd = true, radius = MARKER_RADIUS) {
+function clipLine(ax: number, ay: number, bx: number, by: number, radius = MARKER_RADIUS) {
   const dx = bx - ax, dy = by - ay;
   const s = offsetAlongDir(ax, ay, dx, dy, radius);
-  const e = clipEnd ? offsetAlongDir(bx, by, -dx, -dy, radius) : { x: bx, y: by };
+  const e = offsetAlongDir(bx, by, -dx, -dy, radius);
   return { sx: s.x, sy: s.y, ex: e.x, ey: e.y };
 }
 
 // Clip start/end of a quadratic bezier inward by MARKER_RADIUS
 // Start tangent: P0→ctrl, End tangent: ctrl→P2
-function clipCurve(ax: number, ay: number, cx: number, cy: number, bx: number, by: number, clipEnd = true, radius = MARKER_RADIUS) {
+function clipCurve(ax: number, ay: number, cx: number, cy: number, bx: number, by: number, radius = MARKER_RADIUS) {
   const s = offsetAlongDir(ax, ay, cx - ax, cy - ay, radius);
-  const e = clipEnd ? offsetAlongDir(bx, by, cx - bx, cy - by, radius) : { x: bx, y: by };
+  const e = offsetAlongDir(bx, by, cx - bx, cy - by, radius);
   return { sx: s.x, sy: s.y, ex: e.x, ey: e.y };
 }
 
@@ -75,7 +76,7 @@ export function zigzagPath(x1: number, y1: number, x2: number, y2: number, ampli
 
 // Exported so animated curved runs and lofted passes bow exactly the way the
 // drawn arrow does — two sets of curve maths would visibly disagree.
-export function curveControl(x1: number, y1: number, x2: number, y2: number) {
+export function curveControl(x1: number, y1: number, x2: number, y2: number, side: BendSide = 1) {
   const mx = (x1 + x2) / 2;
   const my = (y1 + y2) / 2;
   const dx = x2 - x1;
@@ -84,7 +85,7 @@ export function curveControl(x1: number, y1: number, x2: number, y2: number) {
   if (len < 1) return { cx: mx, cy: my };
   const nx = -dy / len;
   const ny = dx / len;
-  return { cx: mx + nx * len * 0.28, cy: my + ny * len * 0.28 };
+  return { cx: mx + side * nx * len * 0.28, cy: my + side * ny * len * 0.28 };
 }
 
 interface ArrowSvgProps {
@@ -127,7 +128,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
 
       // — Ball: Pass — dashed + open arrowhead (sizes × 0.85)
       case 'pass': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, !arrow.endsAtPlayer, radius);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, radius);
         return (
           <>
             <defs>
@@ -147,7 +148,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
 
       // — Ball: Dribble — zigzag (amplitude 6)
       case 'dribble': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, !arrow.endsAtPlayer, radius);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, radius);
         const d = zigzagPath(sx, sy, ex, ey, 6);
         return (
           <>
@@ -160,8 +161,8 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
 
       // — Ball: Long ball — curve + open arrowhead
       case 'long-ball': {
-        const { cx, cy } = curveControl(a.x, a.y, b.x, b.y);
-        const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, !arrow.endsAtPlayer, radius);
+        const { cx, cy } = curveControl(a.x, a.y, b.x, b.y, longBallSide(arrow.points[0], arrow.points[1]));
+        const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, radius);
         const pathD = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
         return (
           <>
@@ -180,7 +181,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
 
       // — Player: Direct run — thick solid + filled arrowhead
       case 'direct-run': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, true, radius);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, radius);
         return (
           <>
             <defs>
@@ -200,7 +201,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
 
       // — Player: Secondary run — dashed + filled arrowhead
       case 'secondary-run': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, true, radius);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, radius);
         return (
           <>
             <defs>
@@ -221,7 +222,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
       // — Player: Curved run — bezier + filled arrowhead
       case 'curved-run': {
         const { cx, cy } = curveControl(a.x, a.y, b.x, b.y);
-        const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, true, radius);
+        const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, radius);
         const pathD = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
         return (
           <>
@@ -240,7 +241,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
 
       // — Player: Press run — zigzag (amplitude 7.6) + filled arrowhead
       case 'press-run': {
-        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, true, radius);
+        const { sx, sy, ex, ey } = clipLine(a.x, a.y, b.x, b.y, radius);
         const d = zigzagPath(sx, sy, ex, ey, 7.6, 20);
         return (
           <>

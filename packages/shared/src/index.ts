@@ -65,7 +65,7 @@ export interface TacticArrow {
   type: ArrowType;
   points: { x: number; y: number }[]; // 0-100 percentage coords; target-zone has 1 pt, all others have 2
   color?: string;
-  endsAtPlayer?: boolean; // ball arrows: skip end-clipping so arrowhead points to player centre
+  endsAtPlayer?: boolean; // ball arrows: the pass is received — points[1] is the receiver's position
 
   // --- Motion. An arrow is the notation *and* the animation. -----------------
   /**

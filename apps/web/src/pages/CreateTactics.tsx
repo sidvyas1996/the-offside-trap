@@ -14,6 +14,8 @@ import AnimationTimeline from "../components/tactics/AnimationTimeline";
 import CreatorsMenu from "../components/ui/creators-menu";
 import KitPicker from "../components/tactics/KitPicker";
 import PhaseStrip from "../components/tactics/PhaseStrip";
+import BeatNav from "../components/tactics/BeatNav";
+import { defaultAwayKitId } from "../data/kits";
 import PlayerEditorPanel from "../components/ui/PlayerEditorPanel";
 import BottomSheet from "../components/ui/bottom-sheet";
 import MobileArrowDock from "../components/tactics/MobileArrowDock";
@@ -118,7 +120,9 @@ const CreateTacticsContent: React.FC = () => {
     markerTextColor: oppositionOptions.markerTextColor,
     markerSecondaryColor: oppositionOptions.markerSecondaryColor,
     markerDesign: oppositionOptions.markerDesign,
-    shirtKitId: oppositionOptions.shirtKitId,
+    // Saved as worn, default included, so the tactic keeps its kits even if the
+    // default ever changes.
+    shirtKitId: oppositionOptions.shirtKitId ?? defaultAwayKitId(options.shirtKitId),
     showShirtNumbers: state.oppShowShirtNumbers,
   });
 
@@ -130,6 +134,8 @@ const CreateTacticsContent: React.FC = () => {
 
   // Animation hook — when playing back, override players + field settings
   const animation = useAnimation({
+    // The 5s rest is for watching a finished tactic; while editing, replay at once.
+    loopDelayMs: 0,
     onFrame: (framePlayers, frameFieldSettings, frameOppositionPlayers) => {
       setPlayers(framePlayers);
       if (frameOppositionPlayers) setOppositionPlayers(frameOppositionPlayers);
@@ -194,6 +200,37 @@ const CreateTacticsContent: React.FC = () => {
   }, [fromArrows, setShowBeats]);
 
   /**
+   * A one-time play ends on the move's final pose, and it stays there — snapping
+   * straight back to the starting board would make the ball look as if it never
+   * left. That pose is a display like any other preview, so it holds the
+   * authored board frozen (below) until you touch the pitch, play again, step to
+   * another beat or change an arrow, and then the starting board comes back.
+   */
+  // Derived during render rather than set from an effect: the restore below runs
+  // in a layout effect on the very render playback stops, so a flag set any later
+  // would arrive after the starting board had already snapped back.
+  const [endPoseDismissed, setEndPoseDismissed] = React.useState(false);
+  const holdingEndPose =
+    !animation.isPlaying &&
+    animation.durationMs > 0 &&
+    animation.currentTimeMs >= animation.durationMs &&
+    !endPoseDismissed;
+  useEffect(() => {
+    if (animation.isPlaying) setEndPoseDismissed(false);
+  }, [animation.isPlaying]);
+  useEffect(() => {
+    setEndPoseDismissed(true);
+  }, [currentBeat, arrows]);
+  useEffect(() => {
+    if (!holdingEndPose) return;
+    const release = (e: PointerEvent) => {
+      if (state.fieldRef.current?.contains(e.target as Node)) setEndPoseDismissed(true);
+    };
+    window.addEventListener('pointerdown', release, true);
+    return () => window.removeEventListener('pointerdown', release, true);
+  }, [holdingEndPose, state.fieldRef]);
+
+  /**
    * The board on screen is not always the board being authored.
    *
    * Two things now write poses straight into `players`: playback, and stepping to a
@@ -206,7 +243,7 @@ const CreateTacticsContent: React.FC = () => {
    * the authored board. The moment either display takes over, the authored board
    * freezes and is restored when you come back.
    */
-  const previewing = animation.isPlaying || currentBeat > 1;
+  const previewing = animation.isPlaying || currentBeat > 1 || holdingEndPose;
   const wasPreviewingRef = React.useRef(false);
   const [authored, setAuthored] = React.useState<AuthoredBoard>({
     players,
@@ -356,12 +393,13 @@ const CreateTacticsContent: React.FC = () => {
     setBall(pose.ball);
   }, [currentBeat, v2.boardAtPhase, animation.isPlaying, setPlayers, setOppositionPlayers, setBall]);
 
-  // Spacebar is Step. Guarded against text fields and focused controls, where the
-  // spacebar already means something.
+  // Spacebar is Step; ← / → move back and forward a beat. Guarded against text
+  // fields and focused controls, where these keys already mean something.
   useEffect(() => {
     if (!fromArrows) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const beatKey = e.code === 'ArrowLeft' || e.code === 'ArrowRight';
+      if ((e.code !== 'Space' && !beatKey) || e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       if (
         el &&
@@ -374,11 +412,16 @@ const CreateTacticsContent: React.FC = () => {
         return;
       }
       e.preventDefault();
+      // Beats are views of a move in progress; they can't change under playback.
+      if (beatKey) {
+        if (!animation.isPlaying) handleSetPhase(currentBeat + (e.code === 'ArrowLeft' ? -1 : 1));
+        return;
+      }
       handleStep();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [fromArrows, handleStep]);
+  }, [fromArrows, handleStep, handleSetPhase, currentBeat, animation.isPlaying]);
 
   const handleUpdateMovement = (id: string, patch: Partial<Movement>) => {
     setMovements(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
@@ -467,6 +510,7 @@ const CreateTacticsContent: React.FC = () => {
       if (tactic.animation) {
         const data = tactic.animation as AnimationData;
         animation.loadAnimation(data);
+        animation.setLoop(data.loop !== false);
 
         /**
          * Ask the migration what this tactic actually is.
@@ -574,7 +618,6 @@ const CreateTacticsContent: React.FC = () => {
               ...(passes.nodes.length > 0 && { passes }),
               ...(fromArrows && { fromArrows: true }),
               ...(fromArrows && v2.phaseCount > 0 && { tacticV2: v2.state }),
-              loop: true,
             }
           : undefined,
         // null (not omission) so removing opposition/arrows clears them on update
@@ -821,7 +864,7 @@ const CreateTacticsContent: React.FC = () => {
   const kitPanel = (activeIsAway ? state.oppMarkerType : state.markerType) === 'shirt' ? (
     <KitPicker
       team={activeIsAway ? 'away' : 'home'}
-      value={activeIsAway ? oppositionOptions.shirtKitId : options.shirtKitId}
+      value={activeIsAway ? (oppositionOptions.shirtKitId ?? defaultAwayKitId(options.shirtKitId)) : options.shirtKitId}
       onChange={activeIsAway ? state.handleOppShirtKitChange : state.handleShirtKitChange}
     />
   ) : null;
@@ -860,6 +903,10 @@ const CreateTacticsContent: React.FC = () => {
         fps={animation.fps}
         onPlay={animation.play}
         onPause={animation.pause}
+        loop={animation.loop}
+        onSetLoop={animation.setLoop}
+        loopDelayRemainingMs={animation.loopDelayRemainingMs}
+        loopDelayMs={animation.loopDelayMs}
         onSetDuration={animation.setDuration}
         onSetFps={animation.setFps}
         onApplyPreset={handleApplyPreset}
@@ -950,6 +997,14 @@ const CreateTacticsContent: React.FC = () => {
 
             {/* Stage: field + toolbar + timeline, all in one scroll flow */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 24px', background: 'var(--theme-stage)', borderTop: 'var(--border-w) solid var(--ink)' }}>
+              {fromArrows && (
+                <BeatNav
+                  current={currentBeat}
+                  count={v2.phaseCount}
+                  onSetBeat={handleSetPhase}
+                  disabled={animation.isPlaying}
+                />
+              )}
               {fieldStage}
 
               {/* Toolbar */}

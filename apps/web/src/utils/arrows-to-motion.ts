@@ -8,6 +8,7 @@ import type {
 } from "../../../../packages/shared/src";
 import { pitchDistance } from "./pitch";
 import { curveControl } from "../components/ArrowOverlay";
+import { longBallSide, type BendSide } from "../../../../packages/shared/src/arrow-geometry";
 
 /**
  * Turns tactical notation into motion.
@@ -52,8 +53,8 @@ const SPEED_PCT_PER_S = 45;
 const CURVE_SAMPLES = 8;
 
 /** Points along the quadratic the arrow is drawn with, excluding the endpoints. */
-function bezierWaypoints(from: Pt, to: Pt): Pt[] {
-  const { cx, cy } = curveControl(from.x, from.y, to.x, to.y);
+function bezierWaypoints(from: Pt, to: Pt, side: BendSide = 1): Pt[] {
+  const { cx, cy } = curveControl(from.x, from.y, to.x, to.y, side);
   const out: Pt[] = [];
   for (let i = 1; i < CURVE_SAMPLES; i++) {
     const t = i / CURVE_SAMPLES;
@@ -234,7 +235,9 @@ export function arrowsToMotion(
         ? resolvePlayer(arrow.to, to, players, oppositionPlayers)
         : null;
       const lofted = arrow.type === 'long-ball';
-      const bend = lofted ? bezierWaypoints(arrow.points[0], to) : undefined;
+      const bend = lofted
+        ? bezierWaypoints(arrow.points[0], to, longBallSide(arrow.points[0], to))
+        : undefined;
 
       nodes.push({
         at: { x: to.x, y: to.y },

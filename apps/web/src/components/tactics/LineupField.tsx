@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useCameraTween } from "../../hooks/useCameraTween";
 import { useFootballField } from "../../contexts/FootballFieldContext.tsx";
 import PlayerMarker from "../PlayerMarker.tsx";
 import {
@@ -80,12 +81,21 @@ const LineupField: React.FC<LineupFieldProps> = ({
   // Field rotation and tilt state - use props if provided, otherwise use local state
   const [localRotationAngle, setLocalRotationAngle] = useState(0);
   const [localTiltAngle, setLocalTiltAngle] = useState(28);
-  const rotationAngle = propRotationAngle !== undefined ? propRotationAngle : localRotationAngle;
-  const tiltAngle = propTiltAngle !== undefined ? propTiltAngle : localTiltAngle;
   // Zoom state: 1.0 = default (100%), 0.5 = zoomed out (50%), 1.2 = zoomed in (120%)
   // Default can zoom out to 0.5, then from 0.5 can zoom in to 1.0, then to 1.2
   const [localZoomLevel, setLocalZoomLevel] = useState(0.9);
-  const zoomLevel = propZoomLevel !== undefined ? propZoomLevel : localZoomLevel;
+  // The pose actually drawn: board and markers both render from this eased
+  // value so they never move on separate clocks (see useCameraTween).
+  const {
+    rotation: rotationAngle,
+    tilt: tiltAngle,
+    zoom: zoomLevel,
+    moving: cameraMoving,
+  } = useCameraTween({
+    rotation: propRotationAngle !== undefined ? propRotationAngle : localRotationAngle,
+    tilt: propTiltAngle !== undefined ? propTiltAngle : localTiltAngle,
+    zoom: propZoomLevel !== undefined ? propZoomLevel : localZoomLevel,
+  });
 
   // Function to calculate and update context menu position
   const updateContextMenuPosition = (playerId: number) => {
@@ -331,7 +341,6 @@ const LineupField: React.FC<LineupFieldProps> = ({
             // Applied out here, outside the perspective, so it moves the whole
             // projection evenly instead of being projected itself.
             transform: `translateY(${-projectionDrop}px)`,
-            transition: "transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
           <div
@@ -346,7 +355,6 @@ const LineupField: React.FC<LineupFieldProps> = ({
               // against it — orbiting the camera right swings the pitch left.
               transform: `rotateX(${tiltAngle}deg) rotateZ(${-rotationAngle}deg) scale(${zoomLevel})`,
               transformOrigin: "center center",
-              transition: "transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
             {/* 3D Field Markings */}
@@ -711,12 +719,14 @@ const LineupField: React.FC<LineupFieldProps> = ({
                     // Nearer markers paint over farther ones, as they would on the board.
                     zIndex: Math.round(1000 + at.depth * 100),
                     pointerEvents: "auto",
-                    // Glides with the board's own camera transition, but never
-                    // while being dragged — an ease on a drag makes the marker
-                    // trail the cursor instead of following it.
-                    transition: dragged
-                      ? "none"
-                      : "left 260ms cubic-bezier(0.22, 1, 0.36, 1), top 260ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    // Glides when the formation changes, but never while the
+                    // camera moves (the pose is already eased per frame, and a
+                    // second ease would make the team trail the turf) or while
+                    // dragged (the marker would trail the cursor).
+                    transition:
+                      dragged || cameraMoving
+                        ? "none"
+                        : "left 260ms cubic-bezier(0.22, 1, 0.36, 1), top 260ms cubic-bezier(0.22, 1, 0.36, 1)",
                   }}
                 >
                   <PlayerMarker

@@ -651,3 +651,22 @@ describe("lofted balls and struck easing", () => {
     expect(Math.abs((cx(0.5) - cx(0)) - (cx(1) - cx(0.5)))).toBeLessThan(1.5);
   });
 });
+
+describe("returnHome: false", () => {
+  it("ends on the final pose instead of rewinding to the start", () => {
+    const built = buildUpAndCross();
+    const home = resolveTimeline(built);
+    const stay = resolveTimeline(built, { returnHome: false });
+
+    expect(stay.segments.filter(s => s.kind === "reset")).toHaveLength(0);
+    expect(stay.totalMs).toBeCloseTo(home.resetStartMs, 6);
+
+    // The ball finishes where the move put it, not back at the first passer.
+    const fallback = built.initialBoard[BALL] ?? { x: 50, y: 50 };
+    const start = positionAt(stay.segments, BALL, 0, fallback);
+    const end = positionAt(stay.segments, BALL, stay.totalMs, fallback);
+    const finished = positionAt(home.segments, BALL, home.resetStartMs, fallback);
+    expect(pitchDistance(start, end)).toBeGreaterThan(1);
+    expect(pitchDistance(end, finished)).toBeLessThan(0.01);
+  });
+});

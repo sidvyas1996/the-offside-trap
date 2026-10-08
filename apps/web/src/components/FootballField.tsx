@@ -3,6 +3,7 @@ import { RotateCw } from "lucide-react";
 import { useFootballField } from "../contexts/FootballFieldContext.tsx";
 import PlayerMarker from "./PlayerMarker.tsx";
 import BallMarker from "./BallMarker.tsx";
+import { defaultAwayKitId } from "../data/kits";
 import ArrowOverlay, { BALL_ARROW_TYPES } from "./ArrowOverlay.tsx";
 import {
   DEFAULT_FOOTBALL_FIELD_COLOUR,
@@ -71,6 +72,21 @@ interface FootballFieldProps {
   onPlayerSelect?: (player: Player) => void;
 }
 
+/** Ball arrows that play the ball on — a target marker only annotates. */
+const isBallMove = (a: TacticArrow) => BALL_ARROW_TYPES.includes(a.type) && a.type !== 'target-zone';
+
+/** How far in front of the passer the ball rests, inside the carry radius (4). */
+const BALL_AT_FEET = 3;
+
+/**
+ * Snap radii, in pitchDistance units (percent of pitch length). A marker's
+ * radius is ~2.2 on a typical board. Starting an arrow is forgiving — it has to
+ * come from someone — but a ball only goes *to* a player when it is dropped on
+ * or just around their marker; anywhere else it is played into space.
+ */
+const GRAB_RADIUS = 5;
+const RECEIVE_RADIUS = 3.5;
+
 const FootballField: React.FC<FootballFieldProps> = ({
   editable,
   size,
@@ -90,7 +106,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
     ball, setBall, isAnimating,
     movements, setMovements, passes, setPasses, loopDurationMs, movementMode, showBeats,
     arrows, setArrows, arrowTool, arrowBallColor, arrowRunColor,
-    currentBeat, showAllBeats, previewingPhase,
+    currentBeat, setCurrentBeat, showAllBeats, previewingPhase,
   } = useFootballField();
 
   // One object decides which way up everything below draws, so the orientation
@@ -231,8 +247,9 @@ const FootballField: React.FC<FootballFieldProps> = ({
   // Arrow drawing state
   const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
   const [drawingCurrent, setDrawingCurrent] = useState<{ x: number; y: number } | null>(null);
-  // ID of the player the cursor is snapping to (for visual feedback)
-  const [arrowSnapId, setArrowSnapId] = useState<number | null>(null);
+  // The player the cursor would snap to: the passer before a drag, the receiver
+  // during one. Held as the object, not an id, since ids repeat across teams.
+  const [snapTarget, setSnapTarget] = useState<Player | null>(null);
 
   /**
    * Arrow drawing's cursor mapping.
@@ -249,27 +266,41 @@ const FootballField: React.FC<FootballFieldProps> = ({
     return clientToPitchPct(fieldRef.current, clientX, clientY, projection) ?? { x: 50, y: 50 };
   }, [fieldRef, projection]);
 
-  // Find the nearest player within a snap threshold (8 percentage units, aspect-ratio corrected)
-  const findNearestPlayer = useCallback((pt: { x: number; y: number }) => {
+  /**
+   * The nearest player within `radius` of a point, or null.
+   *
+   * Measured with pitchDistance, so the radius is a true circle on the pitch.
+   * The old version scaled x by PITCH_X_SCALE — the wrong axis — which made the
+   * catchment ~3x wider than it was tall: a ball played well to the side of a
+   * player still snapped to them and could never go into space.
+   */
+  const findNearestPlayer = useCallback((
+    pt: { x: number; y: number },
+    radius: number,
+    exclude?: { x: number; y: number },
+  ) => {
     const all = showOpposition ? [...players, ...oppositionPlayers] : [...players];
-    const THRESHOLD = 8;
     let nearest: Player | null = null;
-    let minDist = THRESHOLD;
+    let minDist = radius;
     for (const p of all) {
-      // Scale x by the pitch aspect ratio so the snap radius is circular on screen
-      const dx = (p.x - pt.x) * PITCH_X_SCALE;
-      const dy = p.y - pt.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (exclude && p.x === exclude.x && p.y === exclude.y) continue;
+      const dist = pitchDistance(p, pt);
       if (dist < minDist) { minDist = dist; nearest = p; }
     }
     return nearest;
   }, [players, oppositionPlayers, showOpposition]);
 
+  /** Who a ball released at `pt` is played to — never the passer themself. */
+  const findReceiver = useCallback(
+    (pt: { x: number; y: number }) => findNearestPlayer(pt, RECEIVE_RADIUS, drawingStart ?? undefined),
+    [findNearestPlayer, drawingStart],
+  );
+
   const handleArrowPointerDown = useCallback((e: React.PointerEvent) => {
     if (!arrowTool) return;
     e.preventDefault();
     const pt = toFieldPct(e.clientX, e.clientY);
-    const nearest = findNearestPlayer(pt);
+    const nearest = findNearestPlayer(pt, GRAB_RADIUS);
     if (!nearest) return; // must originate from a player
     const snapPt = { x: nearest.x, y: nearest.y };
     const color = BALL_ARROW_TYPES.includes(arrowTool) ? arrowBallColor : arrowRunColor;
@@ -286,28 +317,58 @@ const FootballField: React.FC<FootballFieldProps> = ({
     const pt = toFieldPct(e.clientX, e.clientY);
     if (drawingStart) {
       setDrawingCurrent(pt);
+      // While drawing a ball, ring the player it would be played to, so whether
+      // it lands on them or goes into space is visible before letting go.
+      const isBall = !!arrowTool && BALL_ARROW_TYPES.includes(arrowTool);
+      setSnapTarget(isBall ? findReceiver(pt) : null);
     } else {
-      // Track which player the cursor is nearest to for snap indicator
-      const nearest = findNearestPlayer(pt);
-      setArrowSnapId(nearest ? nearest.id : null);
+      setSnapTarget(findNearestPlayer(pt, GRAB_RADIUS));
     }
-  }, [drawingStart, toFieldPct, findNearestPlayer]);
+  }, [drawingStart, arrowTool, toFieldPct, findNearestPlayer, findReceiver]);
 
   const handleArrowPointerUp = useCallback((e: React.PointerEvent) => {
     if (!arrowTool || !drawingStart) return;
-    const end = toFieldPct(e.clientX, e.clientY);
-    const dx = end.x - drawingStart.x;
-    const dy = end.y - drawingStart.y;
+    const released = toFieldPct(e.clientX, e.clientY);
+    const dx = released.x - drawingStart.x;
+    const dy = released.y - drawingStart.y;
     if (Math.sqrt(dx * dx + dy * dy) > 2) {
       const isBall = BALL_ARROW_TYPES.includes(arrowTool);
       const color = isBall ? arrowBallColor : arrowRunColor;
-      const endPlayer = isBall ? findNearestPlayer(end) : null;
+      // Released on (or right around) a player: played to them, and the arrow
+      // ends on them rather than wherever the pointer let go. Anywhere else is a
+      // ball into space, ending exactly where it was dropped.
+      const endPlayer = isBall ? findReceiver(released) : null;
+      const end = endPlayer ? { x: endPlayer.x, y: endPlayer.y } : released;
       // Bind who the arrow runs from and to at draw time. Resolving by position
       // later would orphan the arrow the moment its player is repositioned, and
       // the ref is what lets the run re-anchor to where they actually are.
       const fromRef = resolvePlayerAt(drawingStart);
-      const toRef = resolvePlayerAt(end);
-      setArrows(prev => [...prev, {
+      // A ball into space has no receiver, even if it lands near someone.
+      const toRef = isBall && !endPlayer ? null : resolvePlayerAt(end);
+
+      // Every pass is its own beat: the ball is in one place, so it can only be
+      // played once per beat. Drawing a second ball move into a beat replaces
+      // the one already there rather than stacking up beside it.
+      const sameBeat = (a: TacticArrow) => Math.max(1, Math.floor(a.beat ?? 1)) === currentBeat;
+      const superseded = (a: TacticArrow) => isBall && isBallMove(a) && sameBeat(a);
+
+      // The first pass says who starts on the ball, so put it at their feet —
+      // nudged towards the pass, and within carrying distance so dragging them
+      // still records a dribble. Only on the authored board: a later beat or
+      // playback is showing a pose, and moving the ball there would be lost.
+      const firstBallMove = isBall && !arrows.some(a => isBallMove(a) && !superseded(a));
+      if (firstBallMove && !previewingPhase) {
+        // In pitchDistance's metric (y scaled), so the nudge is the same
+        // distance on the pitch whichever way the pass goes.
+        const my = dy * PITCH_X_SCALE;
+        const len = Math.hypot(dx, my);
+        setBall({
+          x: drawingStart.x + (dx / len) * BALL_AT_FEET,
+          y: drawingStart.y + (my / len) * BALL_AT_FEET / PITCH_X_SCALE,
+        });
+      }
+
+      setArrows(prev => [...prev.filter(a => !superseded(a)), {
         id: crypto.randomUUID(),
         type: arrowTool,
         points: [drawingStart, end],
@@ -319,31 +380,47 @@ const FootballField: React.FC<FootballFieldProps> = ({
         ...(fromRef && { from: fromRef }),
         ...(toRef && { to: toRef }),
       }]);
+
+      // …and the pass closes its beat. Step on to the next one, which shows the
+      // board as the pass leaves it, so the next ball is played from whoever
+      // has it. Runs that go with a pass are drawn before it, or added after by
+      // stepping back. Only while arrows are beats; static annotation has none.
+      //
+      // A tick later, not in this update: the first pass also moves the ball to
+      // the passer, and the studio only records that as the starting board while
+      // it is showing beat 1. Stepping in the same update would skip that, leaving
+      // the ball on the keeper's spot and the opening pass flying in from there.
+      if (isBall && showBeats) {
+        const next = currentBeat + 1;
+        setTimeout(() => setCurrentBeat(next), 0);
+      }
     }
     setDrawingStart(null);
     setDrawingCurrent(null);
-  }, [arrowTool, drawingStart, arrowBallColor, arrowRunColor, currentBeat, toFieldPct, findNearestPlayer, resolvePlayerAt, setArrows]);
+    setSnapTarget(null);
+  }, [arrowTool, drawingStart, arrowBallColor, arrowRunColor, currentBeat, arrows, previewingPhase, showBeats, toFieldPct, findReceiver, resolvePlayerAt, setArrows, setBall, setCurrentBeat]);
 
   const handleArrowOverlayLeave = useCallback(() => {
     setDrawingStart(null);
     setDrawingCurrent(null);
-    setArrowSnapId(null);
+    setSnapTarget(null);
   }, []);
 
   const handleDeleteArrow = useCallback((id: string) => {
     setArrows(prev => prev.filter(a => a.id !== id));
   }, [setArrows]);
 
+  // The preview ends where the real arrow will: on the receiver when there is
+  // one, at the cursor when the ball is going into space.
+  const previewEnd = drawingStart && snapTarget ? { x: snapTarget.x, y: snapTarget.y } : drawingCurrent;
   const previewArrow: TacticArrow | null =
-    arrowTool && arrowTool !== 'target-zone' && drawingStart && drawingCurrent
-      ? { id: 'preview', type: arrowTool, points: [drawingStart, drawingCurrent],
+    arrowTool && arrowTool !== 'target-zone' && drawingStart && previewEnd
+      ? { id: 'preview', type: arrowTool, points: [drawingStart, previewEnd],
           color: BALL_ARROW_TYPES.includes(arrowTool) ? arrowBallColor : arrowRunColor }
       : null;
 
-  // Snap indicator: position of the player being snapped to
-  const snapPlayer = arrowTool && !drawingStart
-    ? (players.find(p => p.id === arrowSnapId) || (showOpposition ? oppositionPlayers.find(p => p.id === arrowSnapId) : null))
-    : null;
+  // Snap indicator: the passer before a drag, the receiver during one.
+  const snapPlayer = arrowTool ? snapTarget : null;
 
   // Drag-to-rotate: angle = atan2(mouse - playerCenter)
   useEffect(() => {
@@ -957,7 +1034,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
           markerSecondaryColor={oppositionOptions.markerSecondaryColor}
           markerDesign={oppositionOptions.markerDesign}
           shirtTextureUrl={oppositionOptions.shirtTextureUrl}
-          shirtKitId={oppositionOptions.shirtKitId}
+          shirtKitId={oppositionOptions.shirtKitId ?? defaultAwayKitId(options.shirtKitId)}
           showShirtNumbers={oppositionOptions.showShirtNumbers}
         />
       ))}

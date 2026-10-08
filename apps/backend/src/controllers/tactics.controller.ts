@@ -4,7 +4,6 @@ import { tacticsService } from '../services/tactics.service';
 import { commentsService } from '../services/comments.service';
 import { AuthedRequest } from '../middlewares/auth.middleware';
 import { AppError } from '../middlewares/error.middleware';
-import { prisma } from '../services/db.service';
 
 export class TacticsController {
   async getTacticsSummary(req: Request, res: Response) {
@@ -21,15 +20,13 @@ export class TacticsController {
   async createTactic(req: AuthedRequest, res: Response) {
     try {
       const tacticData: TacticFormData = req.body;
-      let userId = req.user?.id;
-
+      // The route requires auth, so the signed-in user is the author. There was
+      // a fallback here to "the first user in the database", which silently gave
+      // every tactic to that account — and since only the author may update a
+      // tactic, its real creator could never edit it.
+      const userId = req.user?.id;
       if (!userId) {
-        const firstUser = await prisma.user.findFirst();
-        userId = firstUser?.id;
-      }
-
-      if (!userId) {
-        res.status(400).json({ success: false, error: 'No user available' });
+        res.status(401).json({ success: false, error: 'Sign in to create a tactic' });
         return;
       }
 

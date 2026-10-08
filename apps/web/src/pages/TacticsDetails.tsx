@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MessageCircle, Loader2, Play, Pause, Film, ChevronLeft, Heart, Eye } from "lucide-react";
+import { MessageCircle, Loader2, Play, Pause, Film, ChevronLeft, Heart, Eye, Pencil } from "lucide-react";
 import { TacticEntity } from "../entities/TacticEntity";
 import type { Tactic, Comment, AnimationData, TacticStats } from "../../../../packages/shared";
 import FootballField from "../components/FootballField.tsx";
@@ -12,7 +12,9 @@ import {
   useFootballField,
 } from "../contexts/FootballFieldContext.tsx";
 import { useAnimation } from "../hooks/useAnimation.ts";
+import LoopToggle from "../components/tactics/LoopToggle.tsx";
 import { useIsMobile } from "../hooks/useMediaQuery.ts";
+import { useAuth } from "../contexts/AuthContext.tsx";
 
 function formatTime(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -27,6 +29,9 @@ interface AnimationPlayerProps {
   onPlay: () => void;
   onPause: () => void;
   onSeek: (timeMs: number) => void;
+  loop: boolean;
+  onSetLoop: (loop: boolean) => void;
+  loopDelayRemainingMs: number;
 }
 
 const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
@@ -36,6 +41,9 @@ const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
   onPlay,
   onPause,
   onSeek,
+  loop,
+  onSetLoop,
+  loopDelayRemainingMs,
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -87,6 +95,10 @@ const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
         <span style={{ fontSize: 11, fontFamily: "var(--font-display)", color: "var(--on-surface-variant)", marginLeft: 2 }}>
           {formatTime(currentTimeMs)} / {formatTime(durationMs)}
         </span>
+
+        <div style={{ marginLeft: "auto" }}>
+          <LoopToggle loop={loop} onChange={onSetLoop} delayRemainingMs={loopDelayRemainingMs} />
+        </div>
 
       </div>
 
@@ -140,6 +152,7 @@ const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
 const TacticsDetailsContent: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Loading and error states
   const [loading, setLoading] = useState(true);
@@ -159,14 +172,19 @@ const TacticsDetailsContent: React.FC = () => {
     setDraggedPlayer,
     setBall,
     setIsAnimating,
+    setOppositionPlayers,
+    setOppositionOptions,
+    setOppositionActions,
+    setShowOpposition,
   } = useFootballField();
 
   // Phone-width viewports get the portrait board: a 16:9 pitch letterboxed into
   // a phone's width is a strip barely tall enough to tell the markers apart.
   const isMobile = useIsMobile();
   const animation = useAnimation({
-    onFrame: (framePlayers, frameFieldSettings) => {
+    onFrame: (framePlayers, frameFieldSettings, frameOppositionPlayers) => {
       setPlayers(framePlayers);
+      if (frameOppositionPlayers) setOppositionPlayers(frameOppositionPlayers);
       if (frameFieldSettings.ball) setBall(frameFieldSettings.ball);
       setOptions(prev => ({
         ...prev,
@@ -196,8 +214,11 @@ const TacticsDetailsContent: React.FC = () => {
       editable: false,
       enableContextMenu: false,
     }));
+    // The opposition is read-only here too.
+    setOppositionActions({});
+    setOppositionOptions((prev) => ({ ...prev, editable: false, enableContextMenu: false }));
     setDraggedPlayer(null);
-  }, [setActions, setOptions, setDraggedPlayer]);
+  }, [setActions, setOptions, setDraggedPlayer, setOppositionActions, setOppositionOptions]);
 
   // Seek without playing — update display frame when scrubbing
   const handleSeek = useCallback((timeMs: number) => {
@@ -206,6 +227,7 @@ const TacticsDetailsContent: React.FC = () => {
     const frame = animation.getInterpolatedFrame(timeMs);
     if (frame) {
       setPlayers(frame.players);
+      if (frame.oppositionPlayers) setOppositionPlayers(frame.oppositionPlayers);
       if (frame.fieldSettings.ball) setBall(frame.fieldSettings.ball);
       setOptions(prev => ({
         ...prev,
@@ -215,7 +237,7 @@ const TacticsDetailsContent: React.FC = () => {
         markerType: frame.fieldSettings.markerType,
       }));
     }
-  }, [animation, setPlayers, setOptions, setBall]);
+  }, [animation, setPlayers, setOptions, setBall, setOppositionPlayers]);
 
   // Fetch tactic data on mount
   useEffect(() => {
@@ -235,16 +257,46 @@ const TacticsDetailsContent: React.FC = () => {
       setPlayers(data.players || []);
       if (data.animation && (data.animation as AnimationData).keyframes?.length > 0) {
         animation.loadAnimation(data.animation as AnimationData);
+        animation.setLoop((data.animation as AnimationData).loop !== false);
       }
       if (data.fieldSettings) {
+        const hfs = data.fieldSettings;
         setOptions(prev => ({
           ...prev,
           fieldColor: (data.fieldSettings as any)?.fieldColor || prev.fieldColor,
           playerColor: (data.fieldSettings as any)?.playerColor || prev.playerColor,
           showPlayerLabels: (data.fieldSettings as any)?.showPlayerLabels ?? prev.showPlayerLabels,
           markerType: (data.fieldSettings as any)?.markerType || prev.markerType,
+          // The kit and marker dressing, as the studio saved them — without these
+          // a shirt team fell back to the plain grey sprite here.
+          ...(hfs.markerBgColor && { markerBgColor: hfs.markerBgColor }),
+          ...(hfs.markerBorderColor && { markerBorderColor: hfs.markerBorderColor }),
+          ...(hfs.markerTextColor && { markerTextColor: hfs.markerTextColor }),
+          ...(hfs.markerSecondaryColor && { markerSecondaryColor: hfs.markerSecondaryColor }),
+          ...(hfs.markerDesign && { markerDesign: hfs.markerDesign }),
+          ...(hfs.shirtKitId && { shirtKitId: hfs.shirtKitId }),
+          ...(hfs.showShirtNumbers !== undefined && { showShirtNumbers: hfs.showShirtNumbers }),
         }));
         if ((data.fieldSettings as any)?.ball) setBall((data.fieldSettings as any).ball);
+      }
+      // The opposition, as the studio saved it: players plus their own kit.
+      const hasOpposition = !!data.oppositionPlayers && data.oppositionPlayers.length > 0;
+      setOppositionPlayers(hasOpposition ? data.oppositionPlayers! : []);
+      setShowOpposition(hasOpposition);
+      const ofs = data.oppositionFieldSettings;
+      if (ofs) {
+        setOppositionOptions(prev => ({
+          ...prev,
+          showPlayerLabels: ofs.showPlayerLabels ?? prev.showPlayerLabels,
+          markerType: ofs.markerType || prev.markerType,
+          ...(ofs.markerBgColor && { markerBgColor: ofs.markerBgColor }),
+          ...(ofs.markerBorderColor && { markerBorderColor: ofs.markerBorderColor }),
+          ...(ofs.markerTextColor && { markerTextColor: ofs.markerTextColor }),
+          ...(ofs.markerSecondaryColor && { markerSecondaryColor: ofs.markerSecondaryColor }),
+          ...(ofs.markerDesign && { markerDesign: ofs.markerDesign }),
+          ...(ofs.shirtKitId && { shirtKitId: ofs.shirtKitId }),
+          ...(ofs.showShirtNumbers !== undefined && { showShirtNumbers: ofs.showShirtNumbers }),
+        }));
       }
     } catch (err) {
       console.error("Error fetching tactic:", err);
@@ -312,6 +364,7 @@ const TacticsDetailsContent: React.FC = () => {
   // The detail endpoint returns stats alongside the tactic, but the shared
   // `Tactic` type predates that — read them optionally rather than widening the type.
   const stats = (tactic as Tactic & { stats?: TacticStats }).stats;
+  const isAuthor = !!user && tactic.author?.id === user.id;
   const initialOf = (name: string) => name.charAt(0).toUpperCase();
 
   /** Shared width for everything under the pitch, so chips, copy and comments line up with it. */
@@ -373,6 +426,28 @@ const TacticsDetailsContent: React.FC = () => {
                   {tactic.title}
                 </h1>
               </div>
+              {/* Only the author can save changes, so only they get the way in. */}
+              {isAuthor && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/edit-tactics/${tactic.id}`)}
+                  aria-label="Edit tactic"
+                  style={{
+                    marginLeft: "auto", flexShrink: 0,
+                    display: "flex", alignItems: "center", gap: 6,
+                    padding: isMobile ? "8px 10px" : "8px 14px",
+                    borderRadius: 999,
+                    background: "var(--primary)", color: "var(--on-primary)",
+                    border: "var(--border-w) solid var(--ink)",
+                    boxShadow: "var(--shadow-sm)",
+                    fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13,
+                    cursor: "pointer",
+                  }}
+                >
+                  <Pencil size={14} />
+                  {!isMobile && "Edit"}
+                </button>
+              )}
             </div>
 
             <FootballField portrait={isMobile} framed={!isMobile} />
@@ -386,6 +461,9 @@ const TacticsDetailsContent: React.FC = () => {
                 onPlay={animation.play}
                 onPause={animation.pause}
                 onSeek={handleSeek}
+                loop={animation.loop}
+                onSetLoop={animation.setLoop}
+                loopDelayRemainingMs={animation.loopDelayRemainingMs}
               />
             )}
 
