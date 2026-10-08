@@ -8,6 +8,10 @@ interface BeatListProps {
   oppositionPlayers: Player[];
   /** The beat being authored, highlighted so you can see where a new arrow lands. */
   currentBeat?: number;
+  /** Highest beat offered: every beat in use plus the next one, within the caps. */
+  maxBeat: number;
+  /** Why no further beat is offered, when it is capped. */
+  beatCap?: 'beats' | 'time';
   onSetBeat: (arrowId: string, beat: number) => void;
   onSetTempo: (arrowId: string, tempo: MovementTempo) => void;
   onRemove: (arrowId: string) => void;
@@ -40,7 +44,10 @@ const chip = (active: boolean): React.CSSProperties => ({
   lineHeight: 1.6,
 });
 
-const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+const CIRCLED = [
+  '①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩',
+  '⑪', '⑫', '⑬', '⑭', '⑮', '⑯', '⑰', '⑱', '⑲', '⑳',
+];
 export const circled = (n: number) => CIRCLED[n - 1] ?? `(${n})`;
 
 /**
@@ -56,6 +63,8 @@ const BeatList: React.FC<BeatListProps> = ({
   players,
   oppositionPlayers,
   currentBeat,
+  maxBeat,
+  beatCap,
   onSetBeat,
   onSetTempo,
   onRemove,
@@ -162,7 +171,8 @@ const BeatList: React.FC<BeatListProps> = ({
 
               <div className="flex items-center gap-1 flex-wrap mt-1">
                 <span className="field-label" style={{ fontSize: 9 }}>beat</span>
-                {[1, 2, 3, 4].map(b => (
+                {/* Never hide the beat an arrow already sits on, even past the cap. */}
+                {Array.from({ length: Math.max(maxBeat, beatOf(a)) }, (_, i) => i + 1).map(b => (
                   <button
                     key={b}
                     type="button"
@@ -199,6 +209,12 @@ const BeatList: React.FC<BeatListProps> = ({
           ))}
         </div>
       ))}
+
+      {beatCap && (
+        <p className="field-label" style={{ fontSize: 9, paddingLeft: 2 }}>
+          {beatCap === 'time' ? '1 min limit reached — no more beats' : `Max ${maxBeat} beats`}
+        </p>
+      )}
 
       {markers.length > 0 && (
         <p

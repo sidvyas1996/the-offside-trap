@@ -66,6 +66,12 @@ export interface TacticArrow {
   points: { x: number; y: number }[]; // 0-100 percentage coords; target-zone has 1 pt, all others have 2
   color?: string;
   endsAtPlayer?: boolean; // ball arrows: the pass is received — points[1] is the receiver's position
+  /**
+   * Which side a curved pass or bendy run bows to: 1 is left of travel, -1 right.
+   * Picked by the way the drag swings when drawn. Absent falls back to the old
+   * automatic side, so arrows saved before this existed still look the same.
+   */
+  bend?: 1 | -1;
 
   // --- Motion. An arrow is the notation *and* the animation. -----------------
   /**

@@ -13,6 +13,10 @@ interface AnimationTimelineProps {
   onToggleFromArrows: () => void;
   /** The beat being authored, so the list can show which group you are adding to. */
   currentBeat?: number;
+  /** Highest beat an arrow can be moved to. */
+  maxBeat: number;
+  /** Why no further beat is offered, when it is capped. */
+  beatCap?: 'beats' | 'time';
   /**
    * Loop length as computed by the compiler, when it owns the clock.
    *
@@ -59,6 +63,8 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
   fromArrows,
   onToggleFromArrows,
   currentBeat,
+  maxBeat,
+  beatCap,
   derivedDurationMs,
   onSetBeat,
   onSetTempo,
@@ -198,6 +204,8 @@ const AnimationTimeline: React.FC<AnimationTimelineProps> = ({
             players={players}
             oppositionPlayers={oppositionPlayers}
             currentBeat={currentBeat}
+            maxBeat={maxBeat}
+            beatCap={beatCap}
             onSetBeat={onSetBeat}
             onSetTempo={onSetTempo}
             onRemove={onRemoveArrow}

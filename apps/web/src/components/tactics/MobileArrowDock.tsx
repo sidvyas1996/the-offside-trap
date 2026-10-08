@@ -1,6 +1,7 @@
 import React from "react";
 import { Play, Pause, Plus, ArrowUpRight, ChevronDown } from "lucide-react";
 import type { ArrowType } from "../../../../../packages/shared";
+import { ARROW_TOOLS, BALL_TOOLS, RUN_TOOLS, type ArrowTool } from "./arrow-tools";
 
 /**
  * The phone studio's permanent bottom dock.
@@ -12,23 +13,8 @@ import type { ArrowType } from "../../../../../packages/shared";
  * counter share the dock for the same reason.
  */
 
-/** Ball and run tools, in the design's order and wording. */
-const BALL_TOOLS: Array<{ type: ArrowType; label: string; dashed: boolean }> = [
-  { type: 'pass', label: 'Pass', dashed: true },
-  { type: 'dribble', label: 'Carry', dashed: false },
-  { type: 'long-ball', label: 'Long', dashed: true },
-  { type: 'target-zone', label: 'Target', dashed: false },
-];
-
-const RUN_TOOLS: Array<{ type: ArrowType; label: string; dashed: boolean }> = [
-  { type: 'direct-run', label: 'Direct', dashed: false },
-  { type: 'secondary-run', label: '2nd', dashed: true },
-  { type: 'curved-run', label: 'Curved', dashed: false },
-  { type: 'press-run', label: 'Press', dashed: true },
-];
-
 const TOOL_LABELS: Partial<Record<ArrowType, string>> = Object.fromEntries(
-  [...BALL_TOOLS, ...RUN_TOOLS].map(t => [t.type, t.label]),
+  ARROW_TOOLS.map(t => [t.type, t.title]),
 );
 
 /** `m:ss`, the format the design's playback readout uses. */
@@ -54,15 +40,15 @@ interface MobileArrowDockProps {
 }
 
 const ToolChip: React.FC<{
-  label: string;
-  dashed: boolean;
+  tool: ArrowTool;
   active: boolean;
   onClick: () => void;
-}> = ({ label, dashed, active, onClick }) => (
+}> = ({ tool: { label, title, icon: Icon }, active, onClick }) => (
   <button
     type="button"
     onClick={onClick}
     aria-pressed={active}
+    title={title}
     style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
       flex: 1, minWidth: 0, padding: '8px 0 6px', borderRadius: 11, cursor: 'pointer',
@@ -73,22 +59,15 @@ const ToolChip: React.FC<{
       boxShadow: active ? 'var(--shadow-sm)' : 'none',
     }}
   >
-    {/* The glyph is the line itself — solid or dashed to match what the tool draws. */}
-    <span
-      aria-hidden
-      style={{
-        width: 18, height: 0, marginBottom: 2,
-        borderTop: `2.5px ${dashed ? 'dashed' : 'solid'} ${active ? 'var(--ink)' : 'var(--on-surface-dim)'}`,
-        borderRadius: 2,
-      }}
-    />
+    {/* The glyph is the arrow itself, so straight and curved read apart at a glance. */}
+    <span aria-hidden style={{ display: 'flex' }}><Icon /></span>
     {label}
   </button>
 );
 
 const ToolRow: React.FC<{
   label: string;
-  tools: typeof BALL_TOOLS;
+  tools: ArrowTool[];
   arrowTool: ArrowType | null;
   onSetArrowTool: (t: ArrowType | null) => void;
   marginBottom: number;
@@ -106,8 +85,7 @@ const ToolRow: React.FC<{
       {tools.map(t => (
         <ToolChip
           key={t.type}
-          label={t.label}
-          dashed={t.dashed}
+          tool={t}
           active={arrowTool === t.type}
           // Tapping the live tool clears it, so the board goes back to dragging
           // players without having to reach for a separate "none" control.
@@ -184,7 +162,9 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
             )}
           </div>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: 11, color: 'var(--outline)' }}>
-            {collapsed ? 'tap to open' : 'drag on pitch to draw'}
+            {collapsed ? 'tap to open'
+              : ARROW_TOOLS.some(t => t.curved && t.type === arrowTool) ? 'swing the drag to bend'
+                : 'drag on pitch to draw'}
             <ChevronDown
               size={15}
               strokeWidth={2.6}

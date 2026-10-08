@@ -5,6 +5,7 @@ import PlayerMarker from "./PlayerMarker.tsx";
 import BallMarker from "./BallMarker.tsx";
 import { defaultAwayKitId } from "../data/kits";
 import ArrowOverlay, { BALL_ARROW_TYPES } from "./ArrowOverlay.tsx";
+import { bendFromDrag } from "../../../../packages/shared/src/arrow-geometry";
 import {
   DEFAULT_FOOTBALL_FIELD_COLOUR,
   CHARCOAL_GRAY,
@@ -73,6 +74,9 @@ interface FootballFieldProps {
 }
 
 /** Ball arrows that play the ball on — a target marker only annotates. */
+/** Arrows that bow, and so take their side from how the drag swung. */
+const CURVED_TYPES = new Set<TacticArrow['type']>(['long-ball', 'curved-run']);
+
 const isBallMove = (a: TacticArrow) => BALL_ARROW_TYPES.includes(a.type) && a.type !== 'target-zone';
 
 /** How far in front of the passer the ball rests, inside the carry radius (4). */
@@ -247,6 +251,11 @@ const FootballField: React.FC<FootballFieldProps> = ({
   // Arrow drawing state
   const [drawingStart, setDrawingStart] = useState<{ x: number; y: number } | null>(null);
   const [drawingCurrent, setDrawingCurrent] = useState<{ x: number; y: number } | null>(null);
+  // Every point the pointer passed through on this drag. A curved arrow bends
+  // to whichever side the drag swung, which only the path can tell — the start
+  // and end alone are a straight line. A ref, since it never renders by itself;
+  // drawingCurrent already re-renders on every move.
+  const dragPathRef = useRef<{ x: number; y: number }[]>([]);
   // The player the cursor would snap to: the passer before a drag, the receiver
   // during one. Held as the object, not an id, since ids repeat across teams.
   const [snapTarget, setSnapTarget] = useState<Player | null>(null);
@@ -310,6 +319,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
     } else {
       setDrawingStart(snapPt);
       setDrawingCurrent(snapPt);
+      dragPathRef.current = [];
     }
   }, [arrowTool, arrowBallColor, arrowRunColor, toFieldPct, findNearestPlayer, setArrows]);
 
@@ -317,6 +327,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
     const pt = toFieldPct(e.clientX, e.clientY);
     if (drawingStart) {
       setDrawingCurrent(pt);
+      dragPathRef.current.push(pt);
       // While drawing a ball, ring the player it would be played to, so whether
       // it lands on them or goes into space is visible before letting go.
       const isBall = !!arrowTool && BALL_ARROW_TYPES.includes(arrowTool);
@@ -345,12 +356,26 @@ const FootballField: React.FC<FootballFieldProps> = ({
       const fromRef = resolvePlayerAt(drawingStart);
       // A ball into space has no receiver, even if it lands near someone.
       const toRef = isBall && !endPlayer ? null : resolvePlayerAt(end);
+      const bend = CURVED_TYPES.has(arrowTool)
+        ? bendFromDrag(drawingStart, end, dragPathRef.current)
+        : undefined;
 
       // Every pass is its own beat: the ball is in one place, so it can only be
       // played once per beat. Drawing a second ball move into a beat replaces
       // the one already there rather than stacking up beside it.
+      //
+      // A player is in one place too, so the same goes for runs: one run per
+      // player per beat, and redrawing it replaces the old one. They can still
+      // run again in a later beat, from wherever this one left them.
       const sameBeat = (a: TacticArrow) => Math.max(1, Math.floor(a.beat ?? 1)) === currentBeat;
-      const superseded = (a: TacticArrow) => isBall && isBallMove(a) && sameBeat(a);
+      const samePlayer = (a: TacticArrow) =>
+        a.from && fromRef
+          ? a.from.team === fromRef.team && a.from.playerId === fromRef.playerId
+          // Arrows saved before refs were bound: start snaps to the marker, so match on that.
+          : a.points[0]?.x === drawingStart.x && a.points[0]?.y === drawingStart.y;
+      const isRun = (a: TacticArrow) => !BALL_ARROW_TYPES.includes(a.type);
+      const superseded = (a: TacticArrow) =>
+        sameBeat(a) && (isBall ? isBallMove(a) : isRun(a) && samePlayer(a));
 
       // The first pass says who starts on the ball, so put it at their feet —
       // nudged towards the pass, and within carrying distance so dragging them
@@ -377,6 +402,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
         // arrow would land on beat 1 and Step would have nothing to show for itself.
         beat: currentBeat,
         ...(isBall && endPlayer ? { endsAtPlayer: true } : {}),
+        ...(bend && { bend }),
         ...(fromRef && { from: fromRef }),
         ...(toRef && { to: toRef }),
       }]);
@@ -416,7 +442,10 @@ const FootballField: React.FC<FootballFieldProps> = ({
   const previewArrow: TacticArrow | null =
     arrowTool && arrowTool !== 'target-zone' && drawingStart && previewEnd
       ? { id: 'preview', type: arrowTool, points: [drawingStart, previewEnd],
-          color: BALL_ARROW_TYPES.includes(arrowTool) ? arrowBallColor : arrowRunColor }
+          color: BALL_ARROW_TYPES.includes(arrowTool) ? arrowBallColor : arrowRunColor,
+          ...(CURVED_TYPES.has(arrowTool) && {
+            bend: bendFromDrag(drawingStart, previewEnd, dragPathRef.current),
+          }) }
       : null;
 
   // Snap indicator: the passer before a drag, the receiver during one.

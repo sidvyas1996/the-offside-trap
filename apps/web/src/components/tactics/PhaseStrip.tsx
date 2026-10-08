@@ -1,6 +1,7 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, CornerDownRight, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import type { CompileWarning } from "../../../../../packages/shared/src";
+import { circled } from "./BeatList";
 
 interface PhaseStripProps {
   /** 1-based. Also the beat that newly drawn arrows are assigned to. */
@@ -18,8 +19,6 @@ interface PhaseStripProps {
   disabled?: boolean;
 }
 
-const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
-const circled = (n: number) => CIRCLED[n - 1] ?? `(${n})`;
 
 const iconBtn = (enabled: boolean): React.CSSProperties => ({
   display: 'flex',

@@ -23,7 +23,7 @@ import {
   type TacticState,
 } from "./tactic-v2";
 import { pitchDistance } from "./pitch-geometry";
-import { longBallSide, type BendSide } from "./arrow-geometry";
+import { bendSideOf, type BendSide } from "./arrow-geometry";
 
 /**
  * One-way conversion of every V1 authoring format into a V2 TacticState.
@@ -281,7 +281,7 @@ function phasesFromArrows(
           });
           continue;
         }
-        const bend = arrow.type === 'curved-run' ? curveWaypoints(from, to) : [];
+        const bend = arrow.type === 'curved-run' ? curveWaypoints(from, to, bendSideOf(arrow)) : [];
         actions.push({
           id: `arrow-${arrow.id}`,
           actorId,
@@ -314,7 +314,7 @@ function phasesFromArrows(
       }
 
       const receiver = arrow.endsAtPlayer ? resolveArrowActor(arrow.to, to, board) : null;
-      const bend = arrow.type === 'long-ball' ? curveWaypoints(from, to, longBallSide(from, to)) : [];
+      const bend = arrow.type === 'long-ball' ? curveWaypoints(from, to, bendSideOf(arrow)) : [];
       actions.push({
         id: `arrow-${arrow.id}`,
         actorId: BALL,

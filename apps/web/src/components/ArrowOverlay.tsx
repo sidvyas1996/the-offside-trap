@@ -1,6 +1,6 @@
 import React from "react";
 import type { TacticArrow, ArrowType } from "../../../../packages/shared";
-import { longBallSide, type BendSide } from "../../../../packages/shared/src/arrow-geometry";
+import { bendSideOf, type BendSide } from "../../../../packages/shared/src/arrow-geometry";
 import { LANDSCAPE, PITCH_X_SCALE, type PitchProjection } from "../utils/pitch";
 
 // SVG coordinate space matches the field markings — see utils/pitch.ts
@@ -161,7 +161,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
 
       // — Ball: Long ball — curve + open arrowhead
       case 'long-ball': {
-        const { cx, cy } = curveControl(a.x, a.y, b.x, b.y, longBallSide(arrow.points[0], arrow.points[1]));
+        const { cx, cy } = curveControl(a.x, a.y, b.x, b.y, bendSideOf(arrow));
         const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, radius);
         const pathD = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
         return (
@@ -221,7 +221,7 @@ const ArrowSvg: React.FC<ArrowSvgProps> = ({ arrow, onDelete, isPreview, project
 
       // — Player: Curved run — bezier + filled arrowhead
       case 'curved-run': {
-        const { cx, cy } = curveControl(a.x, a.y, b.x, b.y);
+        const { cx, cy } = curveControl(a.x, a.y, b.x, b.y, bendSideOf(arrow));
         const { sx, sy, ex, ey } = clipCurve(a.x, a.y, cx, cy, b.x, b.y, radius);
         const pathD = `M ${sx} ${sy} Q ${cx} ${cy} ${ex} ${ey}`;
         return (

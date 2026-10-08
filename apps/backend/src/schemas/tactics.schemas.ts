@@ -81,6 +81,8 @@ const arrowSchema = z.object({
     .max(2),
   color: z.string().optional(),
   endsAtPlayer: z.boolean().optional(),
+  /** Side a curved arrow bows to; absent = the automatic side. */
+  bend: z.union([z.literal(1), z.literal(-1)]).optional(),
 
   // Motion: an arrow is the notation and the animation.
   /** Running order. Arrows sharing a beat move together. Absent = beat 1. */

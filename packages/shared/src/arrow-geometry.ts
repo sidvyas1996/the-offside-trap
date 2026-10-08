@@ -172,6 +172,50 @@ export function longBallSide(from: { x: number; y: number }, to: { x: number; y:
 }
 
 /**
+ * Which way a curved arrow bows: the side it was drawn to, else the old default
+ * (a long ball's flank rule, a curved run's left of travel).
+ */
+export function bendSideOf(arrow: {
+  type: ArrowType;
+  points: { x: number; y: number }[];
+  bend?: BendSide;
+}): BendSide {
+  if (arrow.bend === 1 || arrow.bend === -1) return arrow.bend;
+  return arrow.type === 'long-ball' && arrow.points.length >= 2
+    ? longBallSide(arrow.points[0], arrow.points[1])
+    : 1;
+}
+
+/** Least swing off the straight line, in pitch percent, that counts as choosing a side. */
+const MIN_BEND_SWING = 1.5;
+
+/**
+ * The side a drag swung to, judged against the final start→end line.
+ *
+ * Uses the point that strayed furthest, so a drag that wobbles back over the
+ * line near the end still bends the way it was mostly drawn. Same sign
+ * convention as curveControl: positive is the left-of-travel normal (-dy, dx).
+ * Undefined when the drag stayed straight, leaving the default to bendSideOf.
+ */
+export function bendFromDrag(
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  samples: { x: number; y: number }[],
+): BendSide | undefined {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 1) return undefined;
+  let best = 0;
+  for (const p of samples) {
+    const off = (dx * (p.y - start.y) - dy * (p.x - start.x)) / len;
+    if (Math.abs(off) > Math.abs(best)) best = off;
+  }
+  if (Math.abs(best) < MIN_BEND_SWING) return undefined;
+  return best > 0 ? 1 : -1;
+}
+
+/**
  * Arrowhead as an explicit triangle, rather than an SVG `<marker>`.
  *
  * The overlay in apps/web uses `<marker orient="auto">`, which is fine in a

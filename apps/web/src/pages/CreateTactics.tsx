@@ -9,6 +9,7 @@ import { useTacticsActions } from "../hooks/useTacticsActions";
 import { useAnimation } from "../hooks/useAnimation";
 import FullscreenLayout from "../components/tactics/FullscreenLayout";
 import TacticalField from "../components/tactics/TacticalField";
+import ArrowToolWidget from "../components/tactics/ArrowToolWidget";
 import Preview from "../components/tactics/Preview";
 import AnimationTimeline from "../components/tactics/AnimationTimeline";
 import CreatorsMenu from "../components/ui/creators-menu";
@@ -37,6 +38,14 @@ import type { TacticFormData, FieldSettings, Player, AnimationData, Movement, Mo
  * reads too fast or too slow.
  */
 const PLAYBACK_TIME_SCALE = 2;
+
+/**
+ * Ceilings on how long a move can get. A beat lasts as long as its longest action,
+ * so a count alone can't bound the length — a handful of long jogs passes a minute
+ * — and the backend rejects an animation over 60s, so time is capped too.
+ */
+const MAX_BEATS = 20;
+const MAX_ANIMATION_MS = 60_000;
 
 /**
  * Phone sheets.
@@ -361,8 +370,15 @@ const CreateTacticsContent: React.FC = () => {
 
   // --- Phases ---------------------------------------------------------------
 
-  /** One new beat past the end is reachable; that is how you start the next one. */
-  const maxBeat = v2.phaseCount + 1;
+  /**
+   * One new beat past the end is reachable; that is how you start the next one —
+   * unless the move is already at the beat cap or the one-minute limit.
+   */
+  const beatCap: 'beats' | 'time' | undefined =
+    v2.durationMs >= MAX_ANIMATION_MS ? 'time'
+      : v2.phaseCount >= MAX_BEATS ? 'beats'
+        : undefined;
+  const maxBeat = Math.max(1, beatCap ? Math.min(v2.phaseCount, MAX_BEATS) : v2.phaseCount + 1);
 
   const handleSetPhase = React.useCallback(
     (n: number) => setCurrentBeat(Math.max(1, Math.min(n, maxBeat))),
@@ -373,10 +389,11 @@ const CreateTacticsContent: React.FC = () => {
     [maxBeat, setCurrentBeat],
   );
 
-  // Deleting the last arrow in a beat can leave you standing past the end.
+  // Deleting the last arrow in a beat can leave you standing past the end, and a
+  // pass auto-steps to the next beat without knowing about the caps.
   useEffect(() => {
-    setCurrentBeat(b => Math.min(b, maxBeat));
-  }, [maxBeat, setCurrentBeat]);
+    if (currentBeat > maxBeat) setCurrentBeat(maxBeat);
+  }, [currentBeat, maxBeat, setCurrentBeat]);
 
   /**
    * Fast-forward the board to the start of the beat being authored.
@@ -450,7 +467,8 @@ const CreateTacticsContent: React.FC = () => {
   const patchArrow = (id: string, patch: Partial<TacticArrow>) =>
     setArrows(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a));
 
-  const handleSetArrowBeat = (id: string, beat: number) => patchArrow(id, { beat });
+  const handleSetArrowBeat = (id: string, beat: number) =>
+    patchArrow(id, { beat: Math.max(1, Math.min(beat, maxBeat)) });
   const handleSetArrowTempo = (id: string, tempo: MovementTempo) => patchArrow(id, { tempo });
   const handleRemoveArrow = (id: string) => setArrows(prev => prev.filter(a => a.id !== id));
 
@@ -826,14 +844,17 @@ const CreateTacticsContent: React.FC = () => {
         isFullScreen={state.isFullScreen}
         onToggleFieldOfView={() => setFieldOfViewMode(prev => !prev)}
         fieldOfViewMode={fieldOfViewMode}
-          // Arrow tools
-        arrowTool={arrowTool}
-        onSetArrowTool={setArrowTool}
-        arrowBallColor={arrowBallColor}
-        onChangeArrowBallColor={setArrowBallColor}
-        arrowRunColor={arrowRunColor}
-        onChangeArrowRunColor={setArrowRunColor}
-        onClearArrows={() => setArrows([])}
+        // Arrow tools: on desktop they float over the pitch instead (ArrowToolWidget);
+        // the phone dock has the tools, so its sheet keeps only colours and Clear.
+        {...(isMobile && {
+          arrowTool,
+          onSetArrowTool: setArrowTool,
+          arrowBallColor,
+          onChangeArrowBallColor: setArrowBallColor,
+          arrowRunColor,
+          onChangeArrowRunColor: setArrowRunColor,
+          onClearArrows: () => setArrows([]),
+        })}
         // Team tabs
         showOpposition={showOpposition}
         activeTeam={activeTeam}
@@ -890,6 +911,8 @@ const CreateTacticsContent: React.FC = () => {
         arrows={arrows}
         fromArrows={fromArrows}
         currentBeat={currentBeat}
+        maxBeat={maxBeat}
+        beatCap={beatCap}
         derivedDurationMs={legacyGestures ? undefined : v2.durationMs}
         onToggleFromArrows={() => setFromArrows(prev => !prev)}
         onSetBeat={handleSetArrowBeat}
@@ -1005,7 +1028,18 @@ const CreateTacticsContent: React.FC = () => {
                   disabled={animation.isPlaying}
                 />
               )}
-              {fieldStage}
+              <div style={{ position: 'relative' }}>
+                {fieldStage}
+                <ArrowToolWidget
+                  arrowTool={arrowTool}
+                  onSetArrowTool={setArrowTool}
+                  arrowBallColor={arrowBallColor}
+                  onChangeArrowBallColor={setArrowBallColor}
+                  arrowRunColor={arrowRunColor}
+                  onChangeArrowRunColor={setArrowRunColor}
+                  onClearArrows={() => setArrows([])}
+                />
+              </div>
 
               {/* Toolbar */}
               <div style={{ marginTop: 16 }}>

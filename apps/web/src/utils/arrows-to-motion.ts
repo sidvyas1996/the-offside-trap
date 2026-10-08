@@ -8,7 +8,7 @@ import type {
 } from "../../../../packages/shared/src";
 import { pitchDistance } from "./pitch";
 import { curveControl } from "../components/ArrowOverlay";
-import { longBallSide, type BendSide } from "../../../../packages/shared/src/arrow-geometry";
+import { bendSideOf, type BendSide } from "../../../../packages/shared/src/arrow-geometry";
 
 /**
  * Turns tactical notation into motion.
@@ -181,7 +181,7 @@ export function arrowsToMotion(
     if (arrow.type === 'curved-run') {
       // Trace the curve the arrow actually draws, rather than corner through its
       // control point.
-      path.push(...bezierWaypoints(start, to));
+      path.push(...bezierWaypoints(start, to, bendSideOf(arrow)));
     }
     path.push(to);
 
@@ -236,7 +236,7 @@ export function arrowsToMotion(
         : null;
       const lofted = arrow.type === 'long-ball';
       const bend = lofted
-        ? bezierWaypoints(arrow.points[0], to, longBallSide(arrow.points[0], to))
+        ? bezierWaypoints(arrow.points[0], to, bendSideOf(arrow))
         : undefined;
 
       nodes.push({

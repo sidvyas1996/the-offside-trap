@@ -1,4 +1,5 @@
 import React from "react";
+import { ARROW_TOOLS, BALL_TOOLS, RUN_TOOLS, BEND_HINT } from "../tactics/arrow-tools";
 import type { MarkerDesign } from "../../contexts/FootballFieldContext";
 import type { ArrowType } from "../../../../../packages/shared/src";
 
@@ -90,57 +91,6 @@ interface CreatorsMenuProps {
 const COLORS = {
     field: [DEFAULT_FOOTBALL_FIELD_COLOUR, "#222"],
 };
-
-// Tiny 28×16 SVG icons representing each arrow type
-const iconProps = { width: 28, height: 16, viewBox: "0 0 28 16", fill: "none" };
-const PassIcon = () => (
-    <svg {...iconProps}>
-        <line x1="2" y1="8" x2="22" y2="8" stroke="#fbbf24" strokeWidth="1.8" strokeDasharray="4,3" />
-        <polyline points="17,4 23,8 17,12" fill="none" stroke="#fbbf24" strokeWidth="1.8" />
-    </svg>
-);
-const DribbleIcon = () => (
-    <svg {...iconProps}>
-        <polyline points="2,8 7,3 12,13 17,3 22,8" fill="none" stroke="#fbbf24" strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-);
-const LongBallIcon = () => (
-    <svg {...iconProps}>
-        <path d="M 2 12 Q 13 1 24 8" stroke="#fbbf24" strokeWidth="1.8" fill="none" />
-        <polyline points="19,4 24,8 20,12" fill="none" stroke="#fbbf24" strokeWidth="1.8" />
-    </svg>
-);
-const TargetIcon = () => (
-    <svg {...iconProps}>
-        <circle cx="14" cy="8" r="5" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="2,2" />
-        <line x1="10" y1="4" x2="18" y2="12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
-        <line x1="18" y1="4" x2="10" y2="12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
-const DirectRunIcon = () => (
-    <svg {...iconProps}>
-        <line x1="2" y1="8" x2="22" y2="8" stroke="#60a5fa" strokeWidth="2.5" />
-        <polygon points="18,4 26,8 18,12" fill="#60a5fa" />
-    </svg>
-);
-const SecondaryRunIcon = () => (
-    <svg {...iconProps}>
-        <line x1="2" y1="8" x2="22" y2="8" stroke="#60a5fa" strokeWidth="2" strokeDasharray="4,3" />
-        <polygon points="18,4 26,8 18,12" fill="#60a5fa" />
-    </svg>
-);
-const CurvedRunIcon = () => (
-    <svg {...iconProps}>
-        <path d="M 2 13 Q 13 1 24 8" stroke="#60a5fa" strokeWidth="2.5" fill="none" />
-        <polygon points="20,5 26,8 21,12" fill="#60a5fa" />
-    </svg>
-);
-const PressRunIcon = () => (
-    <svg {...iconProps}>
-        <polyline points="2,8 7,3 12,13 17,3 22,8" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinejoin="round" />
-        <polygon points="18,4 26,8 18,12" fill="#60a5fa" />
-    </svg>
-);
 
 /* Toolbar button: violet chip at rest, green with the hard shadow when active. */
 const btnStyle = (active: boolean): React.CSSProperties => ({
@@ -652,13 +602,8 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             {/* Ball movement row */}
                             <div className="flex flex-row items-center gap-1">
                                 <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--theme-muted)] w-8 shrink-0">Ball</span>
-                                {([
-                                    { type: 'pass' as ArrowType, label: 'Pass', icon: PassIcon },
-                                    { type: 'dribble' as ArrowType, label: 'Carry', icon: DribbleIcon },
-                                    { type: 'long-ball' as ArrowType, label: 'Long', icon: LongBallIcon },
-                                    { type: 'target-zone' as ArrowType, label: 'Target', icon: TargetIcon },
-                                ] as { type: ArrowType; label: string; icon: React.FC }[]).map(({ type, label, icon: Icon }) => (
-                                    <button key={type} type="button" title={label}
+                                {BALL_TOOLS.map(({ type, label, title, icon: Icon }) => (
+                                    <button key={type} type="button" title={title}
                                         onClick={() => onSetArrowTool(arrowTool === type ? null : type)}
                                         className={`tool-btn${arrowTool === type ? ' active' : ''}`}
                                         style={{ flexDirection: 'column', gap: 2, padding: '3px 6px', minWidth: 40 }}>
@@ -670,13 +615,8 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                             {/* Player movement row */}
                             <div className="flex flex-row items-center gap-1">
                                 <span className="text-[9px] font-semibold uppercase tracking-widest text-[var(--theme-muted)] w-8 shrink-0">Run</span>
-                                {([
-                                    { type: 'direct-run' as ArrowType, label: 'Direct', icon: DirectRunIcon },
-                                    { type: 'secondary-run' as ArrowType, label: '2nd Run', icon: SecondaryRunIcon },
-                                    { type: 'curved-run' as ArrowType, label: 'Curved', icon: CurvedRunIcon },
-                                    { type: 'press-run' as ArrowType, label: 'Press', icon: PressRunIcon },
-                                ] as { type: ArrowType; label: string; icon: React.FC }[]).map(({ type, label, icon: Icon }) => (
-                                    <button key={type} type="button" title={label}
+                                {RUN_TOOLS.map(({ type, label, title, icon: Icon }) => (
+                                    <button key={type} type="button" title={title}
                                         onClick={() => onSetArrowTool(arrowTool === type ? null : type)}
                                         className={`tool-btn${arrowTool === type ? ' active' : ''}`}
                                         style={{ flexDirection: 'column', gap: 2, padding: '3px 6px', minWidth: 40 }}>
@@ -685,6 +625,9 @@ const CreatorsMenu: React.FC<CreatorsMenuProps> = ({
                                     </button>
                                 ))}
                             </div>
+                            {ARROW_TOOLS.some(t => t.curved && t.type === arrowTool) && (
+                                <span className="text-[9px] text-[var(--theme-muted)]">{BEND_HINT}</span>
+                            )}
                         </div>
                     </div>
                 </>
