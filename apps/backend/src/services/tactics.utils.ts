@@ -27,6 +27,20 @@ export const tacticSummarySelect = {
   },
 };
 
+/**
+ * The summary plus what a list card needs to draw its preview. Kept separate
+ * from tacticSummarySelect so nothing else that reuses the summary starts
+ * loading animations.
+ */
+export const tacticCardSelect = {
+  ...tacticSummarySelect,
+  players: true,
+  fieldSettings: true,
+  oppositionPlayers: true,
+  oppositionFieldSettings: true,
+  animation: true,
+};
+
 export const tacticWithUserInteractionSelect = (userId: string) => ({
   ...tacticSummarySelect,
   likes: {

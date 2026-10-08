@@ -256,6 +256,19 @@ const FootballField: React.FC<FootballFieldProps> = ({
   // and end alone are a straight line. A ref, since it never renders by itself;
   // drawingCurrent already re-renders on every move.
   const dragPathRef = useRef<{ x: number; y: number }[]>([]);
+
+  // A drag on a later beat is ignored (the board there is a computed preview), and
+  // ignoring it silently reads as the players being stuck. Say why instead.
+  const [blockedHint, setBlockedHint] = useState(false);
+  const blockedHintTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const notePreviewBlocked = useCallback(() => {
+    // During playback the reason is on screen already: things are moving.
+    if (isAnimating) return;
+    setBlockedHint(true);
+    clearTimeout(blockedHintTimer.current);
+    blockedHintTimer.current = setTimeout(() => setBlockedHint(false), 2500);
+  }, [isAnimating]);
+  useEffect(() => () => clearTimeout(blockedHintTimer.current), []);
   // The player the cursor would snap to: the passer before a drag, the receiver
   // during one. Held as the object, not an id, since ids repeat across teams.
   const [snapTarget, setSnapTarget] = useState<Player | null>(null);
@@ -990,7 +1003,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
             // While a later beat is on screen the positions are a computed preview,
             // so a drag has nowhere legitimate to land: committing it would write a
             // mid-move pose back into the tactic's starting board.
-            if (previewingPhase) return;
+            if (previewingPhase) { notePreviewBlocked(); return; }
             actions.onPointerDown?.(player, e);
             beginCapture({ kind: 'player', team: 'home', playerId: player.id }, { x: player.x, y: player.y });
           }}
@@ -1037,7 +1050,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
           isAnimating={isAnimating}
           dwellMs={draggedOppositionPlayer?.id === player.id ? capture.liveDwellMs : 0}
           onPointerDown={(_grabbed, e) => {
-            if (previewingPhase) return;
+            if (previewingPhase) { notePreviewBlocked(); return; }
             oppositionActions.onPointerDown?.(player, e);
             beginCapture({ kind: 'player', team: 'away', playerId: player.id }, { x: player.x, y: player.y });
           }}
@@ -1077,7 +1090,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
         isAnimating={isAnimating}
         editable={typeof editable === "boolean" ? editable : options.editable}
         onPointerDown={() => {
-          if (previewingPhase) return;
+          if (previewingPhase) { notePreviewBlocked(); return; }
           setIsDraggingBall(true);
           beginCapture({ kind: 'ball' }, { x: ball.x, y: ball.y });
         }}
@@ -1106,6 +1119,23 @@ const FootballField: React.FC<FootballFieldProps> = ({
         activeBeat={showBeats && !isAnimating && !showAllBeats ? currentBeat : undefined}
         projection={projection}
       />
+
+      {blockedHint && previewingPhase && (
+        <div
+          role="status"
+          className="absolute"
+          style={{
+            left: '50%', bottom: 12, transform: 'translateX(-50%)', zIndex: 50,
+            pointerEvents: 'none', whiteSpace: 'nowrap',
+            padding: '5px 11px', borderRadius: 999,
+            background: 'var(--surface-high)', color: 'var(--on-surface)',
+            border: 'var(--border-w) solid var(--ink)', boxShadow: 'var(--shadow-sm)',
+            fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700,
+          }}
+        >
+          Showing beat {currentBeat}. Players move on beat 1. Click ✋ Move to go back
+        </div>
+      )}
 
       {/* Arrow drawing overlay — transparent full-field capture layer */}
       {arrowTool && (

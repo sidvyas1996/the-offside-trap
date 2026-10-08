@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, GripVertical, PenLine, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Hand, Redo2, Trash2, Undo2 } from "lucide-react";
 import type { ArrowType } from "../../../../../packages/shared/src";
 import { ARROW_TOOLS, BALL_TOOLS, RUN_TOOLS, BEND_HINT, type ArrowTool } from "./arrow-tools";
 
@@ -11,6 +11,10 @@ interface ArrowToolWidgetProps {
   arrowRunColor: string;
   onChangeArrowRunColor: (c: string) => void;
   onClearArrows: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const COLLAPSED_KEY = 'arrow-widget-collapsed';
@@ -42,9 +46,16 @@ const writeCollapsed = (v: boolean) => {
 };
 
 const rowLabel: React.CSSProperties = {
-  width: 30, flexShrink: 0, fontSize: 9, fontWeight: 800,
+  width: 46, flexShrink: 0, fontSize: 9, fontWeight: 800,
   letterSpacing: '0.1em', textTransform: 'uppercase',
 };
+
+const iconBtn = (enabled: boolean): React.CSSProperties => ({
+  background: 'transparent', border: 'none', display: 'flex', padding: 2,
+  color: 'var(--text-secondary)',
+  cursor: enabled ? 'pointer' : 'default',
+  opacity: enabled ? 1 : 0.35,
+});
 
 const Swatch: React.FC<{ color: string; label: string; onChange: (c: string) => void }> = ({ color, label, onChange }) => (
   <label title={`${label} arrow colour`} style={{ position: 'relative', display: 'inline-flex', cursor: 'pointer' }}>
@@ -78,6 +89,10 @@ const ArrowToolWidget: React.FC<ArrowToolWidgetProps> = ({
   arrowRunColor,
   onChangeArrowRunColor,
   onClearArrows,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }) => {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const toggle = () => setCollapsed(c => { writeCollapsed(!c); return !c; });
@@ -188,8 +203,8 @@ const ArrowToolWidget: React.FC<ArrowToolWidgetProps> = ({
           className="flex items-center gap-1.5"
           style={{ ...card, padding: '5px 9px', cursor: 'grab', touchAction: 'none', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}
         >
-          {Icon ? <Icon /> : <PenLine size={13} />}
-          {active ? active.title : 'Arrows'}
+          {Icon ? <Icon /> : <Hand size={13} />}
+          {active ? active.title : 'Move'}
           <ChevronDown size={13} />
         </button>
       </div>
@@ -227,6 +242,12 @@ const ArrowToolWidget: React.FC<ArrowToolWidgetProps> = ({
           Arrows
         </span>
         <span className="flex items-center gap-1.5">
+          <button type="button" onClick={onUndo} disabled={!canUndo} title="Undo (⌘Z)" style={iconBtn(canUndo)}>
+            <Undo2 size={13} />
+          </button>
+          <button type="button" onClick={onRedo} disabled={!canRedo} title="Redo (⇧⌘Z)" style={iconBtn(canRedo)}>
+            <Redo2 size={13} />
+          </button>
           <Swatch color={arrowBallColor} label="Ball" onChange={onChangeArrowBallColor} />
           <Swatch color={arrowRunColor} label="Run" onChange={onChangeArrowRunColor} />
           <button
@@ -248,6 +269,21 @@ const ArrowToolWidget: React.FC<ArrowToolWidgetProps> = ({
         </span>
       </div>
 
+      {/* Move is "no arrow tool": players drag again, and since a later beat is a
+          preview where drags are ignored, picking it also returns to beat 1. */}
+      <div className="flex items-center gap-1" style={{ marginBottom: 4 }}>
+        <span style={{ ...rowLabel, color: 'var(--theme-muted)' }}>Players</span>
+        <button
+          type="button"
+          title="Move players — returns to the starting positions"
+          onClick={() => onSetArrowTool(null)}
+          className={`tool-btn${arrowTool === null ? ' active' : ''}`}
+          style={{ flexDirection: 'column', gap: 2, padding: '3px 6px', minWidth: 52 }}
+        >
+          <Hand size={15} />
+          <span style={{ fontSize: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Move</span>
+        </button>
+      </div>
       <div className="flex items-center gap-1" style={{ marginBottom: 4 }}>
         <span style={{ ...rowLabel, color: '#fbbf24' }}>Ball</span>
         {BALL_TOOLS.map(toolButton)}

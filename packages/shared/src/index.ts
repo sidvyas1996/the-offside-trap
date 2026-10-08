@@ -31,6 +31,8 @@ export interface TacticSummary {
   author?: Author;
   createdAt: Date;
   updatedAt: Date;
+  /** What the card draws: markers, colours, and a sampled replay if animated. */
+  preview?: import('./tactic-preview').TacticPreview;
 }
 
 export type MarkerDesign = 'solid' | 'stripes' | 'diagonal-left' | 'diagonal-right' | 'horizontal-split' | 'vertical-split';
@@ -489,3 +491,4 @@ export * from "./pitch-view";
 export * from "./arrow-geometry";
 export * from "./interpolate";
 export * from "./lineups";
+export * from "./tactic-preview";

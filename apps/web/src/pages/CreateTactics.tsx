@@ -26,7 +26,7 @@ import { ANIMATION_PRESETS, buildPresetAnimation } from "../utils/animation-pres
 import { compileMovements } from "../utils/movement-compiler";
 import { useTacticV2, type AuthoredBoard } from "../hooks/useTacticV2";
 import { migrateTacticToV2 } from "../../../../packages/shared/src";
-import type { TacticFormData, FieldSettings, Player, AnimationData, Movement, MovementTempo, TacticArrow } from "../../../../packages/shared/src";
+import type { TacticFormData, FieldSettings, Player, AnimationData, Movement, MovementTempo, TacticArrow, ArrowType } from "../../../../packages/shared/src";
 
 /**
  * Playback compression for physics-grounded time.
@@ -67,6 +67,7 @@ const CreateTacticsContent: React.FC = () => {
     ball, setBall, setIsAnimating,
     movements, setMovements, passes, setPasses, setLoopDurationMs, setShowBeats, movementMode, setMovementMode,
     arrows, setArrows, arrowTool, setArrowTool, arrowBallColor, setArrowBallColor, arrowRunColor, setArrowRunColor,
+    loadArrows, undoArrows, redoArrows, canUndoArrows, canRedoArrows,
     currentBeat, setCurrentBeat, showAllBeats, setShowAllBeats, setPreviewingPhase,
   } = useFootballField();
 
@@ -389,6 +390,24 @@ const CreateTacticsContent: React.FC = () => {
     [maxBeat, setCurrentBeat],
   );
 
+  /**
+   * Back to the board you can actually edit: beat 1, playback stopped, the end
+   * pose released. A later beat or a playback pose is a computed preview, and
+   * player drags are (rightly) ignored there — so putting the arrow tool down has
+   * to land you somewhere dragging works, or it reads as players being stuck.
+   */
+  const exitToStartingBoard = React.useCallback(() => {
+    if (animation.isPlaying) animation.pause();
+    setEndPoseDismissed(true);
+    setCurrentBeat(1);
+  }, [animation.isPlaying, animation.pause, setCurrentBeat]);
+
+  /** Picking a tool keeps your beat; putting it down (Move) goes back to beat 1. */
+  const handleSetArrowTool = React.useCallback((tool: ArrowType | null) => {
+    setArrowTool(tool);
+    if (tool === null) exitToStartingBoard();
+  }, [setArrowTool, exitToStartingBoard]);
+
   // Deleting the last arrow in a beat can leave you standing past the end, and a
   // pass auto-steps to the next beat without knowing about the caps.
   useEffect(() => {
@@ -439,6 +458,29 @@ const CreateTacticsContent: React.FC = () => {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [fromArrows, handleStep, handleSetPhase, currentBeat, animation.isPlaying]);
+
+  // ⌘Z / Ctrl+Z undoes the last arrow edit; ⇧⌘Z, Ctrl+Shift+Z or Ctrl+Y redoes it.
+  // Not gated on "Arrows animate" like the beat keys above: arrows drawn as plain
+  // annotation are just as worth undoing. Text fields keep their own undo.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+      const key = e.key.toLowerCase();
+      const redo = (key === 'z' && e.shiftKey) || (key === 'y' && e.ctrlKey && !e.shiftKey);
+      const undo = key === 'z' && !e.shiftKey;
+      if (!undo && !redo) return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) {
+        return;
+      }
+      e.preventDefault();
+      // Arrows can't change under playback, same as the beat keys.
+      if (animation.isPlaying) return;
+      if (redo) redoArrows(); else undoArrows();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [undoArrows, redoArrows, animation.isPlaying]);
 
   const handleUpdateMovement = (id: string, patch: Partial<Movement>) => {
     setMovements(prev => prev.map(m => m.id === id ? { ...m, ...patch } : m));
@@ -524,7 +566,8 @@ const CreateTacticsContent: React.FC = () => {
         if (fs.markerType) state.setOppMarkerType(fs.markerType);
         if (fs.showShirtNumbers !== undefined) state.setOppShowShirtNumbers(fs.showShirtNumbers);
       }
-      if (tactic.arrows && tactic.arrows.length > 0) setArrows(tactic.arrows);
+      // Loaded, not drawn: Undo starts from the saved board rather than an empty one.
+      if (tactic.arrows && tactic.arrows.length > 0) loadArrows(tactic.arrows);
       if (tactic.animation) {
         const data = tactic.animation as AnimationData;
         animation.loadAnimation(data);
@@ -621,8 +664,12 @@ const CreateTacticsContent: React.FC = () => {
         formation: form.formation,
         tags: form.tags,
         description: form.description,
-        players,
-        fieldSettings: getCurrentFieldSettings(),
+        // The authored board, never the one on screen: saving while a later beat,
+        // playback or the held end pose is showing would otherwise store that
+        // mid-move pose as the tactic's starting positions — and the animation,
+        // compiled from `authored`, would no longer start where the board does.
+        players: authored.players,
+        fieldSettings: { ...getCurrentFieldSettings(), ball: authored.ball },
         // getAnimation carries the compiled keyframes, which is all the MP4 exporter
         // reads. The authoring source rides alongside so the tactic reopens editable
         // rather than as opaque keyframes: arrows for V2, movements for legacy
@@ -639,7 +686,7 @@ const CreateTacticsContent: React.FC = () => {
             }
           : undefined,
         // null (not omission) so removing opposition/arrows clears them on update
-        oppositionPlayers: showOpposition ? oppositionPlayers : null,
+        oppositionPlayers: showOpposition ? authored.oppositionPlayers : null,
         oppositionFieldSettings: showOpposition ? getOppositionFieldSettings() : null,
         arrows: arrows.length > 0 ? arrows : null,
       };
@@ -848,7 +895,7 @@ const CreateTacticsContent: React.FC = () => {
         // the phone dock has the tools, so its sheet keeps only colours and Clear.
         {...(isMobile && {
           arrowTool,
-          onSetArrowTool: setArrowTool,
+          onSetArrowTool: handleSetArrowTool,
           arrowBallColor,
           onChangeArrowBallColor: setArrowBallColor,
           arrowRunColor,
@@ -1032,12 +1079,16 @@ const CreateTacticsContent: React.FC = () => {
                 {fieldStage}
                 <ArrowToolWidget
                   arrowTool={arrowTool}
-                  onSetArrowTool={setArrowTool}
+                  onSetArrowTool={handleSetArrowTool}
                   arrowBallColor={arrowBallColor}
                   onChangeArrowBallColor={setArrowBallColor}
                   arrowRunColor={arrowRunColor}
                   onChangeArrowRunColor={setArrowRunColor}
                   onClearArrows={() => setArrows([])}
+                  onUndo={undoArrows}
+                  onRedo={redoArrows}
+                  canUndo={canUndoArrows}
+                  canRedo={canRedoArrows}
                 />
               </div>
 
@@ -1067,7 +1118,9 @@ const CreateTacticsContent: React.FC = () => {
         <>
           <MobileArrowDock
             arrowTool={arrowTool}
-            onSetArrowTool={setArrowTool}
+            onSetArrowTool={handleSetArrowTool}
+            onUndo={undoArrows}
+            canUndo={canUndoArrows}
             currentPhase={fromArrows ? currentBeat : 1}
             phaseCount={fromArrows ? Math.max(1, v2.phaseCount) : 1}
             onStep={handleStep}

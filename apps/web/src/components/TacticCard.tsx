@@ -1,7 +1,7 @@
 
-import React from "react";
+import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Heart, MessageCircle, Eye } from "lucide-react";
+import { Heart, MessageCircle, Eye, Play, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
 import MiniTacticCard from "./MiniTacticCard.tsx";
@@ -24,13 +24,23 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
         return tactic.stats.comments;
     };
 
+    const [hovered, setHovered] = useState(false);
+    const progressRef = useRef<HTMLDivElement>(null);
+    const kind = tactic.preview?.kind;
+
     return (
         <motion.div
             className="tactic-card"
             whileHover={{ y: -4, background: "var(--surface-high)" }}
             style={{ background: "var(--surface-container)", borderRadius: 14, overflow: "hidden", transition: "all 0.2s" }}
         >
-            <Link to={`/tactics/${tactic.id}`}>
+            <Link
+                to={`/tactics/${tactic.id}`}
+                onPointerEnter={() => setHovered(true)}
+                onPointerLeave={() => setHovered(false)}
+                onFocus={() => setHovered(true)}
+                onBlur={() => setHovered(false)}
+            >
                 <div className="aspect-video relative overflow-hidden">
                     {tactic.image_url ? (
                         <img
@@ -39,7 +49,57 @@ export const TacticCard: React.FC<TacticCardProps> = ({ tactic }) => {
                             className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                         />
                     ) : (
-                        <MiniTacticCard className="h-full" />
+                        <MiniTacticCard
+                            className="h-full"
+                            preview={tactic.preview}
+                            playing={hovered}
+                            // Written straight to the bar rather than through state: it
+                            // changes every frame, and only this one div cares.
+                            onProgress={p => {
+                                if (progressRef.current) progressRef.current.style.transform = `scaleX(${p})`;
+                            }}
+                        />
+                    )}
+
+                    {/* Lineup or animated tactic: the one thing a card can't show at rest. */}
+                    {kind && (
+                        <span
+                            className="absolute flex items-center gap-1"
+                            style={{
+                                top: 10, left: 10,
+                                padding: "3px 9px 3px 7px",
+                                borderRadius: 99,
+                                border: "var(--border-w) solid var(--ink)",
+                                boxShadow: "var(--shadow-sm)",
+                                background: kind === "animated" ? "var(--primary)" : "var(--surface-high)",
+                                color: kind === "animated" ? "var(--on-primary)" : "var(--on-surface)",
+                                fontFamily: "var(--font-display)",
+                                fontSize: 10,
+                                fontWeight: 800,
+                                letterSpacing: "0.06em",
+                                textTransform: "uppercase",
+                            }}
+                        >
+                            {kind === "animated"
+                                ? <><Play size={10} fill="currentColor" /> Animated</>
+                                : <><Users size={11} /> Lineup</>}
+                        </span>
+                    )}
+
+                    {/* Animated only: fills along with the hover replay. */}
+                    {kind === "animated" && !tactic.image_url && (
+                        <div
+                            ref={progressRef}
+                            aria-hidden
+                            className="absolute left-0 right-0 bottom-0"
+                            style={{
+                                height: 3,
+                                zIndex: 2,
+                                background: "var(--primary)",
+                                transform: "scaleX(0)",
+                                transformOrigin: "left",
+                            }}
+                        />
                     )}
                     <div
                         className="absolute bottom-0 left-0 right-0 px-4 py-3"

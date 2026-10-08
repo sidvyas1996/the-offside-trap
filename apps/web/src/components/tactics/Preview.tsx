@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { Target, Image as ImageIcon, Film } from "lucide-react";
-import MiniTacticCard from "../MiniTacticCard";
+import { Download, Image as ImageIcon, Film } from "lucide-react";
 import { Button } from "../ui/button";
 import { api } from "../../lib/api";
 import { useFootballField } from "../../contexts/FootballFieldContext";
@@ -136,16 +135,13 @@ const Preview: React.FC<PreviewProps> = ({
       className="rounded-2xl p-5"
       style={{ background: "var(--surface-container)", border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)" }}
     >
+      {/* No mini pitch: the board on the left already shows exactly what exports. */}
       <h2 className="panel-title mb-4">
-        <span className="icon-chip"><Target size={14} /></span>
-        Preview
+        <span className="icon-chip"><Download size={14} /></span>
+        Export
       </h2>
-      <div className="rounded-xl overflow-hidden" style={{ border: "var(--border-w) solid var(--ink)", boxShadow: "var(--card-shadow)" }}>
-        <MiniTacticCard />
-      </div>
 
-      <div className="mt-5 space-y-2">
-        <span className="field-label">Export</span>
+      <div className="space-y-2">
         <div className="flex gap-2">
           <Button
             onClick={() => handleExport('png')}

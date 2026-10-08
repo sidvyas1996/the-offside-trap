@@ -1,8 +1,8 @@
-import { Player, TacticFormData, TacticFilters } from '@the-offside-trap/shared';
+import { Player, TacticFormData, TacticFilters, buildTacticPreview } from '@the-offside-trap/shared';
 import { Prisma } from '@prisma/client';
 import { prisma } from './db.service';
 import { createError } from '../middlewares/error.middleware';
-import { tacticSummarySelect } from './tactics.utils';
+import { tacticCardSelect } from './tactics.utils';
 
 export class TacticsService {
   /**
@@ -113,14 +113,23 @@ export class TacticsService {
     const [tactics, total] = await Promise.all([
       prisma.tactic.findMany({
         where,
-        select: tacticSummarySelect,
+        select: tacticCardSelect,
         orderBy,
         skip,
         take: limit,
       }),
       prisma.tactic.count({ where }),
     ]);
-    const tacticResponses = tactics.map(tactic => this.mapToTacticResponse(tactic, userId));
+    // The card fields are read only to build the preview; the summary itself is
+    // mapped from the row without them, so the list never ships full player lists
+    // or whole animations.
+    const tacticResponses = tactics.map(tactic => {
+      const { players, fieldSettings, oppositionPlayers, oppositionFieldSettings, animation, ...summaryRow } = tactic;
+      return {
+        ...this.mapToTacticResponse(summaryRow, userId),
+        preview: buildTacticPreview({ players, fieldSettings, oppositionPlayers, oppositionFieldSettings, animation }),
+      };
+    });
 
     return {
       tactics: tacticResponses,

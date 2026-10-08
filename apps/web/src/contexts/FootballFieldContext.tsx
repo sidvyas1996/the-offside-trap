@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef } from "react";
+import React, { createContext, useContext, useState, useRef, useCallback } from "react";
 import type { Player, TacticArrow, ArrowType, Ball, Movement, PassSequence } from "../../../../packages/shared";
 import { DEFAULT_FOOTBALL_FIELD_COLOUR, DEFAULT_PLAYER_COLOUR } from "../utils/colors.ts";
 
@@ -100,7 +100,14 @@ interface FootballFieldContextProps {
     setMovementMode: React.Dispatch<React.SetStateAction<boolean>>;
     // Arrow annotations
     arrows: TacticArrow[];
+    /** Every change through here is recorded, so it can be undone. */
     setArrows: React.Dispatch<React.SetStateAction<TacticArrow[]>>;
+    /** Replace the arrows and forget the history — for loading a saved tactic. */
+    loadArrows: (arrows: TacticArrow[]) => void;
+    undoArrows: () => void;
+    redoArrows: () => void;
+    canUndoArrows: boolean;
+    canRedoArrows: boolean;
     arrowTool: ArrowType | null;
     setArrowTool: React.Dispatch<React.SetStateAction<ArrowType | null>>;
     arrowBallColor: string;
@@ -193,7 +200,57 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
     const [movementMode, setMovementMode] = useState(false);
 
     // Arrow annotations
-    const [arrows, setArrows] = useState<TacticArrow[]>([]);
+    const [arrows, setArrowsRaw] = useState<TacticArrow[]>([]);
+
+    // Arrow history. Every arrow edit — drawing, a replaced pass or run, a delete,
+    // a beat or tempo change, Clear — already goes through setArrows, so recording
+    // here makes all of them undoable without touching a single caller.
+    //
+    // The next value is resolved against a ref rather than inside a state updater:
+    // StrictMode runs updaters twice, which would record every edit twice, and the
+    // ref stays current when several edits land in one tick.
+    const ARROW_HISTORY_LIMIT = 50;
+    const arrowsRef = useRef(arrows);
+    const pastRef = useRef<TacticArrow[][]>([]);
+    const futureRef = useRef<TacticArrow[][]>([]);
+    // The stacks are refs, so this is what re-renders the Undo/Redo buttons.
+    const [, setHistoryVersion] = useState(0);
+    const commitArrows = useCallback((next: TacticArrow[]) => {
+        arrowsRef.current = next;
+        setArrowsRaw(next);
+        setHistoryVersion(v => v + 1);
+    }, []);
+
+    const setArrows: React.Dispatch<React.SetStateAction<TacticArrow[]>> = useCallback(action => {
+        const prev = arrowsRef.current;
+        const next = typeof action === 'function' ? action(prev) : action;
+        if (next === prev) return;
+        pastRef.current = [...pastRef.current, prev].slice(-ARROW_HISTORY_LIMIT);
+        futureRef.current = [];
+        commitArrows(next);
+    }, [commitArrows]);
+
+    const loadArrows = useCallback((next: TacticArrow[]) => {
+        pastRef.current = [];
+        futureRef.current = [];
+        commitArrows(next);
+    }, [commitArrows]);
+
+    const undoArrows = useCallback(() => {
+        const prev = pastRef.current[pastRef.current.length - 1];
+        if (!prev) return;
+        pastRef.current = pastRef.current.slice(0, -1);
+        futureRef.current = [...futureRef.current, arrowsRef.current];
+        commitArrows(prev);
+    }, [commitArrows]);
+
+    const redoArrows = useCallback(() => {
+        const next = futureRef.current[futureRef.current.length - 1];
+        if (!next) return;
+        futureRef.current = futureRef.current.slice(0, -1);
+        pastRef.current = [...pastRef.current, arrowsRef.current];
+        commitArrows(next);
+    }, [commitArrows]);
     const [arrowTool, setArrowTool] = useState<ArrowType | null>(null);
     const [arrowBallColor, setArrowBallColor] = useState('#fbbf24');
     const [arrowRunColor, setArrowRunColor] = useState('#60a5fa');
@@ -241,6 +298,11 @@ export const FootballFieldProvider: React.FC<{ children: React.ReactNode }> = ({
                 setMovementMode,
                 arrows,
                 setArrows,
+                loadArrows,
+                undoArrows,
+                redoArrows,
+                canUndoArrows: pastRef.current.length > 0,
+                canRedoArrows: futureRef.current.length > 0,
                 arrowTool,
                 setArrowTool,
                 arrowBallColor,

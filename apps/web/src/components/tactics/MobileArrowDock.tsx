@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, Pause, Plus, ArrowUpRight, ChevronDown } from "lucide-react";
+import { Play, Pause, Plus, ArrowUpRight, ChevronDown, Undo2 } from "lucide-react";
 import type { ArrowType } from "../../../../../packages/shared";
 import { ARROW_TOOLS, BALL_TOOLS, RUN_TOOLS, type ArrowTool } from "./arrow-tools";
 
@@ -37,6 +37,9 @@ interface MobileArrowDockProps {
   /** Owned by the page: collapsing also lets the stage go edge-to-edge. */
   collapsed: boolean;
   onToggleCollapsed: () => void;
+  /** Undo the last arrow edit — a phone has no ⌘Z. */
+  onUndo: () => void;
+  canUndo: boolean;
 }
 
 const ToolChip: React.FC<{
@@ -102,8 +105,10 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
   isPlaying, onPlay, onPause,
   currentTimeMs, durationMs,
   collapsed, onToggleCollapsed,
+  onUndo, canUndo,
 }) => {
-  const activeLabel = arrowTool ? TOOL_LABELS[arrowTool] : undefined;
+  // No arrow tool is the Move tool: a drag repositions players.
+  const activeLabel = arrowTool ? TOOL_LABELS[arrowTool] : 'Move';
 
   const progress = durationMs > 0 ? Math.min(1, currentTimeMs / durationMs) : 0;
   const pct = `${(progress * 100).toFixed(2)}%`;
@@ -222,6 +227,22 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
             }} />
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={onUndo}
+          disabled={!canUndo}
+          aria-label="Undo last arrow"
+          title="Undo the last arrow change"
+          style={{
+            width: 36, height: 36, borderRadius: 10, background: 'var(--surface-high)',
+            border: 'var(--border-w) solid var(--ink)', color: 'var(--on-surface)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', flexShrink: 0, cursor: canUndo ? 'pointer' : 'default',
+            opacity: canUndo ? 1 : 0.4,
+          }}
+        >
+          <Undo2 size={15} strokeWidth={2.4} />
+        </button>
 
         {/* Step: fast-forward the board and open the next beat. */}
         <button
