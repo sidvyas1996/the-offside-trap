@@ -32,6 +32,7 @@ interface AnimationPlayerProps {
   loop: boolean;
   onSetLoop: (loop: boolean) => void;
   loopDelayRemainingMs: number;
+  compact?: boolean;
 }
 
 const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
@@ -44,6 +45,7 @@ const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
   loop,
   onSetLoop,
   loopDelayRemainingMs,
+  compact = false,
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -69,12 +71,16 @@ const AnimationPlayer: React.FC<AnimationPlayerProps> = ({
       flexDirection: "column",
       gap: 10,
     }}>
-      {/* Header + controls row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <Film size={14} style={{ color: "var(--primary)", flexShrink: 0 }} />
-        <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--on-surface-variant)" }}>
-          Animation
-        </span>
+      {/* Header + controls row — the label gives way on phones so the controls fit on one line. */}
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: compact ? 10 : 12 }}>
+        {!compact && (
+          <>
+            <Film size={14} style={{ color: "var(--primary)", flexShrink: 0 }} />
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--on-surface-variant)" }}>
+              Animation
+            </span>
+          </>
+        )}
 
         {/* Play / Pause */}
         <button
@@ -384,7 +390,8 @@ const TacticsDetailsContent: React.FC = () => {
       <div style={{ maxWidth: 1240, margin: "0 auto" }}>
         <TopNav />
 
-        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 32, alignItems: "flex-start", marginTop: isMobile ? 20 : 32 }}>
+        {/* Stacked on phones: stretch, not flex-start, or the column shrink-wraps to its content and overflows the screen. */}
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 32, alignItems: isMobile ? "stretch" : "flex-start", marginTop: isMobile ? 20 : 32 }}>
           {/* ── Left column: header · pitch · player · chips · description · comments ── */}
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* Header: back chip, kicker, title — the same shape as the studio header. */}
@@ -464,6 +471,7 @@ const TacticsDetailsContent: React.FC = () => {
                 loop={animation.loop}
                 onSetLoop={animation.setLoop}
                 loopDelayRemainingMs={animation.loopDelayRemainingMs}
+                compact={isMobile}
               />
             )}
 
