@@ -3,21 +3,30 @@ FROM mcr.microsoft.com/playwright:v1.56.1-jammy
 
 WORKDIR /app
 
-# Copy package files
+# Copy root workspace manifests and lockfile
 COPY package*.json ./
-COPY prisma ./prisma/
+COPY turbo.json ./
+COPY packages/shared/package*.json ./packages/shared/
+COPY apps/backend/package*.json ./apps/backend/
+COPY apps/backend/prisma ./apps/backend/prisma/
 
-# Install dependencies
+# Install dependencies across workspaces
 RUN npm ci
 
+# Copy shared package source and build it
+COPY packages/shared ./packages/shared
+RUN npm run build --workspace=@the-offside-trap/shared
+
 # Generate Prisma client
-RUN npx prisma generate
+RUN cd apps/backend && npx prisma generate
 
-# Copy source
-COPY . .
+# Copy backend source
+COPY apps/backend ./apps/backend
 
-# Build TypeScript
-RUN npm run build
+# Build backend
+RUN npm run build --workspace=backend
+
+WORKDIR /app/apps/backend
 
 EXPOSE 3001
 

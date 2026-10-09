@@ -3,7 +3,7 @@ services:
     name: the-offside-trap-backend
     runtime: docker
     dockerfilePath: ./apps/backend/Dockerfile
-    dockerContext: ./apps/backend
+    dockerContext: .
     plan: free
     envVars:
       - key: NODE_ENV

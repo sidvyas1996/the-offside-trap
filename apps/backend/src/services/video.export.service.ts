@@ -74,7 +74,7 @@ function getInterpolatedFrame(
   const span = after.timeMs - before.timeMs;
   const t = span === 0 ? 0 : (timeMs - before.timeMs) / span;
 
-  const playerMap = new Map(after.players.map((p: Player) => [p.id, p]));
+  const playerMap = new Map<number, Player>(after.players.map((p: Player) => [p.id, p]));
   const players = before.players.map((p: Player) => {
     const target = playerMap.get(p.id);
     if (!target) return p;

@@ -34,11 +34,4 @@ app.all('/{*any}', (req, res, next) => {
 // Global error handler
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📚 API documentation: http://localhost:${PORT}/api`);
-  console.log(`❤️ Health check: http://localhost:${PORT}/health`);
-});
-
 export default app;
