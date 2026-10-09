@@ -166,9 +166,10 @@ export class ScreenshotService {
       // element's layout box would shave it off.
       const measure = () =>
         page.evaluate(() => {
-          const remeasure = (window as any).__MEASURE_BOUNDS__;
+          const w = globalThis as any;
+          const remeasure = w.__MEASURE_BOUNDS__;
           if (typeof remeasure === 'function') remeasure();
-          return (window as any).__EXPORT_BOUNDS__ ?? null;
+          return w.__EXPORT_BOUNDS__ ?? null;
         }) as Promise<{ x: number; y: number; width: number; height: number } | null>;
 
       let bounds = await measure();
