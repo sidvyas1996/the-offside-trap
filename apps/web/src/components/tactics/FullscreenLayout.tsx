@@ -80,9 +80,6 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
         </div>
         <LineupField
           waypointsMode={waypointsMode}
-          horizontalZonesMode={horizontalZonesMode}
-          verticalSpacesMode={verticalSpacesMode}
-          isFullScreen={isFullScreen}
           onChangeFieldColor={onChangeFieldColor}
           onChangePlayerColor={onChangePlayerColor}
           markerBgColor={markerBgColor}
@@ -99,12 +96,9 @@ const FullscreenLayout: React.FC<FullscreenLayoutProps> = ({
           showPlayerLabels={showPlayerLabels}
           onToggleMarkerType={onToggleMarkerType}
           markerType={markerType}
-          onToggleShirtNumbers={onToggleShirtNumbers}
-          showShirtNumbers={showShirtNumbers}
           onToggleWaypoints={onToggleWaypoints}
-          onToggleHorizontalZones={onToggleHorizontalZones}
-          onToggleVerticalSpaces={onToggleVerticalSpaces}
-          onToggleFullScreen={onToggleFullScreen}
+          horizontalZonesMode={horizontalZonesMode}
+          verticalSpacesMode={verticalSpacesMode}
           rotationAngle={rotationAngle}
           tiltAngle={tiltAngle}
           onRotationChange={onRotationChange}

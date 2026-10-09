@@ -29,7 +29,7 @@ interface FieldOptions {
 }
 
 interface FieldActions {
-    onPointerDown?: (player: Player) => void;
+    onPointerDown?: (player: Player, e?: React.PointerEvent) => void;
     onPointerMove?: (e: React.PointerEvent) => void;
     onPointerUp?: () => void;
     onPlayerNameChange?: (id: number, name: string) => void;
