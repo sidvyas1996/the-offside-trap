@@ -120,6 +120,15 @@ const FootballField: React.FC<FootballFieldProps> = ({
   const projection = portrait ? PORTRAIT : LANDSCAPE;
 
   /**
+   * Whether a touch on the board is input. Only then does it claim the touch
+   * (touch-action: none) — a read-only board, like the tactic details page,
+   * must let a swipe that starts on the pitch scroll the page.
+   */
+  const interactive =
+    (typeof editable === 'boolean' ? editable : options.editable || oppositionOptions.editable) ||
+    !!arrowTool || waypointsMode || horizontalZonesMode || verticalSpacesMode || fieldOfViewMode;
+
+  /**
    * Player markers run 10% larger on the phone board.
    *
    * The portrait board is far narrower than the desktop one, so a marker that
@@ -663,8 +672,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
       // Read back by clientToPitchPct so every pointer mapping — including the
       // ones in hooks that never see this component — un-rotates correctly.
       {...{ [PITCH_ORIENTATION_ATTR]: String(projection.portrait) }}
-      className={`relative rounded-xl overflow-hidden cursor-move ${isFullScreen ? '' : 'mb-6'}`}
-      style={{ ...fieldStyle, touchAction: 'none' }}
+      className={`relative rounded-xl overflow-hidden ${interactive ? 'cursor-move' : ''} ${isFullScreen ? '' : 'mb-6'}`}
+      style={{ ...fieldStyle, touchAction: interactive ? 'none' : 'auto' }}
       onPointerMove={(e) => { actions.onPointerMove?.(e); oppositionActions.onPointerMove?.(e); handleBallPointerMove(e); handleCaptureMove(e); }}
       onPointerUp={endAllDrags}
       onPointerLeave={endAllDrags}
