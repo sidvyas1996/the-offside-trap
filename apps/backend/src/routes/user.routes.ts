@@ -8,7 +8,6 @@ const router = Router();
 const usersController = new UsersController();
 
 // Auth routes
-router.get('/', usersController.getUsers);
 router.get('/me', requireAuth, usersController.getUserById);
 router.patch(
   '/me',

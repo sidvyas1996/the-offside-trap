@@ -7,7 +7,6 @@ const NAV_LINKS = [
   { label: "Studio", to: "/create-tactics" },
   { label: "Lineups", to: "/create-lineups" },
   { label: "Library", to: "/" },
-  { label: "Pricing", to: "/pricing" },
 ];
 
 interface TopNavProps {

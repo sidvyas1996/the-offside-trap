@@ -4,7 +4,9 @@ import { useFootballField } from "../contexts/FootballFieldContext.tsx";
 import PlayerMarker from "./PlayerMarker.tsx";
 import BallMarker from "./BallMarker.tsx";
 import { defaultAwayKitId } from "../data/kits";
-import ArrowOverlay, { BALL_ARROW_TYPES } from "./ArrowOverlay.tsx";
+import ArrowOverlay, { BALL_ARROW_TYPES, arrowAtPoint } from "./ArrowOverlay.tsx";
+import GroupLinks from "./GroupLinks.tsx";
+import { movingGroups } from "../../../../packages/shared/src/group-move";
 import { bendFromDrag } from "../../../../packages/shared/src/arrow-geometry";
 import {
   DEFAULT_FOOTBALL_FIELD_COLOUR,
@@ -35,6 +37,7 @@ import {
 } from "../utils/pitch.ts";
 import MovementOverlay from "./MovementOverlay";
 import { useMovementCapture, type PlayerRef } from "../hooks/useMovementCapture";
+import { useGroupMove } from "../hooks/useGroupMove";
 
 import type { Player, TacticArrow, Movement } from "../../../../packages/shared";
 
@@ -227,16 +230,14 @@ const FootballField: React.FC<FootballFieldProps> = ({
   const { onUpdatePlayer, onPlayerNameChange } = actions;
 
   const [scale, setScale] = useState(1);
+  /** The board's length on screen, for converting marker pixels into pitch units. */
+  const [pitchLengthPx, setPitchLengthPx] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
     y: number;
     playerId: number | null;
   }>({ visible: false, x: 0, y: 0, playerId: null });
-  const [waypoints, setWaypoints] = useState<
-    Array<{ from: number; to: number }>
-  >([]);
-  const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
   // Per-player FOV rotation angle (degrees). Default 0 = pointing right.
   const [fovAngles, setFovAngles] = useState<Record<number, number>>({});
   const [hoveredPlayerId, setHoveredPlayerId] = useState<number | null>(null);
@@ -454,9 +455,29 @@ const FootballField: React.FC<FootballFieldProps> = ({
     setSnapTarget(null);
   }, []);
 
+  // A group move went in as one gesture, so it comes out as one.
   const handleDeleteArrow = useCallback((id: string) => {
-    setArrows(prev => prev.filter(a => a.id !== id));
+    setArrows(prev => {
+      const groupId = prev.find(a => a.id === id)?.groupId;
+      return prev.filter(a => a.id !== id && !(groupId && a.groupId === groupId));
+    });
   }, [setArrows]);
+
+  const groupLinks = React.useMemo(() => movingGroups(arrows), [arrows]);
+
+  // Group move (the toolbar's waypoints button in the studio). The arrow tool
+  // wins if both are somehow on, since its overlay sits in the same place.
+  const groupMove = useGroupMove({
+    enabled: waypointsMode && !arrowTool && !isAnimating,
+    players,
+    oppositionPlayers,
+    showOpposition,
+    toFieldPct,
+    grabRadius: GRAB_RADIUS,
+    currentBeat,
+    color: arrowRunColor,
+    setArrows,
+  });
 
   // The preview ends where the real arrow will: on the receiver when there is
   // one, at the cursor when the ball is going into space.
@@ -541,6 +562,7 @@ const FootballField: React.FC<FootballFieldProps> = ({
         // full opposition team) if markers shrink relative to the surface.
         const newScale = Math.max(0.7, Math.min(1.5, pitchLengthPx / 1150));
         setScale(newScale);
+        setPitchLengthPx(pitchLengthPx);
       }
     });
     observer.observe(fieldRef.current);
@@ -566,25 +588,6 @@ const FootballField: React.FC<FootballFieldProps> = ({
               : {};
     onUpdatePlayer(contextMenu.playerId, updates);
     setContextMenu({ ...contextMenu, visible: false });
-  };
-
-  const handleWaypointsClick = (playerId: number) => {
-    if (!waypointsMode) return;
-
-    if (selectedPlayer === null) {
-      setSelectedPlayer(playerId);
-    } else if (selectedPlayer === playerId) {
-      setSelectedPlayer(null);
-    } else {
-      // Create waypoint connection
-      const newWaypoint = { from: selectedPlayer, to: playerId };
-      setWaypoints((prev) => [...prev, newWaypoint]);
-      setSelectedPlayer(null);
-    }
-  };
-
-  const handleRemoveLine = (lineIndex: number) => {
-    setWaypoints((prev) => prev.filter((_, index) => index !== lineIndex));
   };
 
   // Responsive field sizing
@@ -678,6 +681,16 @@ const FootballField: React.FC<FootballFieldProps> = ({
       onPointerUp={endAllDrags}
       onPointerLeave={endAllDrags}
       onPointerCancel={endAllDrags}
+      // Right-click an arrow to delete it. Handled here rather than on the
+      // arrows, so it also works under the arrow-tool and group-move layers and
+      // the arrow layer never blocks grabbing a player. Read-only boards (the
+      // tactic details page) leave the browser menu alone.
+      onContextMenu={interactive ? (e) => {
+        const hit = arrowAtPoint(arrows, toFieldPct(e.clientX, e.clientY), projection);
+        if (!hit) return;
+        e.preventDefault();
+        handleDeleteArrow(hit.id);
+      } : undefined}
     >
       {/* Field Markings — drawn from the shared PITCH_MARKINGS data rather than
           inline JSX, so the landscape and portrait boards cannot drift apart and
@@ -879,53 +892,6 @@ const FootballField: React.FC<FootballFieldProps> = ({
         )}
       </svg>
 
-      {/* Waypoints Lines */}
-      {waypointsMode &&
-        waypoints.map((waypoint, index) => {
-          const fromPlayer = players.find((p) => p.id === waypoint.from);
-          const toPlayer = players.find((p) => p.id === waypoint.to);
-
-          if (!fromPlayer || !toPlayer) return null;
-
-          // Determine waypoint line color based on field color
-          const isDarkField = options.fieldColor === "#222";
-          const waypointColor = isDarkField ? "#16A34A" : "#d7d7d7";
-          const waypointShadowColor = isDarkField
-            ? "rgba(22, 163, 74, 0.5)"
-            : "rgba(255, 255, 255, 0.5)";
-
-          return (
-            <svg
-              key={index}
-              className="absolute inset-0 w-full h-full"
-              style={{ zIndex: 5 }}
-            >
-              <line
-                x1={`${fromPlayer.x}%`}
-                y1={`${fromPlayer.y}%`}
-                x2={`${toPlayer.x}%`}
-                y2={`${toPlayer.y}%`}
-                stroke={waypointColor}
-                strokeWidth="4"
-                strokeDasharray="8,8"
-                strokeDashoffset="0"
-                opacity="0.9"
-                className="cursor-pointer hover:stroke-green-300 transition-colors"
-                style={{
-                  filter: `drop-shadow(0 0 4px ${waypointShadowColor})`,
-                }}
-                onContextMenu={(e) => {
-                  if (waypointsMode) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleRemoveLine(index);
-                  }
-                }}
-              />
-            </svg>
-          );
-        })}
-
       {/* Field of View — 120° sector per player with per-player rotation */}
       {fieldOfViewMode && (
         <>
@@ -1030,9 +996,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
           enableContextMenu={options.enableContextMenu}
           showPlayerLabels={options.showPlayerLabels}
           markerType={options.markerType}
-          waypointsMode={waypointsMode}
-          isSelected={selectedPlayer === player.id}
-          onWaypointsClick={() => handleWaypointsClick(player.id)}
+          isSelected={groupMove.isSelected('home', player.id)}
+          groupHover={groupMove.isHovered('home', player.id)}
           fovAngle={fieldOfViewMode ? (fovAngles[player.id] ?? 0) : undefined}
           onMouseEnter={fieldOfViewMode ? () => setHoveredPlayerId(player.id) : undefined}
           onMouseLeave={fieldOfViewMode ? () => setHoveredPlayerId(null) : undefined}
@@ -1077,8 +1042,8 @@ const FootballField: React.FC<FootballFieldProps> = ({
           enableContextMenu={oppositionOptions.enableContextMenu}
           showPlayerLabels={oppositionOptions.showPlayerLabels}
           markerType={oppositionOptions.markerType}
-          waypointsMode={false}
-          isSelected={false}
+          isSelected={groupMove.isSelected('away', player.id)}
+          groupHover={groupMove.isHovered('away', player.id)}
           markerBgColor={oppositionOptions.markerBgColor}
           markerBorderColor={oppositionOptions.markerBorderColor}
           markerTextColor={oppositionOptions.markerTextColor}
@@ -1117,11 +1082,27 @@ const FootballField: React.FC<FootballFieldProps> = ({
         projection={projection}
       />
 
+      {/* Groups that move as one unit, linked through their live positions */}
+      <GroupLinks
+        groups={groupLinks}
+        pending={waypointsMode && !arrowTool && !isAnimating ? groupMove.pendingLink : undefined}
+        players={players}
+        oppositionPlayers={showOpposition ? oppositionPlayers : []}
+        activeBeat={showBeats && !isAnimating && !showAllBeats ? currentBeat : undefined}
+        showLabels={options.showPlayerLabels}
+        showBadges={showBeats && !isAnimating}
+        // A marker is drawn at scale * 0.88 (PlayerMarker), on a board whose
+        // length spans PITCH_LENGTH units.
+        markerPxToUnits={pitchLengthPx > 0 ? (scale * 0.88 * PITCH_LENGTH) / pitchLengthPx : 0.7}
+        projection={projection}
+      />
+
       {/* Arrow annotations */}
       <ArrowOverlay
         arrows={arrows}
         onDeleteArrow={handleDeleteArrow}
         previewArrow={previewArrow}
+        previewArrows={groupMove.previewArrows}
         showBeats={showBeats && !isAnimating}
         // Ghost the beats you are not authoring, so the board shows what happens
         // *now* without throwing away the context of what led here.
@@ -1157,6 +1138,29 @@ const FootballField: React.FC<FootballFieldProps> = ({
           onPointerLeave={handleArrowOverlayLeave}
         />
       )}
+
+      {/* Group move capture layer, and the box being dragged out */}
+      {waypointsMode && !arrowTool && !isAnimating && (
+        <div
+          className="absolute inset-0"
+          style={{ zIndex: 45, cursor: groupMove.overPlayer ? 'pointer' : 'crosshair', touchAction: 'none' }}
+          {...groupMove.handlers}
+        />
+      )}
+      {groupMove.marquee && (() => {
+        const a = projection.toPct(groupMove.marquee.a);
+        const b = projection.toPct(groupMove.marquee.b);
+        return (
+          <div
+            style={{
+              position: 'absolute', zIndex: 46, pointerEvents: 'none',
+              left: `${Math.min(a.x, b.x)}%`, top: `${Math.min(a.y, b.y)}%`,
+              width: `${Math.abs(a.x - b.x)}%`, height: `${Math.abs(a.y - b.y)}%`,
+              border: '2px dashed #60a5fa', background: 'rgba(96, 165, 250, 0.15)', borderRadius: 4,
+            }}
+          />
+        );
+      })()}
 
       {/* Snap indicator ring — shown above overlay, pointer-events none */}
       {snapPlayer && (

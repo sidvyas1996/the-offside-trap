@@ -93,6 +93,11 @@ export interface TacticArrow {
    */
   from?: { team: 'home' | 'away'; playerId: number };
   to?: { team: 'home' | 'away'; playerId: number };
+  /**
+   * Runs drawn together by one group move share this id, so the group is
+   * deleted as it was drawn: in one gesture.
+   */
+  groupId?: string;
 }
 
 // Field visual settings (CreateTactics / 2D field only)
@@ -492,3 +497,4 @@ export * from "./arrow-geometry";
 export * from "./interpolate";
 export * from "./lineups";
 export * from "./tactic-preview";
+export * from "./group-move";

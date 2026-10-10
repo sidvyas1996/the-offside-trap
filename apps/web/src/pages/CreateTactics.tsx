@@ -405,8 +405,17 @@ const CreateTacticsContent: React.FC = () => {
   /** Picking a tool keeps your beat; putting it down (Move) goes back to beat 1. */
   const handleSetArrowTool = React.useCallback((tool: ArrowType | null) => {
     setArrowTool(tool);
+    // Group move and the arrow tool both own the pointer on the pitch, and Move
+    // means neither: picking any of them puts group move down.
+    if (state.waypointsMode) state.handleToggleWaypoints();
     if (tool === null) exitToStartingBoard();
-  }, [setArrowTool, exitToStartingBoard]);
+  }, [setArrowTool, exitToStartingBoard, state.waypointsMode, state.handleToggleWaypoints]);
+
+  /** Group move draws into the beat you are on, so turning it on keeps the beat. */
+  const handleToggleGroupMove = React.useCallback(() => {
+    if (!state.waypointsMode) setArrowTool(null);
+    state.handleToggleWaypoints();
+  }, [state.waypointsMode, state.handleToggleWaypoints, setArrowTool]);
 
   // Deleting the last arrow in a beat can leave you standing past the end, and a
   // pass auto-steps to the next beat without knowing about the caps.
@@ -848,7 +857,7 @@ const CreateTacticsContent: React.FC = () => {
         markerType={state.markerType}
         onToggleShirtNumbers={state.handleToggleShirtNumbers}
         showShirtNumbers={state.showShirtNumbers}
-        onToggleWaypoints={state.handleToggleWaypoints}
+        onToggleWaypoints={handleToggleGroupMove}
         onToggleHorizontalZones={state.handleToggleHorizontalZones}
         onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
         onToggleFullScreen={state.handleToggleFullScreen}
@@ -881,7 +890,6 @@ const CreateTacticsContent: React.FC = () => {
         markerType={state.markerType}
         onToggleShirtNumbers={state.handleToggleShirtNumbers}
         showShirtNumbers={state.showShirtNumbers}
-        onToggleWaypoints={state.handleToggleWaypoints}
         waypointsMode={state.waypointsMode}
         onToggleHorizontalZones={state.handleToggleHorizontalZones}
         horizontalZonesMode={state.horizontalZonesMode}
@@ -1039,7 +1047,7 @@ const CreateTacticsContent: React.FC = () => {
           markerType={state.markerType}
           onToggleShirtNumbers={state.handleToggleShirtNumbers}
           showShirtNumbers={state.showShirtNumbers}
-          onToggleWaypoints={state.handleToggleWaypoints}
+          onToggleWaypoints={handleToggleGroupMove}
           onToggleHorizontalZones={state.handleToggleHorizontalZones}
           onToggleVerticalSpaces={state.handleToggleVerticalSpaces}
           onToggleFullScreen={state.handleToggleFullScreen}
@@ -1089,6 +1097,8 @@ const CreateTacticsContent: React.FC = () => {
                   onRedo={redoArrows}
                   canUndo={canUndoArrows}
                   canRedo={canRedoArrows}
+                  groupMove={state.waypointsMode}
+                  onToggleGroupMove={handleToggleGroupMove}
                 />
               </div>
 
@@ -1119,6 +1129,8 @@ const CreateTacticsContent: React.FC = () => {
           <MobileArrowDock
             arrowTool={arrowTool}
             onSetArrowTool={handleSetArrowTool}
+            groupMove={state.waypointsMode}
+            onToggleGroupMove={handleToggleGroupMove}
             onUndo={undoArrows}
             canUndo={canUndoArrows}
             currentPhase={fromArrows ? currentBeat : 1}

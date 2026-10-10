@@ -1,6 +1,6 @@
 import React from "react";
 import type { TacticArrow, ArrowType } from "../../../../packages/shared";
-import { bendSideOf, type BendSide } from "../../../../packages/shared/src/arrow-geometry";
+import { bendSideOf, quadraticAt, type BendSide } from "../../../../packages/shared/src/arrow-geometry";
 import { LANDSCAPE, PITCH_X_SCALE, type PitchProjection } from "../utils/pitch";
 
 // SVG coordinate space matches the field markings — see utils/pitch.ts
@@ -86,6 +86,63 @@ export function curveControl(x1: number, y1: number, x2: number, y2: number, sid
   const nx = -dy / len;
   const ny = dx / len;
   return { cx: mx + side * nx * len * 0.28, cy: my + side * ny * len * 0.28 };
+}
+
+/** How close (SVG units) a right-click must land to an arrow's line: half the old hit stroke, plus a little. */
+const HIT_TOLERANCE = 8;
+
+const distToSegment = (p: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) => {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+};
+
+/**
+ * The arrow under a pitch point, or null: the nearest one whose drawn line
+ * passes within reach.
+ *
+ * Hit-testing in maths rather than with pointer events on the lines, because
+ * this layer sits above the player markers: lines that caught the pointer would
+ * stop a run's path from letting you grab a teammate it crosses. The geometry
+ * is the same the arrows are drawn with, so a click lands where the line is.
+ */
+export function arrowAtPoint(
+  arrows: TacticArrow[],
+  pt: { x: number; y: number },
+  projection: PitchProjection = LANDSCAPE,
+): TacticArrow | null {
+  const p = toSvg(pt, projection);
+  const radius = markerRadiusFor(projection);
+  let best: TacticArrow | null = null;
+  let bestDist = HIT_TOLERANCE;
+  for (const arrow of arrows) {
+    if (!arrow.points[0]) continue;
+    const a = toSvg(arrow.points[0], projection);
+    let d: number;
+    if (arrow.type === 'target-zone') {
+      d = Math.max(0, Math.hypot(p.x - a.x, p.y - a.y) - 8);
+    } else {
+      if (!arrow.points[1]) continue;
+      const b = toSvg(arrow.points[1], projection);
+      // On a player's marker is the player's, not the arrow leaving them.
+      if (Math.hypot(p.x - a.x, p.y - a.y) < radius || Math.hypot(p.x - b.x, p.y - b.y) < radius) continue;
+      if (arrow.type === 'long-ball' || arrow.type === 'curved-run') {
+        const { cx, cy } = curveControl(a.x, a.y, b.x, b.y, bendSideOf(arrow));
+        d = Infinity;
+        let prev = a;
+        for (let i = 1; i <= 16; i++) {
+          const next = quadraticAt(a.x, a.y, cx, cy, b.x, b.y, i / 16);
+          d = Math.min(d, distToSegment(p, prev, next));
+          prev = next;
+        }
+      } else {
+        d = distToSegment(p, a, b);
+      }
+    }
+    if (d < bestDist) { bestDist = d; best = arrow; }
+  }
+  return best;
 }
 
 interface ArrowSvgProps {
@@ -300,6 +357,8 @@ interface ArrowOverlayProps {
   arrows: TacticArrow[];
   onDeleteArrow?: (id: string) => void;
   previewArrow?: TacticArrow | null;
+  /** Several ghosts at once, for a group move. */
+  previewArrows?: TacticArrow[];
   /** Show running order on the pitch. Off when arrows are just annotation. */
   showBeats?: boolean;
   /**
@@ -322,6 +381,7 @@ const ArrowOverlay: React.FC<ArrowOverlayProps> = ({
   arrows,
   onDeleteArrow,
   previewArrow,
+  previewArrows,
   showBeats,
   activeBeat,
   projection = LANDSCAPE,
@@ -347,6 +407,7 @@ const ArrowOverlay: React.FC<ArrowOverlayProps> = ({
       );
     })}
     {previewArrow && <ArrowSvg key="preview" arrow={previewArrow} isPreview projection={projection} />}
+    {previewArrows?.map((a, i) => <ArrowSvg key={`group-preview-${i}`} arrow={a} isPreview projection={projection} />)}
   </svg>
 );
 

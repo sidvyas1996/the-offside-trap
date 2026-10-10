@@ -5,17 +5,6 @@ import { usersService } from '../services/users.service';
 import { AuthedRequest } from '../middlewares/auth.middleware';
 
 export class UsersController {
-  // Get all users
-  async getUsers(req: Request, res: Response) {
-    try {
-      const users = await usersService.getUsers();
-      res.json({ success: true, data: users });
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      res.status(500).json({ success: false, error: errorMessage });
-    }
-  }
-
   // Get user by ID
   async getUserById(req: AuthedRequest, res: Response): Promise<void> {
     try {

@@ -153,7 +153,6 @@ const TacticalField: React.FC<TacticalFieldProps> = ({
           markerType={markerType}
           onToggleShirtNumbers={onToggleShirtNumbers}
           showShirtNumbers={showShirtNumbers}
-          onToggleWaypoints={onToggleWaypoints}
           waypointsMode={waypointsMode}
           onToggleHorizontalZones={onToggleHorizontalZones}
           horizontalZonesMode={horizontalZonesMode}

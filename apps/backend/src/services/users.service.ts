@@ -11,20 +11,6 @@ interface User {
 }
 
 export class UsersService {
-  // Get all users
-  async getUsers() {
-    return prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        avatar: true,
-        profile: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
   // Get user by ID
   async getUserById(id: string) {
     return prisma.user.findUnique({

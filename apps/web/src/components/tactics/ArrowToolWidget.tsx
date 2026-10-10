@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, GripVertical, Hand, Redo2, Trash2, Undo2 } from "lucide-react";
+import { ChevronDown, ChevronUp, GripVertical, Hand, Redo2, Trash2, Undo2, Users } from "lucide-react";
 import type { ArrowType } from "../../../../../packages/shared/src";
 import { ARROW_TOOLS, BALL_TOOLS, RUN_TOOLS, BEND_HINT, type ArrowTool } from "./arrow-tools";
 
@@ -15,6 +15,9 @@ interface ArrowToolWidgetProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  /** Group move: pick several players and drag them as one. */
+  groupMove?: boolean;
+  onToggleGroupMove?: () => void;
 }
 
 const COLLAPSED_KEY = 'arrow-widget-collapsed';
@@ -93,6 +96,8 @@ const ArrowToolWidget: React.FC<ArrowToolWidgetProps> = ({
   onRedo,
   canUndo,
   canRedo,
+  groupMove = false,
+  onToggleGroupMove,
 }) => {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const toggle = () => setCollapsed(c => { writeCollapsed(!c); return !c; });
@@ -203,8 +208,8 @@ const ArrowToolWidget: React.FC<ArrowToolWidgetProps> = ({
           className="flex items-center gap-1.5"
           style={{ ...card, padding: '5px 9px', cursor: 'grab', touchAction: 'none', fontFamily: 'var(--font-display)', fontSize: 10, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}
         >
-          {Icon ? <Icon /> : <Hand size={13} />}
-          {active ? active.title : 'Move'}
+          {Icon ? <Icon /> : groupMove ? <Users size={13} /> : <Hand size={13} />}
+          {active ? active.title : groupMove ? 'Group' : 'Move'}
           <ChevronDown size={13} />
         </button>
       </div>
@@ -277,12 +282,24 @@ const ArrowToolWidget: React.FC<ArrowToolWidgetProps> = ({
           type="button"
           title="Move players — returns to the starting positions"
           onClick={() => onSetArrowTool(null)}
-          className={`tool-btn${arrowTool === null ? ' active' : ''}`}
+          className={`tool-btn${arrowTool === null && !groupMove ? ' active' : ''}`}
           style={{ flexDirection: 'column', gap: 2, padding: '3px 6px', minWidth: 52 }}
         >
           <Hand size={15} />
           <span style={{ fontSize: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Move</span>
         </button>
+        {onToggleGroupMove && (
+          <button
+            type="button"
+            title="Group move — pick players, then drag one to run them together"
+            onClick={onToggleGroupMove}
+            className={`tool-btn${groupMove ? ' active' : ''}`}
+            style={{ flexDirection: 'column', gap: 2, padding: '3px 6px', minWidth: 52 }}
+          >
+            <Users size={15} />
+            <span style={{ fontSize: 8, letterSpacing: '0.06em', textTransform: 'uppercase' }}>Group</span>
+          </button>
+        )}
       </div>
       <div className="flex items-center gap-1" style={{ marginBottom: 4 }}>
         <span style={{ ...rowLabel, color: '#fbbf24' }}>Ball</span>

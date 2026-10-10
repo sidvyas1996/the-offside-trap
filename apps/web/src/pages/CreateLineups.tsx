@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Save, Loader2, SlidersHorizontal, Palette, Camera, Layers, Shirt, Circle, CaseSensitive, RotateCcw, Hash, Image as ImageIcon } from "lucide-react";
 import { api } from "../lib/api";
+import { exportErrorMessage } from "../utils/export-error";
 import EditorBar from "../components/EditorBar";
 import BottomSheet from "../components/ui/bottom-sheet";
 import RotationDial from "../components/ui/RotationDial";
@@ -153,7 +154,7 @@ const CreateLineupsContent: React.FC = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error exporting lineup:", error);
-      alert("Failed to export image. Please try again.");
+      alert(exportErrorMessage(error, "Failed to export image. Please try again."));
     } finally {
       setIsExporting(null);
     }

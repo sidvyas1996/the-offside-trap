@@ -7,13 +7,12 @@ import HeroPitch from "../components/HeroPitch";
 import type { TacticSummary } from "../../../../packages/shared";
 import {
   Plus, ArrowRight, Clock, TrendingUp, Award,
-  Clapperboard, Box, Image as ImageIcon,
+  Clapperboard, Box,
 } from "lucide-react";
 
 const FEATURES = [
   { icon: Clapperboard, bg: "var(--pitch-lime)", title: "Tactics Studio", body: "Animate presses, passing lanes and runs on a live board.", to: "/create-tactics" },
   { icon: Box, bg: "var(--keeper-blue)", title: "3D Lineups", body: "Rotate, tilt and kit out your XI in real perspective.", to: "/create-lineups" },
-  { icon: ImageIcon, bg: "var(--card-yellow)", title: "Export anywhere", body: "Match‑ready PNG, JPG and animated clips in a click.", to: "/create-tactics" },
 ];
 
 const Home: React.FC = () => {

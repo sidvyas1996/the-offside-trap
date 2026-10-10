@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Download, Image as ImageIcon, Film } from "lucide-react";
 import { Button } from "../ui/button";
 import { api } from "../../lib/api";
+import { exportErrorMessage } from "../../utils/export-error";
 import { useFootballField } from "../../contexts/FootballFieldContext";
 import type { AnimationData } from "../../../../../packages/shared/src";
 
@@ -80,7 +81,7 @@ const Preview: React.FC<PreviewProps> = ({
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error exporting field:", error);
-      alert("Failed to export image. Please try again.");
+      alert(exportErrorMessage(error, "Failed to export image. Please try again."));
     } finally {
       setIsExporting(false);
     }
@@ -124,7 +125,7 @@ const Preview: React.FC<PreviewProps> = ({
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error exporting video:", error);
-      alert("Failed to export video. Please try again.");
+      alert(exportErrorMessage(error, "Failed to export video. Please try again."));
     } finally {
       setIsExportingVideo(false);
     }

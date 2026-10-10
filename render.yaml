@@ -5,6 +5,20 @@ services:
     dockerfilePath: ./apps/backend/Dockerfile
     dockerContext: .
     plan: free
+    # Only deploy when something the backend image is built from changes
+    # (the Render counterpart of vercel.json's ignoreCommand).
+    buildFilter:
+      paths:
+        - apps/backend/**
+        - packages/shared/**
+        - package.json
+        - package-lock.json
+        - turbo.json
+        - render.yaml
+      ignoredPaths:
+        - "**/*.md"
+        - "**/__tests__/**"
+        - "**/*.test.ts"
     envVars:
       - key: NODE_ENV
         value: production

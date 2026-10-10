@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, Pause, Plus, ArrowUpRight, ChevronDown, Undo2 } from "lucide-react";
+import { Play, Pause, Plus, ArrowUpRight, ChevronDown, Undo2, Users } from "lucide-react";
 import type { ArrowType } from "../../../../../packages/shared";
 import { ARROW_TOOLS, BALL_TOOLS, RUN_TOOLS, type ArrowTool } from "./arrow-tools";
 
@@ -40,10 +40,16 @@ interface MobileArrowDockProps {
   /** Undo the last arrow edit — a phone has no ⌘Z. */
   onUndo: () => void;
   canUndo: boolean;
+  /** Group move: pick several players and drag them as one. */
+  groupMove?: boolean;
+  onToggleGroupMove?: () => void;
 }
 
+const GroupIcon: React.FC = () => <Users size={16} />;
+const GROUP_CHIP = { label: 'Group', title: 'Group move — pick players, then drag one to run them together', icon: GroupIcon };
+
 const ToolChip: React.FC<{
-  tool: ArrowTool;
+  tool: Pick<ArrowTool, 'label' | 'title' | 'icon'>;
   active: boolean;
   onClick: () => void;
 }> = ({ tool: { label, title, icon: Icon }, active, onClick }) => (
@@ -106,9 +112,10 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
   currentTimeMs, durationMs,
   collapsed, onToggleCollapsed,
   onUndo, canUndo,
+  groupMove = false, onToggleGroupMove,
 }) => {
   // No arrow tool is the Move tool: a drag repositions players.
-  const activeLabel = arrowTool ? TOOL_LABELS[arrowTool] : 'Move';
+  const activeLabel = arrowTool ? TOOL_LABELS[arrowTool] : groupMove ? 'Group move' : 'Move';
 
   const progress = durationMs > 0 ? Math.min(1, currentTimeMs / durationMs) : 0;
   const pct = `${(progress * 100).toFixed(2)}%`;
@@ -184,6 +191,21 @@ const MobileArrowDock: React.FC<MobileArrowDockProps> = ({
 
       {!collapsed && (
         <>
+      {onToggleGroupMove && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 9 }}>
+          <span
+            style={{
+              width: 34, flexShrink: 0, fontWeight: 800, fontSize: 9,
+              letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--outline)',
+            }}
+          >
+            Players
+          </span>
+          <div style={{ display: 'flex', gap: 7, flex: 1, minWidth: 0 }}>
+            <ToolChip tool={GROUP_CHIP} active={groupMove} onClick={onToggleGroupMove} />
+          </div>
+        </div>
+      )}
       <ToolRow label="Ball" tools={BALL_TOOLS} arrowTool={arrowTool} onSetArrowTool={onSetArrowTool} marginBottom={9} />
       <ToolRow label="Run" tools={RUN_TOOLS} arrowTool={arrowTool} onSetArrowTool={onSetArrowTool} marginBottom={14} />
 

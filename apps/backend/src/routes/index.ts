@@ -19,7 +19,6 @@ router.get('/', (req, res) => {
     name: 'Football Tactics API',
     version: '1.0.0',
     endpoints: {
-      users: '/api/users',
       tactics: '/api/tactics',
     },
   });

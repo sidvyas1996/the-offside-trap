@@ -52,6 +52,8 @@ interface PlayerMarkerProps {
   markerType?: 'circle' | 'shirt';
   waypointsMode?: boolean;
   isSelected?: boolean;
+  /** Under the pointer in group move: glows so it is clear what a click or drag will pick. */
+  groupHover?: boolean;
   onWaypointsClick?: () => void;
   fovAngle?: number;
   onMouseEnter?: () => void;
@@ -88,6 +90,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
   markerType = 'circle',
   waypointsMode = false,
   isSelected = false,
+  groupHover = false,
   onWaypointsClick,
   fovAngle,
   onMouseEnter,
@@ -179,7 +182,7 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
         left: `${(pos ?? player).x}%`,
         top: `${(pos ?? player).y}%`,
         zIndex: isDragged ? 50 : 10,
-        transform: `translate(-50%, -50%) scale(${scale * 0.88 * (isHovered ? 1.1 : 1)})`,
+        transform: `translate(-50%, -50%) scale(${scale * 0.88 * (isHovered || groupHover ? 1.1 : 1)})`,
         transformOrigin: "center",
         // Position must never be transitioned while dragging or animating: both
         // push a fresh position every frame, so an ease on left/top makes the
@@ -281,9 +284,15 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
             background: getCircleBackground(markerDesign, markerBgColor, markerSecondaryColor),
             color: markerTextColor,
             // Brutalist shell: thick colour ring + hard black outline + hard offset shadow
-            boxShadow: isDragged
-              ? '0 0 0 2.5px #15140f, 5px 5px 0 #15140f'
-              : '0 0 0 2.5px #15140f, 3px 3px 0 #15140f',
+            // Selection is a ring outside the ink outline. It has to live in this
+            // shadow: the Tailwind ring is a box-shadow too, and this one overrides it.
+            boxShadow: [
+              '0 0 0 2.5px #15140f',
+              ...(isSelected ? ['0 0 0 6px #60a5fa'] : []),
+              ...(groupHover ? ['0 0 14px 5px rgba(147, 197, 253, 0.9)'] : []),
+              isDragged ? '5px 5px 0 #15140f' : '3px 3px 0 #15140f',
+            ].join(', '),
+            ...(groupHover && { filter: 'brightness(1.25)' }),
             border: `4px solid ${markerBorderColor}`,
             fontFamily: "var(--font-display)",
             fontWeight: 800,
@@ -322,7 +331,9 @@ const PlayerMarker: React.FC<PlayerMarkerProps> = ({
               alt="Player"
               className="w-full h-full object-contain"
               style={{
-                filter: "drop-shadow(0 3px 5px rgba(0,0,0,0.35))",
+                filter: groupHover
+                  ? "drop-shadow(0 0 8px rgba(147, 197, 253, 0.95)) brightness(1.2)"
+                  : "drop-shadow(0 3px 5px rgba(0,0,0,0.35))",
                 ...(kitScale !== 1 && { transform: `scale(${kitScale})` }),
               }}
               draggable={false}

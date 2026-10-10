@@ -91,6 +91,8 @@ const arrowSchema = z.object({
   /** Bound when drawn, so a run survives its player being repositioned. */
   from: playerRef.optional(),
   to: playerRef.optional(),
+  /** Runs drawn by one group move share it, and are deleted together. */
+  groupId: z.string().max(64).optional(),
 });
 
 const keyframeSchema = z.object({
