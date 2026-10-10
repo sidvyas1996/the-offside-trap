@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import { errorHandler } from './middlewares/error.middleware';
 import routes from './routes';
 
@@ -7,6 +8,9 @@ const app = express();
 
 const PORT = process.env.PORT || 3001;
 app.use(cors());
+// @types/compression pulls in Express 5's types; the middleware itself is
+// version-agnostic.
+app.use(compression() as unknown as express.RequestHandler);
 
 // Middleware
 // Tactics carry their compiled animation: a keyframe per frame, each with every

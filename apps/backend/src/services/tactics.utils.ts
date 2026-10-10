@@ -28,12 +28,16 @@ export const tacticSummarySelect = {
 };
 
 /**
- * The summary plus what a list card needs to draw its preview. Kept separate
- * from tacticSummarySelect so nothing else that reuses the summary starts
- * loading animations.
+ * The summary plus the stored card preview. The preview is derived on write,
+ * so the list never loads players or animations.
  */
-export const tacticCardSelect = {
+export const tacticListSelect = {
   ...tacticSummarySelect,
+  preview: true,
+};
+
+/** The fields a card preview is built from. */
+export const tacticPreviewSourceSelect = {
   players: true,
   fieldSettings: true,
   oppositionPlayers: true,

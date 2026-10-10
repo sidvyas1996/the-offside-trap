@@ -9,7 +9,10 @@ export class TacticsController {
   async getTacticsSummary(req: Request, res: Response) {
     try {
       const filters = req.query;
+      const started = performance.now();
       const tactics = await tacticsService.getTacticsSummary(filters);
+      // Shows in DevTools' Timing tab, separating query time from network time.
+      res.set('Server-Timing', `db;dur=${(performance.now() - started).toFixed(1)}`);
       res.json({ success: true, data: tactics });
     } catch (error) {
       console.error(error);

@@ -1,8 +1,8 @@
-import { Player, TacticFormData, TacticFilters, buildTacticPreview } from '@the-offside-trap/shared';
+import { Player, TacticFormData, TacticFilters, TacticPreview, buildTacticPreview } from '@the-offside-trap/shared';
 import { Prisma } from '@prisma/client';
 import { prisma } from './db.service';
 import { createError } from '../middlewares/error.middleware';
-import { tacticCardSelect } from './tactics.utils';
+import { tacticListSelect, tacticPreviewSourceSelect } from './tactics.utils';
 
 export class TacticsService {
   /**
@@ -113,23 +113,37 @@ export class TacticsService {
     const [tactics, total] = await Promise.all([
       prisma.tactic.findMany({
         where,
-        select: tacticCardSelect,
+        select: tacticListSelect,
         orderBy,
         skip,
         take: limit,
       }),
       prisma.tactic.count({ where }),
     ]);
-    // The card fields are read only to build the preview; the summary itself is
-    // mapped from the row without them, so the list never ships full player lists
-    // or whole animations.
-    const tacticResponses = tactics.map(tactic => {
-      const { players, fieldSettings, oppositionPlayers, oppositionFieldSettings, animation, ...summaryRow } = tactic;
-      return {
-        ...this.mapToTacticResponse(summaryRow, userId),
-        preview: buildTacticPreview({ players, fieldSettings, oppositionPlayers, oppositionFieldSettings, animation }),
-      };
-    });
+
+    // Rows saved before previews were stored have none yet: build those from
+    // the full row once, store the result, and serve it. Only they pay for
+    // loading the animation.
+    const missing = tactics.filter(t => t.preview == null).map(t => t.id);
+    const builtPreviews = new Map<string, TacticPreview>();
+    if (missing.length > 0) {
+      const sources = await prisma.tactic.findMany({
+        where: { id: { in: missing } },
+        select: { id: true, ...tacticPreviewSourceSelect },
+      });
+      await Promise.all(
+        sources.map(({ id, ...source }) => {
+          const preview = buildTacticPreview(source);
+          builtPreviews.set(id, preview);
+          return prisma.tactic.update({ where: { id }, data: { preview: preview as any } });
+        }),
+      );
+    }
+
+    const tacticResponses = tactics.map(({ preview, ...summaryRow }) => ({
+      ...this.mapToTacticResponse(summaryRow, userId),
+      preview: (preview as unknown as TacticPreview | null) ?? builtPreviews.get(summaryRow.id),
+    }));
 
     return {
       tactics: tacticResponses,
@@ -217,6 +231,7 @@ export class TacticsService {
         oppositionPlayers: (data.oppositionPlayers as any) ?? undefined,
         oppositionFieldSettings: (data.oppositionFieldSettings as any) ?? undefined,
         arrows: (data.arrows as any) ?? undefined,
+        preview: buildTacticPreview(data) as any,
         author: {
           connect: { id: userId },
         },
@@ -249,7 +264,7 @@ export class TacticsService {
     // Check if tactic exists and user is the owner
     const existingTactic = await prisma.tactic.findUnique({
       where: { id },
-      select: { authorId: true },
+      select: { authorId: true, ...tacticPreviewSourceSelect },
     });
 
     if (!existingTactic) {
@@ -309,6 +324,16 @@ export class TacticsService {
 
     if (data.arrows !== undefined) {
       updateData.arrows = (data.arrows as any) ?? Prisma.DbNull;
+    }
+
+    // The stored preview follows whatever this update leaves in the row.
+    const previewFields = ['players', 'fieldSettings', 'oppositionPlayers', 'oppositionFieldSettings', 'animation'] as const;
+    if (previewFields.some(f => data[f] !== undefined)) {
+      const { authorId: _authorId, ...current } = existingTactic;
+      updateData.preview = buildTacticPreview({
+        ...current,
+        ...Object.fromEntries(previewFields.filter(f => data[f] !== undefined).map(f => [f, data[f]])),
+      }) as any;
     }
 
     const updatedTactic = await prisma.tactic.update({
@@ -501,6 +526,7 @@ export class TacticsService {
         tags: originalTactic.tags,
         description: originalTactic.description,
         players: originalTactic.players!,
+        preview: buildTacticPreview({ players: originalTactic.players }) as any,
         author: {
           connect: { id: userId },
         },
